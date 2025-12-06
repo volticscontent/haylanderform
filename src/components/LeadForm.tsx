@@ -144,7 +144,10 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error("Erro ao salvar dados");
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || "Erro ao salvar dados");
+        }
         
         setStatus("success");
         
@@ -157,7 +160,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     } catch (err) {
         console.error(err);
         setStatus("error");
-        setErrorMsg("Erro ao enviar formulário. Tente novamente.");
+        setErrorMsg(err instanceof Error ? err.message : "Erro ao enviar formulário. Tente novamente.");
     }
   };
 
@@ -315,7 +318,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             name="tipo_divida"
                             value={formData.tipo_divida}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         >
                             <option value="">Selecione...</option>
                             <option value="Não Ajuizada">Não Ajuizada (Cobrança judicial não iniciada)</option>
@@ -332,7 +335,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             name="origem_divida"
                             value={formData.origem_divida}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         >
                             <option value="">Selecione...</option>
                             <option value="Municipal">Municipal</option>
@@ -353,7 +356,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                 value={formData.valor_divida}
                                 onChange={handleChange}
                                 placeholder="R$ 0,00"
-                                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                             />
                         </div>
                     </div>
@@ -367,7 +370,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             value={formData.tempo_divida}
                             onChange={handleChange}
                             placeholder="Ex: 2 anos"
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         />
                     </div>
 
@@ -379,7 +382,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                 name="calculo_parcelamento"
                                 value={formData.calculo_parcelamento}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                             >
                                 <option value="">Selecione um plano para registrar...</option>
                                 {parcelas.map((p) => (

@@ -110,10 +110,10 @@ export async function PUT(
     }
 
     return NextResponse.json(res.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating user:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: error.message || "Internal Server Error" },
       { status: 500 }
     );
   } finally {

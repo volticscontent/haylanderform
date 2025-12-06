@@ -18,35 +18,40 @@ if (!connectionString && dbUrlLine) {
     }
 }
 
-if (connectionString) {
-    // Remove quotes if present
-    connectionString = connectionString.replace(/^"|"$/g, '').replace(/^'|'$/g, '');
-}
-
 console.log('Using connection string:', connectionString);
 
 const client = new Client({
   connectionString: connectionString,
 });
 
-async function inspect() {
+async function updateSchema() {
   try {
     await client.connect();
-    console.log('Connected.');
-    const res = await client.query(`
-      SELECT column_name, data_type 
-      FROM information_schema.columns 
-      WHERE table_name = 'haylander';
-    `);
-    console.log('Columns in haylander table:');
-    res.rows.forEach(row => {
-      console.log(`${row.column_name} (${row.data_type})`);
-    });
+    console.log('Connected to database.');
+
+    const queries = [
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS "possui_sócio" BOOLEAN;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS valor_divida_municipal TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS valor_divida_estadual TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS valor_divida_federal TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS valor_divida_ativa TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS observacoes TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS envio_disparo TEXT;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS data_controle_24h TIMESTAMP;`,
+      `ALTER TABLE haylander ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP;`
+    ];
+
+    for (const query of queries) {
+      console.log(`Executing: ${query}`);
+      await client.query(query);
+    }
+
+    console.log('Schema updated successfully.');
   } catch (err) {
-    console.error('Error executing query', err.stack);
+    console.error('Error updating schema:', err);
   } finally {
     await client.end();
   }
 }
 
-inspect();
+updateSchema();
