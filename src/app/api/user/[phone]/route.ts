@@ -57,6 +57,7 @@ export async function PUT(
     faturamento_mensal,
     observacoes,
     teria_interesse,
+    calculo_parcelamento,
   } = body;
 
   try {
@@ -78,25 +79,27 @@ export async function PUT(
         faturamento_mensal = $9,
         observacoes = $10,
         "teria_interesse?" = $11,
+        calculo_parcelamento = $12,
         envio_disparo = 'a1',
         data_controle_24h = NOW() + INTERVAL '24 hours',
         atualizado_em = NOW()
-      WHERE telefone = $12
+      WHERE telefone = $13
       RETURNING *
     `;
 
     const values = [
-      cnpj,
-      tipo_negocio,
-      possui_socio === "Sim", // Convert "Sim"/"Não" to boolean if needed, or strictly boolean. Database says boolean.
-      tipo_divida,
-      valor_divida_municipal,
-      valor_divida_estadual,
-      valor_divida_federal,
-      valor_divida_ativa,
-      faturamento_mensal,
-      observacoes,
-      teria_interesse,
+      cnpj || null,
+      tipo_negocio || null,
+      possui_socio === "Sim", // Boolean
+      tipo_divida || null,
+      valor_divida_municipal || null,
+      valor_divida_estadual || null,
+      valor_divida_federal || null,
+      valor_divida_ativa || null,
+      faturamento_mensal || null,
+      observacoes || null,
+      teria_interesse || null,
+      calculo_parcelamento || null,
       phone,
     ];
 

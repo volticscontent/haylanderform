@@ -29,10 +29,31 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     possui_socio: "", // "Sim" | "Não"
     teria_interesse: "", // "Sim" | "Não"
     observacoes: observacao || "",
+    calculo_parcelamento: "",
   });
 
+  const [parcelas, setParcelas] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const valor = formData.valor_divida;
+    if (!valor) {
+        setParcelas([]);
+        return;
+    }
+    const cleanValue = valor.replace(/[^\d,]/g, '').replace(',', '.');
+    const numericValue = parseFloat(cleanValue);
+    if (isNaN(numericValue) || numericValue <= 0) {
+        setParcelas([]);
+        return;
+    }
+    const options = [12, 24, 36, 48, 60].map(months => {
+        const installmentValue = numericValue / months;
+        return `${months}x de ${installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    });
+    setParcelas(options);
+  }, [formData.valor_divida]);
 
   useEffect(() => {
     if (phone) {
@@ -60,6 +81,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             // For simplicity, we might not pre-fill the debt details perfectly if multiple exist, or we just rely on the user to fill them.
             // But let's try to pre-fill if we can.
             observacoes: observacao || data.observacoes || "",
+            calculo_parcelamento: data.calculo_parcelamento || "",
             teria_interesse: data["teria_interesse?"] || "",
             faturamento_mensal: data.faturamento_mensal || "",
             possui_socio: data["possui_sócio"] ? "Sim" : "Não",
@@ -96,6 +118,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         faturamento_mensal: formData.faturamento_mensal,
         observacoes: formData.observacoes,
         teria_interesse: formData.teria_interesse,
+        calculo_parcelamento: formData.calculo_parcelamento,
     };
 
     // Handle Debt logic
@@ -193,7 +216,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
   }
 
   return (
-    <div className="w-full bg-white dark:bg-zinc-900 p-6 sm:p-8 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+    <div className="w-full bg-white dark:bg-zinc-900 p-4 py-12 sm:p-8 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
       <div className="mb-8 text-center">
         <h2 className="text-3xl text-zinc-900 dark:text-white tracking-tight mb-2">
           Seja bem vindo a Haylander Martins Contabilidade!
@@ -292,7 +315,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             name="tipo_divida"
                             value={formData.tipo_divida}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg dark:text-white"
+                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         >
                             <option value="">Selecione...</option>
                             <option value="Não Ajuizada">Não Ajuizada (Cobrança judicial não iniciada)</option>
@@ -309,7 +332,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             name="origem_divida"
                             value={formData.origem_divida}
                             onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg dark:text-white"
+                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         >
                             <option value="">Selecione...</option>
                             <option value="Municipal">Municipal</option>
@@ -330,7 +353,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                 value={formData.valor_divida}
                                 onChange={handleChange}
                                 placeholder="R$ 0,00"
-                                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg dark:text-white"
+                                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                             />
                         </div>
                     </div>
@@ -344,9 +367,29 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             value={formData.tempo_divida}
                             onChange={handleChange}
                             placeholder="Ex: 2 anos"
-                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg dark:text-white"
+                            className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
                         />
                     </div>
+
+                    {/* Simulação de Parcelamento */}
+                    {parcelas.length > 0 && (
+                        <div className="space-y-2 animate-in fade-in duration-300">
+                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Simulação de Parcelamento (Estimativa)</label>
+                            <select
+                                name="calculo_parcelamento"
+                                value={formData.calculo_parcelamento}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            >
+                                <option value="">Selecione um plano para registrar...</option>
+                                {parcelas.map((p) => (
+                                    <option key={p} value={p}>
+                                        {p}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
