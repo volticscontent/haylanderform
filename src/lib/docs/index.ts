@@ -1,0 +1,19 @@
+import { intro } from './intro'
+import { forms } from './forms'
+import { adminPanel } from './admin-panel'
+import { serproApi } from './serpro-api'
+import { disparoApi } from './disparo-api'
+import { listApi } from './list-api'
+import { meeting } from './meeting'
+import { databaseBot } from './database-bot'
+
+export const docsContent = {
+  intro,
+  forms,
+  meeting,
+  'database-bot': databaseBot,
+  'admin-panel': adminPanel,
+  'serpro-api': serproApi,
+  'disparo-api': disparoApi,
+  'list-api': listApi
+}

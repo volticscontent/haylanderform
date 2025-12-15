@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Send, User, Phone, FileText, MessageSquare, CheckCircle2, Building2, DollarSign, Users, AlertCircle } from "lucide-react";
+import { Send, User, Phone, FileText, MessageSquare, CheckCircle2, Building2, DollarSign, AlertCircle } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -15,15 +15,16 @@ interface LeadFormProps {
 }
 
 export default function LeadForm({ phone, observacao }: LeadFormProps) {
+  const [debts, setDebts] = useState<{ id: string; origin: string; value: string }[]>([]);
   const [formData, setFormData] = useState({
     nome_completo: "",
     telefone: "",
+    email: "",
+    senha_gov: "",
     cnpj: "",
     tipo_negocio: "",
     possui_divida: "", // "Sim" | "Não"
     tipo_divida: "",
-    origem_divida: "",
-    valor_divida: "",
     tempo_divida: "",
     faturamento_mensal: "",
     possui_socio: "", // "Sim" | "Não"
@@ -36,24 +37,26 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Calculate total debt and installments
   useEffect(() => {
-    const valor = formData.valor_divida;
-    if (!valor) {
+    const totalValue = debts.reduce((acc, debt) => {
+        if (!debt.value) return acc;
+        const cleanValue = debt.value.replace(/[^\d,]/g, '').replace(',', '.');
+        const numericValue = parseFloat(cleanValue);
+        return acc + (isNaN(numericValue) ? 0 : numericValue);
+    }, 0);
+
+    if (totalValue <= 0) {
         setParcelas([]);
         return;
     }
-    const cleanValue = valor.replace(/[^\d,]/g, '').replace(',', '.');
-    const numericValue = parseFloat(cleanValue);
-    if (isNaN(numericValue) || numericValue <= 0) {
-        setParcelas([]);
-        return;
-    }
+
     const options = [12, 24, 36, 48, 60].map(months => {
-        const installmentValue = numericValue / months;
+        const installmentValue = totalValue / months;
         return `${months}x de ${installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
     });
     setParcelas(options);
-  }, [formData.valor_divida]);
+  }, [debts]);
 
   useEffect(() => {
     if (phone) {
@@ -67,19 +70,25 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             return res.json();
         })
         .then((data) => {
+          // Load existing debts
+          const loadedDebts = [];
+          if (data.valor_divida_municipal) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Municipal', value: data.valor_divida_municipal });
+          if (data.valor_divida_estadual) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Estadual', value: data.valor_divida_estadual });
+          if (data.valor_divida_federal) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Federal', value: data.valor_divida_federal });
+          if (data.valor_divida_ativa) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Ativa', value: data.valor_divida_ativa });
+
+          setDebts(loadedDebts);
+
           setFormData((prev) => ({
             ...prev,
             nome_completo: data.nome_completo || "",
             telefone: data.telefone || phone,
+            email: data.email || "",
+            senha_gov: data.senha_gov || "",
             cnpj: data.cnpj || "",
             tipo_negocio: data["tipo_negócio"] || "",
-            // We need to infer possui_divida from existing debt data if available
-            possui_divida: (data.tipo_divida || data.valor_divida_municipal || data.valor_divida_estadual || data.valor_divida_federal || data.valor_divida_ativa) ? "Sim" : "",
+            possui_divida: (data.tipo_divida || loadedDebts.length > 0) ? "Sim" : "",
             tipo_divida: data.tipo_divida || "",
-            // Logic to determine which debt value is present to set 'origem_divida' and 'valor_divida' would be complex if multiple exist, 
-            // but let's try to pick one or leave empty for user to fill if they want to update.
-            // For simplicity, we might not pre-fill the debt details perfectly if multiple exist, or we just rely on the user to fill them.
-            // But let's try to pre-fill if we can.
             observacoes: observacao || data.observacoes || "",
             calculo_parcelamento: data.calculo_parcelamento || "",
             teria_interesse: data["teria_interesse?"] || "",
@@ -105,13 +114,27 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleAddDebt = () => {
+    setDebts([...debts, { id: crypto.randomUUID(), origin: "", value: "" }]);
+  };
+
+  const handleRemoveDebt = (id: string) => {
+    setDebts(debts.filter(d => d.id !== id));
+  };
+
+  const handleDebtChange = (id: string, field: 'origin' | 'value', value: string) => {
+    setDebts(debts.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("submitting");
 
     // Prepare payload
     // We map form state to DB columns expected by API
-    const payload: any = {
+    const payload: UpdatePayload = {
+        email: formData.email,
+        senha_gov: formData.senha_gov,
         cnpj: formData.cnpj,
         tipo_negocio: formData.tipo_negocio,
         possui_socio: formData.possui_socio,
@@ -125,11 +148,18 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     if (formData.possui_divida === "Sim") {
         payload.tipo_divida = formData.tipo_divida;
         
-        // Map specific debt value based on origin
-        if (formData.origem_divida === "Municipal") payload.valor_divida_municipal = formData.valor_divida;
-        if (formData.origem_divida === "Estadual") payload.valor_divida_estadual = formData.valor_divida;
-        if (formData.origem_divida === "Federal") payload.valor_divida_federal = formData.valor_divida;
-        if (formData.origem_divida === "Ativa") payload.valor_divida_ativa = formData.valor_divida;
+        // Reset debt values first to ensure we overwrite if removed
+        payload.valor_divida_municipal = null;
+        payload.valor_divida_estadual = null;
+        payload.valor_divida_federal = null;
+        payload.valor_divida_ativa = null;
+
+        debts.forEach(debt => {
+            if (debt.origin === "Municipal") payload.valor_divida_municipal = debt.value;
+            if (debt.origin === "Estadual") payload.valor_divida_estadual = debt.value;
+            if (debt.origin === "Federal") payload.valor_divida_federal = debt.value;
+            if (debt.origin === "Ativa") payload.valor_divida_ativa = debt.value;
+        });
 
         // Append tempo_divida to observacoes as requested since there is no column
         if (formData.tempo_divida) {
@@ -249,6 +279,41 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             </div>
         </div>
 
+        {/* Email e Senha Gov */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
+                <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                    <input 
+                      type="email" 
+                      name="email"
+                      required
+                      value={formData.email} 
+                      onChange={handleChange}
+                      placeholder="seu@email.com"
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" 
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Senha Gov.br</label>
+                <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                    <input 
+                      type="text" 
+                      name="senha_gov"
+                      required
+                      value={formData.senha_gov} 
+                      onChange={handleChange}
+                      placeholder="Senha do Gov.br"
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" 
+                    />
+                </div>
+            </div>
+        </div>
+
+
         {/* CNPJ */}
         <div className="space-y-2">
           <label htmlFor="cnpj" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">CNPJ</label>
@@ -328,37 +393,59 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                         </select>
                     </div>
 
-                    {/* Origem da Dívida */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Ela é:</label>
-                        <select
-                            name="origem_divida"
-                            value={formData.origem_divida}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                    {/* Lista de Dívidas */}
+                    <div className="space-y-4">
+                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Dívidas:</label>
+                        {debts.map((debt) => (
+                            <div key={debt.id} className="flex gap-4 items-start p-4 bg-white dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                <div className="flex-1 space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium text-zinc-500 uppercase">Origem</label>
+                                        <select
+                                            value={debt.origin}
+                                            onChange={(e) => handleDebtChange(debt.id, 'origin', e.target.value)}
+                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                        >
+                                            <option value="">Selecione...</option>
+                                            <option value="Municipal">Municipal</option>
+                                            <option value="Estadual">Estadual</option>
+                                            <option value="Federal">Federal</option>
+                                            <option value="Ativa">Ativa</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-medium text-zinc-500 uppercase">Valor</label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                            <input
+                                                type="text"
+                                                value={debt.value}
+                                                onChange={(e) => handleDebtChange(debt.id, 'value', e.target.value)}
+                                                placeholder="R$ 0,00"
+                                                className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveDebt(debt.id)}
+                                    className="mt-8 p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                    title="Remover dívida"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        ))}
+                        
+                        <button
+                            type="button"
+                            onClick={handleAddDebt}
+                            className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline"
                         >
-                            <option value="">Selecione...</option>
-                            <option value="Municipal">Municipal</option>
-                            <option value="Estadual">Estadual</option>
-                            <option value="Federal">Federal</option>
-                            <option value="Ativa">Ativa</option>
-                        </select>
-                    </div>
-
-                    {/* Valor da Dívida */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Qual é o valor da dívida?</label>
-                        <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                            <input
-                                type="text"
-                                name="valor_divida"
-                                value={formData.valor_divida}
-                                onChange={handleChange}
-                                placeholder="R$ 0,00"
-                                className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                            />
-                        </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Adicionar Dívida
+                        </button>
                     </div>
 
                     {/* Tempo da Dívida */}
@@ -501,4 +588,23 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
       </form>
     </div>
   );
+}
+
+
+// Tipagem do payload enviado para a API
+interface UpdatePayload {
+  email: string;
+  senha_gov: string;
+  cnpj: string;
+  tipo_negocio: string;
+  possui_socio: string;
+  faturamento_mensal: string;
+  observacoes: string;
+  teria_interesse: string;
+  calculo_parcelamento: string;
+  tipo_divida?: string;
+  valor_divida_municipal?: string | null;
+  valor_divida_estadual?: string | null;
+  valor_divida_federal?: string | null;
+  valor_divida_ativa?: string | null;
 }

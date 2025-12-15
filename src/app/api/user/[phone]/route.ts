@@ -46,6 +46,8 @@ export async function PUT(
   // Map fields to columns
   // Note: We are careful with quotes for columns with special characters
   const {
+    email,
+    senha_gov,
     cnpj,
     tipo_negocio,
     possui_socio,
@@ -68,26 +70,30 @@ export async function PUT(
     const updateQuery = `
       UPDATE haylander
       SET 
-        cnpj = $1,
-        "tipo_negócio" = $2,
-        "possui_sócio" = $3,
-        tipo_divida = $4,
-        valor_divida_municipal = COALESCE($5, valor_divida_municipal),
-        valor_divida_estadual = COALESCE($6, valor_divida_estadual),
-        valor_divida_federal = COALESCE($7, valor_divida_federal),
-        valor_divida_ativa = COALESCE($8, valor_divida_ativa),
-        faturamento_mensal = $9,
-        observacoes = $10,
-        "teria_interesse?" = $11,
-        calculo_parcelamento = $12,
+        email = $1,
+        senha_gov = $2,
+        cnpj = $3,
+        "tipo_negócio" = $4,
+        "possui_sócio" = $5,
+        tipo_divida = $6,
+        valor_divida_municipal = $7,
+        valor_divida_estadual = $8,
+        valor_divida_federal = $9,
+        valor_divida_ativa = $10,
+        faturamento_mensal = $11,
+        observacoes = $12,
+        "teria_interesse?" = $13,
+        calculo_parcelamento = $14,
         envio_disparo = 'a1',
         data_controle_24h = NOW() + INTERVAL '24 hours',
         atualizado_em = NOW()
-      WHERE telefone = $13
+      WHERE telefone = $15
       RETURNING *
     `;
 
     const values = [
+      email || null,
+      senha_gov || null,
       cnpj || null,
       tipo_negocio || null,
       possui_socio === "Sim", // Boolean
@@ -110,10 +116,11 @@ export async function PUT(
     }
 
     return NextResponse.json(res.rows[0]);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating user:", error);
+    const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { error: message },
       { status: 500 }
     );
   } finally {
