@@ -24,7 +24,7 @@ type LeadRecord = {
   situacao: string | null
   qualificacao: string | null
   motivo_qualificacao: string | null
-  teria_interesse: string | null
+  interesse_ajuda: string | null
   valor_divida_ativa: string | null
   valor_divida_municipal: string | null
   valor_divida_estadual: string | null
@@ -34,6 +34,10 @@ type LeadRecord = {
   tipo_negocio: string | null
   faturamento_mensal: string | null
   possui_socio: boolean | null
+  pos_qualificacao: boolean | null
+  servico_negociado: string | null
+  data_ultima_consulta: string | null
+  procuracao: boolean | null
   idades_socios: string | null
   porte_empresa: string | null
   score_serasa: string | null
@@ -159,9 +163,9 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                   <p className="text-zinc-900 dark:text-zinc-200 font-medium">{lead.qualificacao || '-'}</p>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-zinc-500">Teria Interesse?</label>
-                  <p className={`font-medium ${lead.teria_interesse === 'Sim' ? 'text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-zinc-200'}`}>
-                    {lead.teria_interesse || '-'}
+                  <label className="text-xs text-zinc-500">Interesse em Ajuda?</label>
+                  <p className={`font-medium ${lead.interesse_ajuda === 'Sim' ? 'text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-zinc-200'}`}>
+                    {lead.interesse_ajuda || '-'}
                   </p>
                 </div>
                 <div className="space-y-1 md:col-span-2">
@@ -240,6 +244,17 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                     <Clock className="w-3 h-3" />
                     {lead.data_controle_24h ? new Date(lead.data_controle_24h).toLocaleString('pt-BR') : '-'}
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-zinc-500">Última Consulta</label>
+                  <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm">
+                    <Clock className="w-3 h-3" />
+                    {lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toLocaleString('pt-BR') : '-'}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                   <label className="text-xs text-zinc-500">Procuração</label>
+                   <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
                 </div>
                 <div className="space-y-1 md:col-span-2">
                    <label className="text-xs text-zinc-500">Status de Envio (Disparo)</label>
@@ -356,7 +371,7 @@ export default function LeadList({
     { id: 'situacao', label: 'Situação' },
     { id: 'qualificacao', label: 'Qualificação' },
     { id: 'motivo_qualificacao', label: 'Motivo qualificação' },
-    { id: 'teria_interesse', label: 'Teria interesse' },
+    { id: 'interesse_ajuda', label: 'Interesse em ajuda' },
     { id: 'valor_divida_ativa', label: 'Dívida ativa' },
     { id: 'valor_divida_municipal', label: 'Dívida municipal' },
     { id: 'valor_divida_estadual', label: 'Dívida estadual' },
@@ -544,7 +559,7 @@ export default function LeadList({
                       <option value="situacao">Situação</option>
                       <option value="qualificacao">Qualificação</option>
                       <option value="motivo_qualificacao">Motivo qualificação</option>
-                      <option value="teria_interesse">Teria interesse?</option>
+                      <option value="interesse_ajuda">Interesse em ajuda</option>
                       <option value="valor_divida_ativa">Valor dívida ativa</option>
                       <option value="valor_divida_municipal">Valor dívida municipal</option>
                       <option value="valor_divida_estadual">Valor dívida estadual</option>
@@ -926,7 +941,7 @@ export default function LeadList({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs">
                           <span className="text-zinc-500">Interesse:</span>
-                          {row.teria_interesse === 'Sim' ? (
+                          {row.interesse_ajuda === 'Sim' ? (
                             <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" /> Sim
                             </span>

@@ -9,34 +9,29 @@ export const databaseBot = {
 
     ## Estrutura do Banco de Dados (PostgreSQL)
 
-    O sistema utiliza duas tabelas principais para gerenciar o ciclo de vida dos clientes.
+    O sistema utiliza uma arquitetura modular com tabelas especializadas vinculadas à tabela central \`leads\`.
 
-    ### 1. Tabela \`haylander\` (Leads)
-    Armazena o perfil completo do lead, incluindo dados financeiros e status de qualificação.
+    ### 1. Tabela \`leads\` (Core)
+    Armazena a identidade principal do contato.
 
     | Coluna | Tipo | Descrição |
     | :--- | :--- | :--- |
-    | \`id\` | UUID/Int | Chave Primária |
+    | \`id\` | SERIAL | Chave Primária |
     | \`telefone\` | String | **Chave de Busca** (Indexada). Formato: 5511999999999 |
-    | \`email\` | String | E-mail de contato principal |
     | \`nome_completo\` | String | Nome do lead |
-    | \`cnpj\` | String | Cadastro Nacional de Pessoa Jurídica |
-    | \`tipo_negocio\` | String | MEI, Simples Nacional, Autônomo |
-    | \`valor_divida_ativa\` | Decimal | Montante da dívida ativa |
-    | \`faturamento_mensal\` | Decimal | Média de faturamento declarado |
-    | \`envio_disparo\` | String | Controle de fluxo (ex: 'a1', 'processando') |
-    | \`data_controle_24h\` | Timestamp | Janela de contato para evitar SPAM |
+    | \`email\` | String | E-mail de contato principal |
+    | \`data_cadastro\` | Timestamp | Data de entrada no sistema |
+    | \`atualizado_em\` | Timestamp | Última modificação |
 
-    ### 2. Tabela \`mei_applications\` (Abertura de MEI)
-    Tabela transacional para armazenar solicitações de formalização.
+    ### 2. Tabelas Satélites (Módulos)
+    
+    - **\`leads_empresarial\`**: Dados jurídicos (CNPJ, Razão Social, Faturamento, Dados Serpro).
+    - **\`leads_qualificacao\`**: Status do funil (MQL/SQL), Situação, Interesse.
+    - **\`leads_financeiro\`**: Dívidas (Ativa, Federal, etc.), Parcelamentos.
+    - **\`leads_atendimento\`**: Controle de fluxo (envio_disparo, data_controle_24h, observações).
+    - **\`leads_vendas\`**: Dados comerciais (reunião agendada, serviço negociado, procuração).
 
-    | Coluna | Tipo | Descrição |
-    | :--- | :--- | :--- |
-    | \`id\` | UUID | Chave Primária |
-    | \`user_id\` | FK | Referência à tabela \`haylander\` |
-    | \`cpf\` | String | Cadastro de Pessoa Física |
-    | \`titulo_eleitor_...\` | String | Dados de validação governamental |
-    | \`atividade_principal\` | String | CNAE principal |
+    Todas as tabelas satélites possuem uma FK \`lead_id\` apontando para \`leads.id\`.
 
     ---
 

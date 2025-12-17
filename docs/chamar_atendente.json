@@ -1,0 +1,163 @@
+{
+  "name": "chamar_atendente",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        320,
+        352
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b5942df6-0160-4ef7-965d-57583acdc8aa",
+      "name": "Replace me with your logic",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        528,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "46a28e53-c8a2-4ed5-b86e-59e99f523540",
+              "name": "number",
+              "value": "553182354127",
+              "type": "string"
+            },
+            {
+              "id": "c7f60219-8789-4321-b579-ec33d3affcff",
+              "name": "delay",
+              "value": "0",
+              "type": "string"
+            },
+            {
+              "id": "73b04daf-956e-46de-84a8-19d275918767",
+              "name": "linkPreview",
+              "value": "false",
+              "type": "string"
+            },
+            {
+              "id": "cec1d841-2f03-48ce-8790-f4cd8c7767b6",
+              "name": "mentionsEveryOne",
+              "value": "false",
+              "type": "string"
+            },
+            {
+              "id": "f4933651-a698-4250-8658-f5efd2e5fae4",
+              "name": "text",
+              "value": "=Olá Haylander. {{ $json.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        352
+      ],
+      "id": "4b0b2bbd-8a21-4acd-adc6-f6ebcd6d5124",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolutionapi.landcriativa.com/message/sendText/3198235127",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "isfEQhkHq5tnvAa04A6VMisTec8JbvGW"
+            },
+            {
+              "name": "content-type ",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "=553182354127"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        352
+      ],
+      "id": "6d180423-827b-4e55-b86d-55a8540f7e0f",
+      "name": "HTTP Request1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Replace me with your logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace me with your logic": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5af29267-fb0c-442b-858d-7ba5cfc23de0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9aa3672f1fa9d73c90fc2de834ace9070f15041e1e5448af8f21f2e51ea63c7c"
+  },
+  "id": "PtJpwHQGZLeDSSNO",
+  "tags": []
+}

@@ -13,66 +13,71 @@ export const disparoApi = {
       ### 1. Criar Agendamento de Disparo
       **POST** \`/api/disparos/create\`
 
-      Endpoint principal para iniciar uma campanha de disparos. Atualmente, ele valida o payload e retorna um ID de confirmação (Stub), mas está preparado para integrar com filas de processamento (Redis/Bull).
+      Endpoint principal para iniciar uma campanha de disparos. Suporta agendamento, envio imediato e criação de previews.
 
       **Payload:**
       \`\`\`json
       {
         "channel": "whatsapp",
-        "body": "Olá! Temos uma oferta especial para você...",
+        "instance_name": "marketing-01", // Nome da instância na Evolution API
+        "body": "Olá {{nome_completo}}! Temos uma oferta especial...",
         "filters": {
           "tags": ["cliente-antigo", "vip"],
-          "last_contact_days": 30
+          "statusFilter": "pendente",
+          "phones": ["5511999999999"] // Opcional: lista explícita
         },
-        "schedule_at": "2023-12-25T10:00:00Z" // Opcional
+        "schedule_at": "2023-12-25T10:00:00Z", // Opcional
+        "status": "scheduled" // 'scheduled' | 'preview' | 'draft'
       }
       \`\`\`
 
       **Resposta de Sucesso (200):**
       \`\`\`json
       {
-        "id": "DISP-1702589999999",
-        "received": {
-          "channel": "whatsapp",
-          "body": "...",
-          "filters": { ... }
-        },
-        "status": "queued"
-      }
-      \`\`\`
-
-      **Erro de Validação (400):**
-      \`\`\`json
-      {
-        "error": "Payload inválido"
+        "id": "123",
+        "status": "scheduled",
+        "created_at": "...",
+        "message": "Disparo agendado com sucesso."
       }
       \`\`\`
 
       ---
 
-      ## Fluxo de Processamento (Planejado)
+      ## Fluxo de Processamento
 
       \`\`\`mermaid
       sequenceDiagram
           participant Client as "Painel Admin"
           participant API as "API Disparos"
-          participant Queue as "Fila (Redis)"
-          participant Worker as "Worker Process"
-          participant WhatsApp as "WhatsApp Gateway"
+          participant DB as "Banco de Dados"
+          participant Process as "Process Worker (/process)"
+          participant Evo as "Evolution API"
 
           Client->>API: POST /create (Payload)
-          API->>API: Validar Filtros e Conteúdo
-          API->>Queue: Enfileirar Job (Priority: Normal)
-          API-->>Client: 200 OK (Job ID)
+          API->>DB: INSERT INTO disparos
+          API-->>Client: 200 OK (ID)
           
-          loop Processamento em Background
-              Worker->>Queue: Pop Job
-              Worker->>Worker: Selecionar Leads (DB)
-              Worker->>WhatsApp: Enviar Mensagem
-              WhatsApp-->>Worker: Status (Sent/Delivered)
-              Worker->>DB: Atualizar Histórico do Lead
+          loop Job Cron (a cada min)
+              Process->>DB: SELECT * FROM disparos WHERE pending
+              Process->>DB: UPDATE status = processing
+              
+              loop Para cada Lead Filtrado
+                  Process->>DB: SELECT dados_lead (Joins)
+                  Process->>Process: Replace Placeholders ({{nome}})
+                  Process->>Evo: POST /message/sendText/{instance}
+                  Evo-->>Process: 200 OK
+              end
+              
+              Process->>DB: UPDATE status = completed
           end
       \`\`\`
+
+      ## Integração Evolution API
+      
+      O sistema utiliza a **Evolution API** para o envio das mensagens de WhatsApp.
+      
+      - **Instâncias Dinâmicas**: É possível selecionar qual instância (ex: \`atendimento\`, \`marketing\`, \`vendas\`) fará o envio através do campo \`instance_name\`.
+      - **Placeholders**: O corpo da mensagem suporta variáveis dinâmicas baseadas nas colunas do banco de dados (ex: \`{{nome_completo}}\`, \`{{razao_social}}\`).
 
       ## Regras de Negócio
 

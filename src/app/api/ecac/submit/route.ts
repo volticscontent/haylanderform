@@ -15,18 +15,18 @@ export async function POST(request: Request) {
     await client.connect();
 
     // Check if user exists
-    const checkRes = await client.query('SELECT id FROM haylander WHERE telefone = $1', [telefone]);
+    const checkRes = await client.query('SELECT id FROM leads WHERE telefone = $1', [telefone]);
 
     if (checkRes.rows.length > 0) {
       // Update
       await client.query(
-        `UPDATE haylander SET nome_completo = $1, email = $2, senha_gov = $3, atualizado_em = NOW() WHERE telefone = $4`,
+        `UPDATE leads SET nome_completo = $1, email = $2, senha_gov = $3, atualizado_em = NOW() WHERE telefone = $4`,
         [nome_completo, email, senha_gov, telefone]
       );
     } else {
       // Insert
       await client.query(
-        `INSERT INTO haylander (nome_completo, telefone, email, senha_gov, created_at) VALUES ($1, $2, $3, $4, NOW())`,
+        `INSERT INTO leads (nome_completo, telefone, email, senha_gov, created_at) VALUES ($1, $2, $3, $4, NOW())`,
         [nome_completo, telefone, email, senha_gov]
       );
     }

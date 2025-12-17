@@ -2,7 +2,7 @@ import { docsContent } from '@/lib/docs-content'
 import { notFound } from 'next/navigation'
 import Mermaid from '@/components/Mermaid'
 import CodeWindow from '@/components/CodeWindow'
-import { getDatabaseSchema } from '@/lib/db-schema'
+import { getDatabaseSchema } from '@/lib/db-introspection'
 import { Database } from 'lucide-react'
 import { databaseBot } from '@/lib/docs/database-bot'
 
@@ -16,7 +16,7 @@ export default async function DocPage({
   const slug = (await params).slug
 
   // Simple markdown-like parser for the content
-  const renderContent = (text: string, currentSlug: string) => {
+  const renderContent = (text: string) => {
     const lines = text.split(/\r?\n/)
     const elements: React.ReactNode[] = []
     let currentMermaidBlock: string[] | null = null
@@ -198,7 +198,7 @@ export default async function DocPage({
         {/* Bot e Dados */}
         <section id="bot-dados" className="scroll-mt-20 mb-12">
             <div className="prose dark:prose-invert max-w-none">
-                {renderContent(databaseBot.content, slug)}
+                {renderContent(databaseBot.content)}
             </div>
         </section>
 
@@ -285,7 +285,7 @@ export default async function DocPage({
             </div>
 
             <div className="prose dark:prose-invert max-w-none">
-                {renderContent(content.content, slug)}
+                {renderContent(content.content)}
             </div>
         </div>
       )
@@ -305,7 +305,7 @@ export default async function DocPage({
       </div>
 
       <div className="prose dark:prose-invert max-w-none">
-        {renderContent(content.content, slug)}
+        {renderContent(content.content)}
       </div>
     </div>
   )

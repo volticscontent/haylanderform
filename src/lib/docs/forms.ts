@@ -79,8 +79,8 @@ export const forms = {
           E -- Não --> C
           E -- Sim --> F["POST /api/mei/submit"]
           
-          F --> G[("Tabela mei_applications")]
-          G --> H["Vincular ao User ID (haylander)"]
+          F --> G[("Tabela haylander")]
+          G --> H["Atualizar ou Criar Registro"]
           
           H --> I["Gerar Resumo Formatado"]
           I --> J["Redirecionar WhatsApp"]
@@ -89,7 +89,7 @@ export const forms = {
 
       1. **Validação**: O formulário possui validações de campos obrigatórios, formato de CPF, E-mail e CEP.
       2. **Submissão**: Os dados são enviados via \`POST\` para \`/api/mei/submit\`.
-      3. **Armazenamento**: Os dados são salvos em uma tabela dedicada (\`mei_applications\`), vinculada ao usuário principal através do telefone/ID.
+      3. **Armazenamento**: Os dados são salvos na tabela principal (\`haylander\`), unificando as informações do cliente.
       4. **Integração**: Após o envio, o sistema gera um resumo dos dados formatado e redireciona o usuário para o WhatsApp, facilitando a conferência pelo atendente.
 
       ## 3. Formulário de Cadastro e-CAC (ECACForm)
@@ -137,7 +137,7 @@ export const forms = {
       ## Resumo Técnico - MEIForm
       - **Renderização**: Client Component (\`use client\`)
       - **Método HTTP**: \`POST\` (Criação)
-      - **Tabela Banco**: \`mei_applications\`
+      - **Tabela Banco**: \`haylander\`
       - **Automação**: Gera resumo p/ WhatsApp
       - **Validação**: Estrutural (CPF, CEP, Campos)
     `

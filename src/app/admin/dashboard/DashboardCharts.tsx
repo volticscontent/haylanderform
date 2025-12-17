@@ -40,7 +40,7 @@ type LeadDashboardRecord = {
   envio_disparo: string | null
   situacao: string | null
   qualificacao: string | null
-  teria_interesse: string | null
+  interesse_ajuda: string | null
   confirmacao_qualificacao?: boolean | null
   reuniao_agendada?: boolean | null
   vendido?: boolean | null
@@ -52,7 +52,7 @@ type DateRange = {
 }
 
 export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] }) {
-  const [filterColumn, setFilterColumn] = useState<'envio_disparo' | 'situacao' | 'qualificacao' | 'teria_interesse'>('envio_disparo')
+  const [filterColumn, setFilterColumn] = useState<'envio_disparo' | 'situacao' | 'qualificacao' | 'interesse_ajuda'>('envio_disparo')
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar')
   
   // Date Filter State
@@ -112,7 +112,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     // Helper to count metrics
     const calculateMetrics = (dataset: LeadDashboardRecord[]) => {
       const totalLeads = dataset.length
-      const interested = dataset.filter(d => d.teria_interesse === 'Sim').length
+      const interested = dataset.filter(d => d.interesse_ajuda === 'Sim').length
 
       return {
         totalLeads,
@@ -135,7 +135,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
         }).length,
 
         interested,
-        notInterested: dataset.filter(d => d.teria_interesse === 'Não').length,
+        notInterested: dataset.filter(d => d.interesse_ajuda === 'Não').length,
         conversionRate: totalLeads > 0 ? (interested / totalLeads) * 100 : 0
       }
     }
@@ -222,7 +222,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     envio_disparo: 'Status de Envio',
     situacao: 'Situação',
     qualificacao: 'Qualificação',
-    teria_interesse: 'Interesse'
+    interesse_ajuda: 'Interesse'
   }
 
   // 2b. Leads por Horário (usando data_cadastro quando disponível)
@@ -358,7 +358,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <option value="envio_disparo">Envio</option>
                 <option value="situacao">Situação</option>
                 <option value="qualificacao">Qualif.</option>
-                <option value="teria_interesse">Interesse</option>
+                <option value="interesse_ajuda">Interesse</option>
               </select>
             </div>
           </div>
@@ -575,7 +575,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       {(() => {
         const leads = filteredData.length;
         const telefone = filteredData.filter((d: LeadDashboardRecord) => d.telefone && String(d.telefone).trim() !== "").length;
-        const interesse = filteredData.filter((d: LeadDashboardRecord) => String(d.teria_interesse || '').toLowerCase() === 'sim').length;
+        const interesse = filteredData.filter((d: LeadDashboardRecord) => String(d.interesse_ajuda || '').toLowerCase() === 'sim').length;
         const qualificacao = filteredData.filter((d: LeadDashboardRecord) => {
           const q = String(d.qualificacao || '').toLowerCase();
           return q.includes('qualificado') || d.confirmacao_qualificacao === true;

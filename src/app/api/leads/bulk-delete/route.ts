@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const client = new Client({ connectionString: process.env.DATABASE_URL })
     await client.connect()
 
-    // Backward compatibility: if qualification is provided, use old logic
+    // Backward compatibility: if qualification is provided, use logic mapping to new table
     if (body.qualification) {
       const qualification: 'vazio' | 'Qualificado' | 'Desqualificado' = body.qualification
       if (!qualification) {
@@ -21,13 +21,27 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'qualification é obrigatório' }, { status: 400 })
       }
 
-      let res
-      if (qualification === 'vazio') {
-        res = await client.query(`DELETE FROM haylander WHERE "qualificação" IS NULL OR "qualificação" = ''`)
-      } else {
-        res = await client.query('DELETE FROM haylander WHERE "qualificação" = $1', [qualification])
-      }
+      let sql = ''
+      let params: string[] = []
 
+      if (qualification === 'vazio') {
+        sql = `
+            DELETE FROM leads l
+            USING leads_qualificacao lq
+            WHERE l.id = lq.lead_id
+            AND (lq.qualificacao IS NULL OR lq.qualificacao = '')
+        `
+      } else {
+        sql = `
+            DELETE FROM leads l
+            USING leads_qualificacao lq
+            WHERE l.id = lq.lead_id
+            AND lq.qualificacao = $1
+        `
+        params = [qualification]
+      }
+      
+      const res = await client.query(sql, params)
       await client.end()
       revalidatePath('/admin/lista')
       return NextResponse.json({ success: true, deleted: res.rowCount })
@@ -38,37 +52,36 @@ export async function POST(request: Request) {
     const operator: 'in' | 'not_in' | 'is_empty' | 'is_not_empty' | undefined = body.operator
     const values: string[] = Array.isArray(body.values) ? body.values : []
 
-    const allowedColumns: Record<string, string> = {
-      telefone: 'telefone',
-      nome_completo: 'nome_completo',
-      razao_social: 'razao_social',
-      cnpj: 'cnpj',
-      email: 'email',
-      observacoes: 'observacoes',
-      calculo_parcelamento: 'calculo_parcelamento',
-      atualizado_em: 'atualizado_em',
-      data_cadastro: 'data_cadastro',
-      data_controle_24h: 'data_controle_24h',
-      envio_disparo: 'envio_disparo',
-      situacao: 'situacao',
-      qualificacao: '"qualificação"',
-      motivo_qualificacao: '"motivo_qualificação"',
-      teria_interesse: '"teria_interesse?"',
-      valor_divida_ativa: 'valor_divida_ativa',
-      valor_divida_municipal: 'valor_divida_municipal',
-      valor_divida_estadual: 'valor_divida_estadual',
-      valor_divida_federal: 'valor_divida_federal',
-      cartao_cnpj: '"cartão-cnpj"',
-      tipo_divida: 'tipo_divida',
-      tipo_negocio: '"tipo_negócio"',
-      faturamento_mensal: 'faturamento_mensal',
-      possui_socio: '"possui_sócio"',
-      // Novas colunas do vendedor
-      servico_escolhido: '"serviço_escolhido"',
-      reuniao_agendada: '"reunião_agendada"',
-      vendido: 'vendido',
-      data_reuniao: '"data_reunião"',
-      confirmacao_qualificacao: '"confirmação_qualificação"',
+    const columnTableMap: Record<string, string> = {
+      // leads (core)
+      'telefone': 'leads', 'nome_completo': 'leads', 'email': 'leads', 'atualizado_em': 'leads', 'data_cadastro': 'leads',
+      
+      // leads_empresarial
+      'cnpj': 'leads_empresarial', 'razao_social': 'leads_empresarial', 'tipo_negocio': 'leads_empresarial', 'faturamento_mensal': 'leads_empresarial', 'cartao_cnpj': 'leads_empresarial',
+      
+      // leads_qualificacao
+      'situacao': 'leads_qualificacao', 'qualificacao': 'leads_qualificacao', 'motivo_qualificacao': 'leads_qualificacao', 'interesse_ajuda': 'leads_qualificacao', 'pos_qualificacao': 'leads_qualificacao', 'possui_socio': 'leads_qualificacao',
+      
+      // leads_financeiro
+      'calculo_parcelamento': 'leads_financeiro', 'valor_divida_ativa': 'leads_financeiro', 'valor_divida_municipal': 'leads_financeiro', 'valor_divida_estadual': 'leads_financeiro', 'valor_divida_federal': 'leads_financeiro', 'tipo_divida': 'leads_financeiro',
+      
+      // leads_vendas
+      'servico_negociado': 'leads_vendas', 'procuracao': 'leads_vendas', 'data_reuniao': 'leads_vendas',
+      
+      // leads_atendimento
+      'observacoes': 'leads_atendimento', 'data_controle_24h': 'leads_atendimento', 'envio_disparo': 'leads_atendimento', 'data_ultima_consulta': 'leads_atendimento',
+
+      // Legacy/Aliases
+      'teria_interesse': 'leads_qualificacao', // -> interesse_ajuda
+      'servico_escolhido': 'leads_vendas', // -> servico_negociado
+      'reuniao_agendada': 'leads_vendas', // -> ? (assuming mapped or ignored)
+      'vendido': 'leads_vendas', // -> ?
+      'confirmacao_qualificacao': 'leads_qualificacao' // -> ?
+    }
+
+    const columnRealNameMap: Record<string, string> = {
+        'teria_interesse': 'interesse_ajuda',
+        'servico_escolhido': 'servico_negociado'
     }
 
     if (!column || !operator) {
@@ -76,11 +89,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'column e operator são obrigatórios' }, { status: 400 })
     }
 
-    const dbCol = allowedColumns[column]
-    if (!dbCol) {
-      await client.end()
-      return NextResponse.json({ error: 'Coluna não permitida' }, { status: 400 })
-    }
+    const whereTableName = columnTableMap[column] || 'leads'
+    const whereColReal = columnRealNameMap[column] || column
 
     if ((operator === 'in' || operator === 'not_in') && values.length === 0) {
       await client.end()
@@ -90,34 +100,52 @@ export async function POST(request: Request) {
     let sql = ''
     let params: string[][] = []
 
+    // Construct WHERE clause logic
+    // We need to alias the joined table if it's not leads
+    // If whereTableName == 'leads', alias is 'l' (or just leads)
+    // If whereTableName != 'leads', alias is 't'
+    
+    let whereClause = ''
+    const targetAlias = whereTableName === 'leads' ? 'l' : 't'
+    const colRef = `${targetAlias}.${whereColReal}`
+
     switch (operator) {
       case 'in':
-        sql = `DELETE FROM haylander WHERE ${dbCol}::text = ANY($1)`
+        whereClause = `${colRef}::text = ANY($1)`
         params = [values]
         break
       case 'not_in':
-        sql = `DELETE FROM haylander WHERE NOT (${dbCol}::text = ANY($1)) OR ${dbCol} IS NULL`
+        whereClause = `NOT (${colRef}::text = ANY($1)) OR ${colRef} IS NULL`
         params = [values]
         break
       case 'is_empty':
-        sql = `DELETE FROM haylander WHERE ${dbCol} IS NULL OR ${dbCol}::text = ''`
+        whereClause = `${colRef} IS NULL OR ${colRef}::text = ''`
         break
       case 'is_not_empty':
-        sql = `DELETE FROM haylander WHERE ${dbCol} IS NOT NULL AND ${dbCol}::text <> ''`
+        whereClause = `${colRef} IS NOT NULL AND ${colRef}::text <> ''`
         break
-      default:
-        await client.end()
-        return NextResponse.json({ error: 'Operador inválido' }, { status: 400 })
+    }
+
+    if (whereTableName === 'leads') {
+        sql = `DELETE FROM leads l WHERE ${whereClause}`
+    } else {
+        sql = `
+            DELETE FROM leads l
+            USING ${whereTableName} t
+            WHERE l.id = t.lead_id
+            AND ${whereClause}
+        `
     }
 
     const res = await client.query(sql, params)
     await client.end()
 
     revalidatePath('/admin/lista')
+
     return NextResponse.json({ success: true, deleted: res.rowCount })
   } catch (error: unknown) {
     console.error('Bulk delete error:', error)
-    const message = error instanceof Error ? error.message : 'Erro ao excluir em massa'
+    const message = error instanceof Error ? error.message : 'Erro ao deletar em massa'
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

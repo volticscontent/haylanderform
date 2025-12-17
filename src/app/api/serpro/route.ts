@@ -11,16 +11,22 @@ async function updateClientData(cnpj: string) {
     
     // Tenta encontrar por CNPJ formatado ou limpo
     const check = await client.query(
-      'SELECT id FROM haylander WHERE REPLACE(REPLACE(REPLACE(cnpj, \'.\', \'\'), \'/\', \'\'), \'-\', \'\') = $1',
+      `SELECT l.id 
+       FROM leads l
+       JOIN leads_empresarial le ON l.id = le.lead_id
+       WHERE REPLACE(REPLACE(REPLACE(le.cnpj, '.', ''), '/', ''), '-', '') = $1`,
       [cnpjClean]
     );
 
     if (check.rows.length > 0) {
+      const leadId = check.rows[0].id;
+      // Ensure the record exists in leads_atendimento before updating
       await client.query(`
-        UPDATE haylander 
-        SET data_ultima_consulta = NOW()
-        WHERE id = $1
-      `, [check.rows[0].id]);
+        INSERT INTO leads_atendimento (lead_id, data_ultima_consulta)
+        VALUES ($1, NOW())
+        ON CONFLICT (lead_id) DO UPDATE 
+        SET data_ultima_consulta = NOW(), updated_at = NOW()
+      `, [leadId]);
     }
   } catch (e) {
     console.error('Failed to update client DB:', e);

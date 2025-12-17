@@ -17,15 +17,18 @@ export async function GET() {
     // Fetch clients sorted by last consultation date
     const query = `
       SELECT 
-        id, 
-        nome_completo as nome, 
-        cnpj, 
-        data_ultima_consulta, 
-        procuracao_ativa, 
-        procuracao_validade 
-      FROM haylander 
-      WHERE data_ultima_consulta IS NOT NULL 
-      ORDER BY data_ultima_consulta DESC 
+        l.id, 
+        l.nome_completo as nome, 
+        le.cnpj, 
+        la.data_ultima_consulta, 
+        lv.procuracao_ativa, 
+        lv.procuracao_validade 
+      FROM leads l
+      LEFT JOIN leads_empresarial le ON l.id = le.lead_id
+      LEFT JOIN leads_atendimento la ON l.id = la.lead_id
+      LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
+      WHERE la.data_ultima_consulta IS NOT NULL 
+      ORDER BY la.data_ultima_consulta DESC 
       LIMIT 10
     `;
     

@@ -47,6 +47,10 @@ Ferramentas para envio de mensagens em massa e controle de fluxo de conversas vi
 - [Ver API de Disparos](/admin/docs?section=disparo-api)
 - [Ver Documentação do Bot](/admin/docs?section=database-bot)
 
+### 5. Agendamento de Reuniões
+Interface simplificada para que leads agendem conversas técnicas via WhatsApp, com validação de cadastro prévio.
+- [Ver Documentação de Agendamento](/admin/docs?section=meeting)
+
 ---
 
 ## Tecnologias Utilizadas

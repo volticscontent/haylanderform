@@ -16,18 +16,28 @@ async function getData() {
     await client.connect()
     const res = await client.query(`
       SELECT 
-        telefone, 
-        nome_completo, 
-        cnpj, 
-        calculo_parcelamento, 
-        data_cadastro,
-        atualizado_em,
-        envio_disparo,
-        situacao,
-        qualificação as qualificacao,
-        "teria_interesse?" as teria_interesse
-      FROM haylander 
-      ORDER BY atualizado_em DESC 
+        l.id,
+        l.nome_completo,
+        l.telefone,
+        l.email,
+        le.cnpj,
+        lf.calculo_parcelamento,
+        l.data_cadastro,
+        l.atualizado_em,
+        la.envio_disparo,
+        lq.situacao,
+        lq.qualificacao,
+        lq.interesse_ajuda,
+        lq.pos_qualificacao as confirmacao_qualificacao,
+        (lv.data_reuniao IS NOT NULL) as reuniao_agendada,
+        (lv.servico_negociado IS NOT NULL) as vendido
+      FROM leads l
+      LEFT JOIN leads_empresarial le ON l.id = le.lead_id
+      LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
+      LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
+      LEFT JOIN leads_atendimento la ON l.id = la.lead_id
+      LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
+      ORDER BY l.atualizado_em DESC 
       LIMIT 500
     `)
     return res.rows

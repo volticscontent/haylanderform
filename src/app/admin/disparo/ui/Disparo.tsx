@@ -19,7 +19,7 @@ type Record = {
   situacao: string | null
   qualificacao: string | null
   motivo_qualificacao: string | null
-  teria_interesse: string | null
+  interesse_ajuda: string | null
   valor_divida_ativa: string | null
   valor_divida_municipal: string | null
   valor_divida_estadual: string | null
@@ -29,6 +29,10 @@ type Record = {
   tipo_negocio: string | null
   faturamento_mensal: string | null
   possui_socio: boolean | null
+  pos_qualificacao: boolean | null
+  servico_negociado: string | null
+  data_ultima_consulta: string | null
+  procuracao: boolean | null
 }
 
 export default function Disparo({ data }: { data: Record[] }) {
@@ -44,6 +48,7 @@ export default function Disparo({ data }: { data: Record[] }) {
     body?: string
     schedule?: string
     selectedPhones?: string[]
+    instanceName?: string
     attachments?: { link?: string }
   }
   const readDraft = (): Draft | null => {
@@ -74,6 +79,7 @@ export default function Disparo({ data }: { data: Record[] }) {
   const [selectedPhones, setSelectedPhones] = useState<string[]>(() => Array.isArray(draft?.selectedPhones) ? (draft?.selectedPhones as string[]) : [])
   const [body, setBody] = useState<string>(draft?.body ?? '')
   const [schedule, setSchedule] = useState<string>(draft?.schedule ?? '')
+  const [instanceName, setInstanceName] = useState<string>(draft?.instanceName ?? '')
 
   // Estado do menu de placeholders
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -110,7 +116,6 @@ export default function Disparo({ data }: { data: Record[] }) {
       document: attachments.document ? URL.createObjectURL(attachments.document) : undefined,
       video: attachments.video ? URL.createObjectURL(attachments.video) : undefined,
     }
-    // eslint-disable-next-line
     setAttachmentUrls(newUrls)
     return () => {
       Object.values(newUrls).forEach(u => u && URL.revokeObjectURL(u))
@@ -201,25 +206,85 @@ export default function Disparo({ data }: { data: Record[] }) {
     alert('Rascunho salvo localmente.')
   }
 
+  const savePreview = async () => {
+    if (!body.trim()) { alert('Informe a mensagem.'); return }
+    
+    try {
+      const payload = {
+         channel: 'whatsapp',
+         body,
+         schedule_at: null,
+         filters: {
+            searchTerm,
+            statusFilter,
+            criteria,
+            phones: selectedPhones 
+         },
+         status: 'preview',
+         instance_name: instanceName
+      }
+      
+      const res = await fetch('/api/disparos/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!res.ok) {
+         const err = await res.json()
+         throw new Error(err.error || 'Erro desconhecido')
+      }
+      
+      const json = await res.json()
+      alert(`Preview salvo com sucesso! ID: ${json.id}`)
+      
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erro desconhecido'
+      alert('Erro ao salvar preview: ' + message)
+    }
+  }
+
   const submit = async () => {
-    // Somente frontend: salva configuração completa localmente
     if (!body.trim()) { alert('Informe a mensagem.'); return }
     if (!selectedPhones.length) { alert('Selecione ao menos um destinatário.'); return }
-    const cfg = {
-      recipients: selectedPhones,
-      schedule,
-      message: body,
-      attachments: {
-        link: attachments.link,
-        imageName: attachments.image?.name,
-        audioName: attachments.audio?.name,
-        documentName: attachments.document?.name,
-        videoName: attachments.video?.name,
-      },
-      filters: { searchTerm, statusFilter, criteria }
-    }
-    localStorage.setItem('lead_disparo_config', JSON.stringify(cfg))
-    alert(`Configuração de disparo criada (${selectedPhones.length} destinatários).`)
+
+    try {
+      const payload = {
+         channel: 'whatsapp',
+         body,
+         schedule_at: schedule || null,
+         filters: {
+            searchTerm,
+            statusFilter,
+            criteria,
+            phones: selectedPhones // Always send selected phones to be precise based on UI selection
+         }
+      }
+      
+      const res = await fetch('/api/disparos/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!res.ok) {
+         const err = await res.json()
+         throw new Error(err.error || 'Erro desconhecido')
+      }
+      
+      const json = await res.json()
+      alert(`Disparo agendado com sucesso! ID: ${json.id}`)
+      
+      // Trigger processing if immediate
+      if (!schedule) {
+         // Fire and forget
+         fetch('/api/disparos/process').catch(console.error)
+      }
+      
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erro desconhecido'
+      alert('Erro ao criar disparo: ' + message)
+    } finally { }
   }
 
   return (
@@ -253,6 +318,20 @@ export default function Disparo({ data }: { data: Record[] }) {
             </select>
             <div className="text-xs text-zinc-600 dark:text-zinc-400">Destinatários: <span className="font-semibold">{affectedCount}</span></div>
           </div>
+        </div>
+
+        <div className="px-4 pt-4">
+           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">
+             Instância WhatsApp (Opcional)
+           </label>
+           <input 
+             type="text" 
+             value={instanceName}
+             onChange={(e) => setInstanceName(e.target.value)}
+             placeholder="Nome da instância (ex: 3198235127)"
+             className="block w-full sm:w-1/2 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700"
+           />
+           <p className="text-xs text-zinc-500 mt-1">Se deixado em branco, usará a instância padrão do sistema.</p>
         </div>
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -301,8 +380,15 @@ export default function Disparo({ data }: { data: Record[] }) {
                       <option value="cnpj">CNPJ</option>
                       <option value="email">E-mail</option>
                       <option value="envio_disparo">Status envio</option>
-                      <option value="teria_interesse">Teria interesse</option>
+                      <option value="interesse_ajuda">Interesse em Ajuda</option>
                       <option value="situacao">Situação</option>
+                      <option value="tipo_negocio">Tipo de negócio</option>
+                      <option value="qualificacao">Qualificação</option>
+                      <option value="faturamento_mensal">Faturamento mensal</option>
+                      <option value="possui_socio">Possui sócio</option>
+                      <option value="pos_qualificacao">Pós-Qualificação</option>
+                      <option value="servico_negociado">Serviço Negociado</option>
+                      <option value="procuracao">Procuração</option>
                     </select>
                     <select
                       className="w-40 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
@@ -539,8 +625,11 @@ export default function Disparo({ data }: { data: Record[] }) {
           <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 transition-colors">
             Preview da mensagem
           </button>
-          <button onClick={saveDraft} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-500 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 transition-colors">
+          <button onClick={saveDraft} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 transition-colors">
             Salvar rascunho
+          </button>
+          <button onClick={savePreview} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 dark:hover:bg-zinc-700 transition-colors">
+            Salvar Preview
           </button>
           <button onClick={submit} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 transition-colors">
             <Send className="w-4 h-4" />

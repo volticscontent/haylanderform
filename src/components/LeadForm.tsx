@@ -28,7 +28,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     tempo_divida: "",
     faturamento_mensal: "",
     possui_socio: "", // "Sim" | "Não"
-    teria_interesse: "", // "Sim" | "Não"
+    interesse_ajuda: "", // "Sim" | "Não"
     observacoes: observacao || "",
     calculo_parcelamento: "",
   });
@@ -86,14 +86,14 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             email: data.email || "",
             senha_gov: data.senha_gov || "",
             cnpj: data.cnpj || "",
-            tipo_negocio: data["tipo_negócio"] || "",
+            tipo_negocio: data.tipo_negocio || "",
             possui_divida: (data.tipo_divida || loadedDebts.length > 0) ? "Sim" : "",
             tipo_divida: data.tipo_divida || "",
             observacoes: observacao || data.observacoes || "",
             calculo_parcelamento: data.calculo_parcelamento || "",
-            teria_interesse: data["teria_interesse?"] || "",
+            interesse_ajuda: data.interesse_ajuda || "",
             faturamento_mensal: data.faturamento_mensal || "",
-            possui_socio: data["possui_sócio"] ? "Sim" : "Não",
+            possui_socio: data.possui_socio ? "Sim" : "Não",
           }));
           setStatus("idle");
         })
@@ -140,7 +140,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         possui_socio: formData.possui_socio,
         faturamento_mensal: formData.faturamento_mensal,
         observacoes: formData.observacoes,
-        teria_interesse: formData.teria_interesse,
+        interesse_ajuda: formData.interesse_ajuda,
         calculo_parcelamento: formData.calculo_parcelamento,
     };
 
@@ -534,10 +534,10 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                     <label key={opt} className="flex items-center gap-2 cursor-pointer">
                         <input
                             type="radio"
-                            name="teria_interesse"
+                            name="interesse_ajuda"
                             value={opt}
-                            checked={formData.teria_interesse === opt}
-                            onChange={() => handleRadioChange("teria_interesse", opt)}
+                            checked={formData.interesse_ajuda === opt}
+                            onChange={() => handleRadioChange("interesse_ajuda", opt)}
                             className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
@@ -600,7 +600,7 @@ interface UpdatePayload {
   possui_socio: string;
   faturamento_mensal: string;
   observacoes: string;
-  teria_interesse: string;
+  interesse_ajuda: string;
   calculo_parcelamento: string;
   tipo_divida?: string;
   valor_divida_municipal?: string | null;

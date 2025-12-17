@@ -18,8 +18,16 @@ export const adminPanel = {
       - **Status do Bot**: Monitoramento de uptime do agente Apolo.
 
       ### 2. Lista de Leads (Tabela Interativa)
-      O componente central da gestão.
-      - **Filtros**: Por Status, Dívida, Data de Cadastro.
+      O componente central da gestão. A visualização é enriquecida com dados de múltiplas tabelas (\`leads_empresarial\`, \`leads_qualificacao\`, \`leads_financeiro\`, etc.).
+      
+      - **Dados Exibidos**:
+        - **Dados Básicos**: Nome, Telefone, Email, Data de Cadastro.
+        - **Empresarial**: CNPJ, Razão Social (via Join).
+        - **Financeiro**: Cálculo de Parcelamento, Dívidas.
+        - **Qualificação**: Situação (MQL/SQL), Interesse.
+        - **Comercial**: Status de Venda, Reunião Agendada.
+      
+      - **Filtros**: Por Status, Dívida, Data de Cadastro, etc.
       - **Ações Rápidas**: Editar, Excluir, Enviar Mensagem.
       - **Paginação**: Server-side pagination para performance.
 

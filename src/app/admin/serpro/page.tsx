@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { DataViewer } from '@/components/serpro/DataViewer';
 
+interface SerproResponse {
+  mensagens?: Array<{ codigo?: string; texto?: string }>;
+  primary?: Record<string, unknown>;
+  fallback?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export default function SerproPage() {
   const [cnpj, setCnpj] = useState('');
   const [ano, setAno] = useState(new Date().getFullYear().toString());
@@ -10,7 +17,7 @@ export default function SerproPage() {
   const [numeroRecibo, setNumeroRecibo] = useState('');
   const [codigoReceita, setCodigoReceita] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SerproResponse | null>(null);
   const [error, setError] = useState('');
   const [service, setService] = useState<'CCMEI_DADOS' | 'PGMEI' | 'SIMEI' | 'SIT_FISCAL' | 'DIVIDA_ATIVA' | 'CND' | 'PARCELAMENTO' | 'DASN_SIMEI' | 'PROCESSOS'>('CCMEI_DADOS');
 
@@ -183,8 +190,8 @@ export default function SerproPage() {
 
       {result && (
         (() => {
-          const r = result as any;
-          const mensagens = Array.isArray(r.mensagens) ? r.mensagens as Array<{ codigo?: string; texto?: string }> : [];
+          const r = result;
+          const mensagens = Array.isArray(r.mensagens) ? r.mensagens : [];
           // Se tiver 'primary', usa ele, senão usa o próprio root.
           // Mas se tiver 'primary', o root é só um container, então não queremos mostrar 'primary' e 'fallback' duplicados se passarmos o root.
           const primaryData = r.primary ? r.primary : r;

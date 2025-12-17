@@ -13,7 +13,7 @@ interface AdminSidebarProps {
 type NavItem = {
     name: string
     href?: string
-    icon: any
+    icon: React.ElementType
     children?: NavItem[]
 }
 
@@ -114,7 +114,14 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
   useEffect(() => {
     // Initial hash
     if (typeof window !== 'undefined') {
-      setActiveHash(window.location.hash)
+      // Use requestAnimationFrame to avoid synchronous state update warning during render phase (if that's the issue)
+      // or just to defer it slightly.
+      requestAnimationFrame(() => {
+        const hash = window.location.hash
+        if (hash && hash !== activeHash) {
+            setActiveHash(hash)
+        }
+      })
     }
 
     const handleHashChange = () => {
@@ -123,7 +130,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll Spy Effect
   useEffect(() => {
@@ -188,7 +195,14 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
   useEffect(() => {
     // Update hash when pathname changes (e.g. navigation)
     if (typeof window !== 'undefined') {
-      setActiveHash(window.location.hash)
+       requestAnimationFrame(() => {
+         const hash = window.location.hash
+         // Only update if different to avoid loops, and don't depend on activeHash to avoid effect loop
+         setActiveHash(prev => {
+           if (hash !== prev) return hash;
+           return prev;
+         })
+       })
     }
   }, [pathname])
 
@@ -283,7 +297,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
                         {/* Submenu */}
                         <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
                             {link.children?.map(child => {
-                                const ChildIcon = child.icon
+                                // const ChildIcon = child.icon (unused)
                                 const childHref = child.href || '';
                                 const [childPath, childHash] = childHref.split('#');
                                 const targetHash = childHash ? `#${childHash}` : '';

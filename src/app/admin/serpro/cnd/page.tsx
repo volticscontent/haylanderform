@@ -4,10 +4,22 @@ import { useState } from 'react';
 import { DataViewer } from '@/components/serpro/DataViewer';
 import LastConsultedClients from '@/components/serpro/LastConsultedClients';
 
+interface SerproMessage {
+  codigo?: string;
+  texto?: string;
+}
+
+interface SerproResponse {
+  mensagens?: SerproMessage[];
+  primary?: unknown;
+  fallback?: unknown;
+  [key: string]: unknown;
+}
+
 export default function CndPage() {
   const [cnpj, setCnpj] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SerproResponse | null>(null);
   const [error, setError] = useState('');
 
   const handleConsultar = async () => {
@@ -91,8 +103,8 @@ export default function CndPage() {
 
       {result && (
         (() => {
-          const r = result as any;
-          const mensagens = Array.isArray(r.mensagens) ? r.mensagens as Array<{ codigo?: string; texto?: string }> : [];
+          const r = result as SerproResponse;
+          const mensagens = Array.isArray(r.mensagens) ? r.mensagens : [];
           const primaryData = r.primary ? r.primary : r;
           const fallbackData = r.fallback;
 
@@ -125,7 +137,7 @@ export default function CndPage() {
                 </details>
               </div>
 
-              {fallbackData && (
+              {!!fallbackData && (
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 border-l-4 border-l-emerald-500">
                   <DataViewer data={fallbackData} title="Dados Complementares" />
                 </div>

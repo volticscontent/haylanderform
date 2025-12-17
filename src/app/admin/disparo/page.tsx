@@ -10,33 +10,53 @@ async function getData() {
     await client.connect()
     const res = await client.query(`
       SELECT 
-        id,
-        telefone, 
-        nome_completo, 
-        razao_social,
-        cnpj, 
-        email,
-        observacoes,
-        calculo_parcelamento, 
-        atualizado_em,
-        data_cadastro,
-        data_controle_24h,
-        envio_disparo,
-        situacao,
-        qualificação as qualificacao,
-        motivo_qualificação as motivo_qualificacao,
-        "teria_interesse?" as teria_interesse,
-        valor_divida_ativa,
-        valor_divida_municipal,
-        valor_divida_estadual,
-        valor_divida_federal,
-        "cartão-cnpj" as cartao_cnpj,
-        tipo_divida,
-        tipo_negócio as tipo_negocio,
-        faturamento_mensal,
-        possui_sócio as possui_socio
-      FROM haylander 
-      ORDER BY atualizado_em DESC 
+        l.id,
+        l.telefone, 
+        l.nome_completo, 
+        l.email,
+        l.atualizado_em,
+        l.data_cadastro,
+        
+        -- leads_empresarial
+        le.razao_social,
+        le.cnpj, 
+        le.cartao_cnpj,
+        le.tipo_negocio,
+        le.faturamento_mensal,
+        
+        -- leads_atendimento
+        la.observacoes,
+        la.data_controle_24h,
+        la.envio_disparo,
+        la.data_ultima_consulta,
+        
+        -- leads_financeiro
+        lf.calculo_parcelamento, 
+        lf.valor_divida_ativa,
+        lf.valor_divida_municipal,
+        lf.valor_divida_estadual,
+        lf.valor_divida_federal,
+        lf.tipo_divida,
+        
+        -- leads_qualificacao
+        lq.situacao,
+        lq.qualificacao,
+        lq.motivo_qualificacao,
+        lq.interesse_ajuda,
+        lq.possui_socio,
+        lq.pos_qualificacao,
+        
+        -- leads_vendas
+        lv.servico_negociado,
+        lv.procuracao
+
+      FROM leads l
+      LEFT JOIN leads_empresarial le ON l.id = le.lead_id
+      LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
+      LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
+      LEFT JOIN leads_atendimento la ON l.id = la.lead_id
+      LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
+      ORDER BY l.atualizado_em DESC 
       LIMIT 500
     `)
     return res.rows
