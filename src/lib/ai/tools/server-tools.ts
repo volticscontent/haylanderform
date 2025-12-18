@@ -21,7 +21,24 @@ function normalizeKey(key: string): string {
 // 1. get_User
 export async function getUser(phone: string): Promise<string> {
   try {
-    const res = await pool.query('SELECT * FROM leads WHERE telefone = $1', [phone]);
+    let query = 'SELECT * FROM leads WHERE telefone = $1';
+    let params = [phone];
+
+    // Handle Brazil 9th digit variation for lookup
+    if (phone.startsWith('55') && (phone.length === 12 || phone.length === 13)) {
+       let altPhone = '';
+       if (phone.length === 13) {
+           altPhone = phone.slice(0, 4) + phone.slice(5); // Remove 9
+       } else {
+           altPhone = phone.slice(0, 4) + '9' + phone.slice(4); // Add 9
+       }
+       if (altPhone) {
+           query = 'SELECT * FROM leads WHERE telefone = $1 OR telefone = $2 LIMIT 1';
+           params = [phone, altPhone];
+       }
+    }
+
+    const res = await pool.query(query, params);
     if (res.rows.length === 0) {
       return JSON.stringify({ status: "not_found", message: "Cliente não encontrado." });
     }
@@ -119,7 +136,21 @@ export async function updateUser(params: {
 
   try {
     // Check if user exists
-    const check = await pool.query('SELECT id FROM leads WHERE telefone = $1', [telefone]);
+    let check = await pool.query('SELECT id, telefone FROM leads WHERE telefone = $1', [telefone]);
+    
+    // If not found, try alternative format for Brazil
+    if (check.rows.length === 0 && telefone.startsWith('55')) {
+         let altPhone = '';
+         if (telefone.length === 13) altPhone = telefone.slice(0, 4) + telefone.slice(5);
+         else if (telefone.length === 12) altPhone = telefone.slice(0, 4) + '9' + telefone.slice(4);
+         
+         if (altPhone) {
+             const altCheck = await pool.query('SELECT id, telefone FROM leads WHERE telefone = $1', [altPhone]);
+             if (altCheck.rows.length > 0) {
+                 check = altCheck;
+             }
+         }
+    }
     
     // Normalize keys
     const normalizedUpdates: Record<string, unknown> = {};
@@ -139,11 +170,12 @@ export async function updateUser(params: {
       return JSON.stringify({ status: "created", data: res.rows[0] });
     } else {
       // Update existing
+      const targetPhone = check.rows[0].telefone || telefone;
       const keys = Object.keys(normalizedUpdates);
       if (keys.length === 0) return JSON.stringify({ status: "no_changes" });
 
       const setClause = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
-      const values = [telefone, ...Object.values(normalizedUpdates)];
+      const values = [targetPhone, ...Object.values(normalizedUpdates)];
       
       // Add atualizado_em
       const query = `UPDATE leads SET ${setClause}, atualizado_em = NOW() WHERE telefone = $1 RETURNING *`;
@@ -183,11 +215,14 @@ export async function sendForm(phone: string, observacao?: string): Promise<stri
 }
 
 // 4. agendar_reuniao
-export async function scheduleMeeting(): Promise<string> {
+export async function scheduleMeeting(phone?: string): Promise<string> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const link = phone ? `${baseUrl}/reuniao/${phone}` : `${baseUrl}/reuniao`;
+
   return JSON.stringify({
     status: "success",
     message: "Link de agendamento gerado.",
-    link: "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0..." // Mock calendar link
+    link: link
   });
 }
 

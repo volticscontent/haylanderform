@@ -21,7 +21,6 @@ export default function MetaAdsFunnel({
   width,
   height = 260,
   gradient = ["#2e7bf6b0", "#8479fd"],
-  dark = true,
   title = "Funil de Conversão",
 }: Props) {
   const elementId = "meta-ads-funnel";
@@ -60,26 +59,42 @@ export default function MetaAdsFunnel({
       const style = document.createElement('style');
       style.innerHTML = `
         #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__value {
-          fill: ${dark ? '#e4e4e7' : '#18181b'} !important; /* zinc-200 / zinc-900 */
+          color: #18181b !important; /* zinc-900 - Número Principal (Escuro no claro) */
+          fill: #18181b !important;
           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
-          font-weight: 600 !important;
+          font-weight: 700 !important;
         }
+        :is(.dark) #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__value {
+          color: #f4f4f5 !important; /* zinc-100 - Claro no escuro */
+          fill: #f4f4f5 !important;
+        }
+
         #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__title {
-          fill: ${dark ? '#a1a1aa' : '#52525b'} !important; /* zinc-400 / zinc-600 */
+          color: #18181b !important; /* blue-600 - Título (Azul) */
+          fill: #18181b !important;
           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
+          font-weight: 500 !important;
         }
+        :is(.dark) #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__title {
+          color: #60a5fa !important; /* blue-400 */
+          fill: #60a5fa !important;
+        }
+
         #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel {
-           fill: ${dark ? '#71717a' : '#71717a'} !important;
+           color: #18181b !important; /* blue-800 - Porcentagem (Azul Escuro) */
+           fill: #18181b !important;
            font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
+           font-weight: 600 !important;
+        }
+        :is(.dark) #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel {
+           color: #93c5fd !important; /* blue-300 - Azul claro para contraste no dark mode */
+           fill: #93c5fd !important;
         }
       `;
       el.appendChild(style);
 
-      if (dark) {
-        el.classList.add("fg-dark");
-      } else {
-        el.classList.remove("fg-dark");
-      }
+      // Handle library specific theme class if needed, or rely on our CSS overrides
+      // el.classList.remove("fg-dark"); 
 
       try {
         const svg = el.querySelector("svg");
@@ -148,13 +163,12 @@ export default function MetaAdsFunnel({
       }
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, [stages, width, height, gradient, dark]);
+  }, [stages, width, height, gradient]);
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-black p-4 overflow-hidden w-full">
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 overflow-hidden w-full shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
-        <span className="text-xs text-zinc-400">i</span>
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
       </div>
       <div id={elementId} className="funnel-graph w-full" style={{ width: "100%", height, overflow: "hidden" }} />
     </div>

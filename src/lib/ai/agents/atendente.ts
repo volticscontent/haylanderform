@@ -26,7 +26,8 @@ Informações Reais do Cliente:
 2. **chamar_atendente**: Transferir para humano.
 `;
 
-export async function runAtendenteAgent(message: string, context: AgentContext) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runAtendenteAgent(message: string | any, context: AgentContext) {
   // 1. Fetch latest user data
   const userDataJson = await getUser(context.userPhone);
   let userData = "Não encontrado";

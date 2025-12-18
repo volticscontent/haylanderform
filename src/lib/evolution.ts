@@ -40,3 +40,117 @@ export async function checkWhatsAppNumbers(numbers: string[]) {
   if (!res.ok) throw new Error(`WhatsAppNumbers failed: ${res.status}`)
   return res.json() as Promise<Array<{ exists: boolean; jid: string; number: string }>>
 }
+
+export async function evolutionFindChats() {
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/findChats/${encodeURIComponent(evolutionConfig.instance)}`
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+  }), evolutionConfig.timeoutMs)
+  if (!res.ok) throw new Error(`FindChats failed: ${res.status}`)
+  return res.json()
+}
+
+export async function evolutionFindMessages(jid: string, limit: number = 20, page: number = 1) {
+  if (!jid) {
+    console.warn('evolutionFindMessages called without JID');
+    return { messages: { records: [] } };
+  }
+
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/findMessages/${encodeURIComponent(evolutionConfig.instance)}`
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify({
+      where: {
+        key: {
+          remoteJid: jid
+        }
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+  }), evolutionConfig.timeoutMs)
+  
+  if (!res.ok) throw new Error(`FindMessages failed: ${res.status}`)
+  return res.json()
+}
+
+export async function evolutionGetBase64FromMediaMessage(message: unknown) {
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/getBase64FromMediaMessage/${encodeURIComponent(evolutionConfig.instance)}`
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify({
+      message,
+      convertToMp4: false
+    })
+  }), evolutionConfig.timeoutMs)
+  
+  if (!res.ok) {
+     // Don't throw, just return null so we don't break the whole list
+     console.error(`GetBase64 failed: ${res.status}`);
+     return null;
+  }
+  return res.json()
+}
+
+export async function evolutionSendTextMessage(jid: string, text: string) {
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(evolutionConfig.instance)}`
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify({
+      number: jid,
+      text: text,
+      delay: 1200,
+      linkPreview: true
+    })
+  }), evolutionConfig.timeoutMs)
+
+  if (!res.ok) throw new Error(`SendTextMessage failed: ${res.status}`)
+  return res.json()
+}
+
+export async function evolutionSendMediaMessage(jid: string, media: string, type: 'image' | 'video' | 'audio' | 'document', caption?: string, fileName?: string, mimetype?: string) {
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendMedia/${encodeURIComponent(evolutionConfig.instance)}`
+  
+  const body = {
+    number: jid,
+    media: media, // Base64 or URL
+    mediatype: type,
+    mimetype: mimetype,
+    caption: caption,
+    fileName: fileName
+  }
+
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify(body)
+  }), evolutionConfig.timeoutMs)
+
+  if (!res.ok) throw new Error(`SendMediaMessage failed: ${res.status}`)
+  return res.json()
+}
+
+export async function evolutionSendWhatsAppAudio(jid: string, audio: string) {
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendWhatsAppAudio/${encodeURIComponent(evolutionConfig.instance)}`
+  
+  const body = {
+    number: jid,
+    audio: audio // Base64
+  }
+
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify(body)
+  }), evolutionConfig.timeoutMs)
+
+  if (!res.ok) throw new Error(`SendWhatsAppAudio failed: ${res.status}`)
+  return res.json()
+}

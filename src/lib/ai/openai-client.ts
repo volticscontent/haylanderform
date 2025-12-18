@@ -16,7 +16,7 @@ export interface ToolDefinition {
 
 export async function runAgent(
   systemPrompt: string,
-  userMessage: string,
+  userMessage: string | Array<OpenAI.Chat.Completions.ChatCompletionContentPart>,
   context: AgentContext,
   tools: ToolDefinition[]
 ): Promise<string> {

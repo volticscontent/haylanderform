@@ -26,7 +26,7 @@ import {
   Users
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
-import { format, subDays, differenceInDays, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns'
+import { format, subDays, differenceInDays, isWithinInterval, parseISO, startOfDay, endOfDay, startOfMonth } from 'date-fns'
 
 const MetaAdsFunnel = dynamic(() => import('@/components/MetaAdsFunnel'), { ssr: false })
 
@@ -289,36 +289,90 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 </button>
 
                 {showDatePicker && (
-                  <div className="absolute right-0 left-0 sm:left-auto mt-2 w-full sm:w-72 bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-800 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">Data Início</label>
-                        <input 
-                          type="date" 
-                          className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
-                          value={dateRange.start || ''}
-                          onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-zinc-500 mb-1">Data Fim</label>
-                        <input 
-                          type="date" 
-                          className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
-                          value={dateRange.end || ''}
-                          onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        />
-                      </div>
-                      <div className="pt-2 flex justify-end">
-                        <button 
-                          onClick={() => {
-                            setDateRange({ start: null, end: null })
-                            setShowDatePicker(false)
-                          }}
-                          className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  <div className="absolute right-0 left-0 sm:left-auto mt-2 w-full sm:w-[480px] bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-800 z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden flex flex-col sm:flex-row">
+                    {/* Presets Sidebar */}
+                    <div className="p-2 bg-zinc-50 dark:bg-zinc-800/50 border-b sm:border-b-0 sm:border-r border-zinc-200 dark:border-zinc-700 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:min-w-[140px]">
+                      {[
+                        { label: 'Hoje', action: () => {
+                            const today = new Date();
+                            setDateRange({ start: format(today, 'yyyy-MM-dd'), end: format(today, 'yyyy-MM-dd') });
+                        }},
+                        { label: 'Ontem', action: () => {
+                            const yesterday = subDays(new Date(), 1);
+                            setDateRange({ start: format(yesterday, 'yyyy-MM-dd'), end: format(yesterday, 'yyyy-MM-dd') });
+                        }},
+                        { label: 'Últimos 7 dias', action: () => {
+                            const end = new Date();
+                            const start = subDays(end, 6);
+                            setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(end, 'yyyy-MM-dd') });
+                        }},
+                        { label: 'Este Mês', action: () => {
+                            const today = new Date();
+                            const start = startOfMonth(today);
+                            setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(today, 'yyyy-MM-dd') });
+                        }},
+                        { label: 'Últimos 30 dias', action: () => {
+                            const end = new Date();
+                            const start = subDays(end, 29);
+                            setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(end, 'yyyy-MM-dd') });
+                        }},
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          onClick={preset.action}
+                          className="px-3 py-1.5 text-xs sm:text-sm font-medium text-left rounded-md hover:bg-white dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors whitespace-nowrap"
                         >
-                          Limpar Filtros
+                          {preset.label}
                         </button>
+                      ))}
+                    </div>
+
+                    {/* Custom Range Area */}
+                    <div className="p-4 flex-1 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-500 mb-1">Data Início</label>
+                          <input 
+                            type="date" 
+                            className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                            value={dateRange.start || ''}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-zinc-500 mb-1">Data Fim</label>
+                          <input 
+                            type="date" 
+                            className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                            value={dateRange.end || ''}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 mt-4">
+                        <span className="text-xs text-zinc-400">
+                          {dateRange.start && dateRange.end ? (
+                            `${differenceInDays(parseISO(dateRange.end), parseISO(dateRange.start)) + 1} dias selecionados`
+                          ) : 'Selecione um período'}
+                        </span>
+                        <div className="flex gap-2">
+                           <button 
+                            onClick={() => {
+                              setDateRange({ start: null, end: null })
+                              // Don't close, just clear
+                            }}
+                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 font-medium"
+                          >
+                            Limpar
+                          </button>
+                          <button 
+                            onClick={() => setShowDatePicker(false)}
+                            className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium transition-colors"
+                          >
+                            Aplicar
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -384,12 +438,18 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   />
                   <Tooltip 
                     cursor={{ fill: 'transparent' }}
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      color: '#18181b'
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                              {payload[0].value} registros
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -416,12 +476,18 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     allowDecimals={false}
                   />
                   <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      color: '#18181b'
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                              {payload[0].value} registros
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
                   <Line 
@@ -495,7 +561,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     {summaryMetrics.previous && (
                       <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
                         (carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) 
-                          ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                          ? 'bg-green-50 text-green-500 dark:bg-gray-500/50 dark:text--400'
                           : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
                           ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                           : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
@@ -553,7 +619,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       </div>
 
       {/* Leads por Horário */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-2">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Leads por Horário</h3>
           <span className="text-sm text-zinc-500 dark:text-zinc-400">{filteredData.length} registros considerados</span>
@@ -564,7 +630,22 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} className="dark:opacity-10" />
               <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', color: '#18181b' }} />
+              <Tooltip 
+                cursor={{ fill: 'transparent' }}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
+                        <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                          {payload[0].value} leads
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
               <Bar dataKey="value" radius={[4,4,0,0]} fill="#3b82f6" />
             </BarChart>
           </ResponsiveContainer>
@@ -598,7 +679,6 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
             stages={stages}
             height={260}
             gradient={["#2e7cf6", "#6b5dfc"]}
-            dark
           />
         );
       })()}

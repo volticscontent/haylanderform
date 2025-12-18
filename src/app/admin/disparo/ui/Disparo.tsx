@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { Search, Send } from 'lucide-react'
+import { Search, Send, MessageCircle, RefreshCw } from 'lucide-react'
 
 type Record = {
   id: number
@@ -33,6 +33,34 @@ type Record = {
   servico_negociado: string | null
   data_ultima_consulta: string | null
   procuracao: boolean | null
+}
+
+function WhatsAppAvatar({ phone }: { phone: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!phone) return;
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) return;
+
+    // Fetch lazy/debounced could be better, but simple fetch for now
+    fetch('/api/whatsapp/profile-pic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if(d.url) setSrc(d.url);
+    })
+    .catch(() => {});
+  }, [phone]);
+
+  if (!src) return <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs text-zinc-500 font-medium shrink-0">{phone.slice(-2)}</div>;
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img src={src} className="w-8 h-8 rounded-full object-cover shrink-0" alt="Avatar" />
+  );
 }
 
 export default function Disparo({ data }: { data: Record[] }) {
@@ -80,6 +108,26 @@ export default function Disparo({ data }: { data: Record[] }) {
   const [body, setBody] = useState<string>(draft?.body ?? '')
   const [schedule, setSchedule] = useState<string>(draft?.schedule ?? '')
   const [instanceName, setInstanceName] = useState<string>(draft?.instanceName ?? '')
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+        const res = await fetch('/api/whatsapp/sync-contacts', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            alert(`Sincronização concluída!\nCriados: ${data.created}\nAtualizados: ${data.updated}\nA página será recarregada.`);
+            window.location.reload();
+        } else {
+            alert('Erro na sincronização: ' + (data.error || 'Desconhecido'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Erro ao sincronizar.');
+    } finally {
+        setIsSyncing(false);
+    }
+  };
 
   // Estado do menu de placeholders
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -329,7 +377,7 @@ export default function Disparo({ data }: { data: Record[] }) {
              value={instanceName}
              onChange={(e) => setInstanceName(e.target.value)}
              placeholder="Nome da instância (ex: 3198235127)"
-             className="block w-full sm:w-1/2 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700"
+             className="block w-full sm:w-1/2 rounded-md border-0 p-2 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700"
            />
            <p className="text-xs text-zinc-500 mt-1">Se deixado em branco, usará a instância padrão do sistema.</p>
         </div>
@@ -452,6 +500,54 @@ export default function Disparo({ data }: { data: Record[] }) {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="space-y-3">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Destinatários</div>
+                <button 
+                    type="button"
+                    onClick={handleSync} 
+                    disabled={isSyncing}
+                    className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                    title="Sincronizar contatos e nomes do WhatsApp"
+                >
+                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Sincronizando...' : 'Sincronizar WhatsApp'}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <button type="button" className="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-700" onClick={() => setSelectedPhones(filteredData.map(r => String(r.telefone || '').trim()).filter(Boolean))}>Selecionar todos (filtrados)</button>
+                <button type="button" className="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-700" onClick={() => setSelectedPhones([])}>Limpar seleção</button>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">Selecionados: {selectedPhones.length}</span>
+              </div>
+              <div className="max-h-96 overflow-auto rounded border border-zinc-200 dark:border-zinc-700">
+                {filteredData.map((row, idx) => {
+                  const phone = String(row.telefone || '').trim()
+                  if (!phone) return null
+                  const checked = selectedPhones.includes(phone)
+                  return (
+                    <div key={`${phone}-${idx}`} className="flex items-center justify-between px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                      <label className="flex items-center gap-2 text-sm flex-1 cursor-pointer">
+                        <input type="checkbox" checked={checked} onChange={(e) => {
+                          const isChecked = e.target.checked
+                          setSelectedPhones(prev => isChecked ? Array.from(new Set([...prev, phone])) : prev.filter(p => p !== phone))
+                        }} />
+                        <WhatsAppAvatar phone={phone} />
+                        <span className="text-zinc-900 dark:text-zinc-200">{row.nome_completo || '(Sem nome)'} — {phone}</span>
+                      </label>
+                      <a
+                        href={`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(body)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        title="Enviar mensagem no WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )
+                })}
+              </div>
           </div>
         </div>
 
@@ -587,30 +683,7 @@ export default function Disparo({ data }: { data: Record[] }) {
               onChange={(e) => setSchedule(e.target.value)}
               className="w-64 p-2  rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
             />
-            <div className="mt-4">
-              <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">Destinatários</div>
-              <div className="flex items-center gap-2 mb-2">
-                <button type="button" className="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-700" onClick={() => setSelectedPhones(filteredData.map(r => String(r.telefone || '').trim()).filter(Boolean))}>Selecionar todos (filtrados)</button>
-                <button type="button" className="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-700" onClick={() => setSelectedPhones([])}>Limpar seleção</button>
-                <span className="text-xs text-zinc-600 dark:text-zinc-400">Selecionados: {selectedPhones.length}</span>
-              </div>
-              <div className="max-h-48 overflow-auto rounded border border-zinc-200 dark:border-zinc-700">
-                {filteredData.map((row, idx) => {
-                  const phone = String(row.telefone || '').trim()
-                  if (!phone) return null
-                  const checked = selectedPhones.includes(phone)
-                  return (
-                    <label key={`${phone}-${idx}`} className="flex items-center gap-2 px-3 py-1 text-sm">
-                      <input type="checkbox" checked={checked} onChange={(e) => {
-                        const isChecked = e.target.checked
-                        setSelectedPhones(prev => isChecked ? Array.from(new Set([...prev, phone])) : prev.filter(p => p !== phone))
-                      }} />
-                      <span className="text-zinc-900 dark:text-zinc-200">{row.nome_completo || '(Sem nome)'} — {phone}</span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
+
           </div>
         </div>
 

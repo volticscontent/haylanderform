@@ -94,7 +94,8 @@ Você vai passivamente obedecer ao comando do cliente, não se preocupe em fazer
 Após receber as informações do formulário de qualificação, você deve analisar as informações e verificar se o cliente está qualificado para a regularização ou abertura de MEI. Se faltar coisas importantes para sua análise, você pode perguntar ao cliente diretamente. Se aparentar não saber não pergunte mais e use a tool \`update_user\` com a situação "desqualificado" e a qualificação "MQL".
 `;
 
-export async function runApoloAgent(message: string, context: AgentContext) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runApoloAgent(message: string | any, context: AgentContext) {
   // 1. Fetch latest user data
   let userDataJson = "{}";
   try {

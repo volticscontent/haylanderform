@@ -29,7 +29,7 @@ export default function AdminShell({
         min-h-screen transition-all duration-200
         ${isLoggedIn ? 'lg:pl-64' : ''}
       `}>
-        <div className="sm:p-8">
+        <div className="sm:p-8 p-4">
            {isLoggedIn && (
              <div className="flex justify-between items-center mb-6">
                 {/* Mobile Menu Button */}

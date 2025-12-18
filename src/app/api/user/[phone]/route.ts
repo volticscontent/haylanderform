@@ -10,7 +10,7 @@ const getClient = () => {
 // Helper to get full lead data with joins
 const getFullLeadQuery = (whereClause: string) => `
   SELECT 
-    l.id, l.telefone, l.nome_completo, l.email, l.senha_gov, l.data_cadastro, l.updated_at as atualizado_em,
+    l.id, l.telefone, l.nome_completo, l.email, l.senha_gov, l.data_cadastro, l.atualizado_em,
     le.razao_social, le.cnpj, le.cartao_cnpj, le.tipo_negocio, le.faturamento_mensal, le.endereco, le.numero, le.complemento, le.bairro, le.cidade, le.estado, le.cep, le.dados_serpro,
     la.observacoes, la.data_controle_24h, la.envio_disparo, la.data_ultima_consulta, la.atendente_id,
     lf.calculo_parcelamento, lf.valor_divida_ativa, lf.valor_divida_municipal, lf.valor_divida_estadual, lf.valor_divida_federal, lf.tipo_divida, lf.tem_divida, lf.tempo_divida,
@@ -47,7 +47,7 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching user:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   } finally {
@@ -182,7 +182,7 @@ export async function PUT(
     console.error("Error updating user:", error);
     const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { error: message },
+      { error: message, details: String(error) },
       { status: 500 }
     );
   } finally {

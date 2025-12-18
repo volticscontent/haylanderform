@@ -16,12 +16,40 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log('[Webhook] Body recebido:', JSON.stringify(body, null, 2));
 
-    // Suporte a diferentes formatos de mensagem da Evolution API
-    const message = 
-      body.data?.message?.conversation || 
-      body.data?.message?.extendedTextMessage?.text ||
-      body?.data?.message?.imageMessage?.caption || 
-      '';
+    const msgData = body.data?.message;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let message: string | any[] = '';
+
+    // 1. Text extraction
+    if (msgData?.conversation) {
+      message = msgData.conversation;
+    } else if (msgData?.extendedTextMessage?.text) {
+      message = msgData.extendedTextMessage.text;
+    } 
+    // 2. Image extraction
+    else if (msgData?.imageMessage) {
+      const caption = msgData.imageMessage.caption || '';
+      // Evolution API usually sends base64 in body.data.base64 if configured
+      const base64 = body.data?.base64 || msgData.imageMessage.base64;
+      const mimetype = msgData.imageMessage.mimetype || 'image/jpeg';
+
+      if (base64) {
+        message = [
+          { type: 'text', text: caption || 'Analise esta imagem.' },
+          { type: 'image_url', image_url: { url: `data:${mimetype};base64,${base64}` } }
+        ];
+        console.log('[Webhook] Imagem processada com sucesso.');
+      } else {
+        message = caption;
+        console.log('[Webhook] Imagem recebida mas sem base64. Habilite "Include Base64" no Webhook da Evolution API.');
+      }
+    }
+    // 3. Document extraction (PDF) - Placeholder for future implementation
+    else if (msgData?.documentMessage) {
+      const caption = msgData.documentMessage.caption || '';
+      message = caption + ' [Arquivo recebido. O sistema ainda não processa o conteúdo interno de PDFs, mas analisará a legenda/nome.]';
+      console.log('[Webhook] Documento recebido. Leitura de conteúdo PDF temporariamente desativada.');
+    }
 
     const sender = body.data?.key?.remoteJid;
     const fromMe = body.data?.key?.fromMe;
@@ -38,7 +66,8 @@ export async function POST(req: Request) {
     }
 
     const userPhone = sender.replace('@s.whatsapp.net', '');
-    console.log(`[Webhook] Mensagem de ${userPhone}: ${message}`);
+    const logMsg = typeof message === 'string' ? message : '[Conteúdo Multimodal/Imagem]';
+    console.log(`[Webhook] Mensagem de ${userPhone}: ${logMsg}`);
 
     // 1. Determinar o Estado do Usuário (Routing Logic)
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
@@ -64,6 +93,22 @@ export async function POST(req: Request) {
       await updateUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido', situacao: 'aguardando_qualificação' });
       userState = 'lead';
     } else {
+      // Usuário existente: Atualizar dados (sync)
+      // Se tiver pushName, e o nome atual for vazio ou Desconhecido, atualiza.
+      // Se não, apenas chama updateUser para atualizar o 'atualizado_em'
+      const currentName = user.nome_completo as string;
+      const shouldUpdateName = pushName && (!currentName || currentName === 'Desconhecido' || currentName.trim() === '');
+      
+      if (shouldUpdateName) {
+         console.log(`[Router] Atualizando nome do usuário ${userPhone} para ${pushName}`);
+         await updateUser({ telefone: userPhone, nome_completo: pushName });
+         // Update local user object for correct context
+         user.nome_completo = pushName; 
+      } else {
+         // Atualiza apenas timestamp (e garante que o user está 'ativo')
+         await updateUser({ telefone: userPhone });
+      }
+
       // Usuário existente: Verificar regras
       if (user.situacao === 'cliente') {
         userState = 'customer';

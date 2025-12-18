@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -19,6 +19,7 @@ type NavItem = {
 
 const adminLinks: NavItem[] = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Atendimento', href: '/admin/atendimento', icon: MessageCircle },
     { name: 'Lista', href: '/admin/lista', icon: Users },
     { name: 'Disparo', href: '/admin/disparo', icon: Send },
     { name: 'Consulta CNPJ', href: '/admin/serpro', icon: Globe },
@@ -219,6 +220,35 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
       return activeParent ? activeParent.name : null;
   });
 
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check local storage or system preference
+    const timer = setTimeout(() => {
+      const storedTheme = localStorage.getItem('theme');
+      if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setIsDark(true);
+        document.documentElement.classList.add('dark');
+      } else {
+        setIsDark(false);
+        document.documentElement.classList.remove('dark');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const toggleTheme = () => {
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDark(true);
+    }
+  };
+
   const handleToggle = (name: string) => {
       setExpandedSection(prev => prev === name ? null : name);
   }
@@ -352,6 +382,17 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
             )
           })}
         </nav>
+
+        {/* Footer with Theme Toggle */}
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+          >
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? 'Modo Claro' : 'Modo Escuro'}
+          </button>
+        </div>
       </div>
     </>
   )

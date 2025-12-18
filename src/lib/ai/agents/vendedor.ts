@@ -71,7 +71,8 @@ Você não vende o papel, vende a solução que será entregue na reunião.
 - Seu KPI é: **Reunião Agendada com Contexto Rico** (o Haylander precisa saber o que o cliente quer antes de entrar na sala).
 `;
 
-export async function runVendedorAgent(message: string, context: AgentContext) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runVendedorAgent(message: string | any, context: AgentContext) {
   // 1. Fetch latest user data for prompt injection
   const userDataJson = await getUser(context.userPhone);
   let userData = "Não encontrado";
@@ -94,7 +95,7 @@ export async function runVendedorAgent(message: string, context: AgentContext) {
         type: 'object',
         properties: {},
       },
-      function: async () => await scheduleMeeting()
+      function: async () => await scheduleMeeting(context.userPhone)
     },
     {
       name: 'chamar_atendente',
