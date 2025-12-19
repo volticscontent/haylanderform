@@ -2,6 +2,25 @@
 
 import { evolutionFindChats, evolutionFindMessages, evolutionSendTextMessage, evolutionSendMediaMessage, evolutionSendWhatsAppAudio, evolutionGetBase64FromMediaMessage } from "@/lib/evolution";
 import pool from "@/lib/db";
+import { generatePhoneVariations } from "@/lib/phone-utils";
+
+export async function triggerBot(chatId: string, botName: string) {
+    try {
+        console.log(`Triggering bot ${botName} for chat ${chatId}`);
+        
+        // TODO: Implement actual bot triggering logic here
+        // This could be a webhook call, an Evolution API call to start a Typebot, etc.
+        // Example: await evolutionStartTypebot(chatId, botName);
+
+        // For now, we'll simulate a delay and success
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        return { success: true, message: `Bot ${botName} iniciado com sucesso` };
+    } catch (error) {
+        console.error(`Error triggering bot ${botName}:`, error);
+        return { success: false, error: `Falha ao iniciar bot ${botName}` };
+    }
+}
 
 export async function getChats() {
   try {
@@ -10,25 +29,18 @@ export async function getChats() {
     // Get all registered phone numbers to minimize DB queries
     const registeredMap = new Map();
     try {
-        const { rows: leads } = await pool.query('SELECT id, telefone FROM leads');
+        const { rows: leads } = await pool.query('SELECT id, telefone, nome_completo, situacao FROM leads');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         leads.forEach((lead: any) => {
             if (lead.telefone) {
-                const cleanPhone = lead.telefone.replace(/\D/g, '');
-                registeredMap.set(cleanPhone, lead.id);
+                const leadData = {
+                    id: lead.id,
+                    name: lead.nome_completo,
+                    status: lead.situacao
+                };
                 
-                // Handle Brazil 9th digit variations for matching
-                if (cleanPhone.startsWith('55')) {
-                    if (cleanPhone.length === 13) {
-                        // Has 9th digit (55 + 2 DDD + 9 + 8 number) -> Remove it to match 12-digit format
-                        const phoneWithout9 = cleanPhone.slice(0, 4) + cleanPhone.slice(5);
-                        registeredMap.set(phoneWithout9, lead.id);
-                    } else if (cleanPhone.length === 12) {
-                        // Missing 9th digit (55 + 2 DDD + 8 number) -> Add it to match 13-digit format
-                        const phoneWith9 = cleanPhone.slice(0, 4) + '9' + cleanPhone.slice(4);
-                        registeredMap.set(phoneWith9, lead.id);
-                    }
-                }
+                const variations = generatePhoneVariations(lead.telefone);
+                variations.forEach(v => registeredMap.set(v, leadData));
             }
         });
     } catch (dbError) {
@@ -42,12 +54,31 @@ export async function getChats() {
       const enrichedChats = await Promise.all(chats.map(async (chat: any) => {
         const jid = chat.remoteJid || chat.id;
         const phone = jid ? jid.split('@')[0].replace(/\D/g, '') : '';
-        const leadId = registeredMap.get(phone);
+        
+        // Try to find exact match or variations
+        let leadInfo = registeredMap.get(phone);
+        
+        if (!leadInfo && phone) {
+            // If direct match failed, try generating variations of the chat phone
+            // This handles cases where database has "5531..." but chat is "31..." or vice-versa
+            // and our initial map population might have missed some edge cases
+            const chatPhoneVariations = generatePhoneVariations(phone);
+            for (const variant of chatPhoneVariations) {
+                const found = registeredMap.get(variant);
+                if (found) {
+                    leadInfo = found;
+                    break;
+                }
+            }
+        }
 
         const enrichedChat = { 
             ...chat, 
-            isRegistered: !!leadId,
-            leadId: leadId || undefined
+            isRegistered: !!leadInfo,
+            leadId: leadInfo?.id || undefined,
+            leadName: leadInfo?.name || undefined,
+            leadStatus: leadInfo?.status || undefined,
+            leadDataReuniao: leadInfo?.data_reuniao || undefined
         };
 
         // Always fetch the latest message to ensure accuracy
@@ -74,6 +105,33 @@ export async function getChats() {
     console.error("Error fetching chats:", error);
     return { success: false, error: "Failed to fetch chats" };
   }
+}
+
+export async function getLeadByPhone(phone: string) {
+    try {
+        const cleanPhone = phone.replace(/\D/g, '');
+        // Try exact match first
+        let result = await pool.query('SELECT * FROM leads WHERE telefone = $1', [cleanPhone]);
+        
+        if (result.rows.length === 0) {
+            // Try variations
+            const variations = generatePhoneVariations(cleanPhone);
+            if (variations.length > 0) {
+                // Build OR clause for variations
+                const placeholders = variations.map((_, i) => `$${i + 1}`).join(', ');
+                result = await pool.query(`SELECT * FROM leads WHERE telefone IN (${placeholders}) LIMIT 1`, variations);
+            }
+        }
+
+        if (result.rows.length > 0) {
+            return { success: true, data: result.rows[0] };
+        }
+        
+        return { success: false, error: 'Lead não encontrado' };
+    } catch (error) {
+        console.error("Error fetching lead:", error);
+        return { success: false, error: "Failed to fetch lead" };
+    }
 }
 
 export async function registerLead(name: string, phone: string) {

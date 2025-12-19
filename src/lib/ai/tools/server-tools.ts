@@ -155,7 +155,20 @@ export async function updateUser(params: {
     // Normalize keys
     const normalizedUpdates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(updates)) {
-      normalizedUpdates[normalizeKey(key)] = value;
+      const normKey = normalizeKey(key);
+      let normValue = value;
+
+      // Sanitize empty strings for enum fields to avoid constraint violations
+      if (normKey === 'qualificacao' && normValue === '') {
+        normValue = null;
+      }
+      
+      // Map frontend status to database status if needed
+      if (normKey === 'situacao' && normValue === 'aguardando_qualificação') {
+         normValue = 'nao_respondido';
+      }
+
+      normalizedUpdates[normKey] = normValue;
     }
 
     if (check.rows.length === 0) {

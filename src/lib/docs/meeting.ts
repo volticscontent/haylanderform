@@ -56,6 +56,22 @@ export const meeting = {
 
       ---
 
+      ## Painel Administrativo
+
+      ### Visualização de Agenda
+      O sistema conta com um módulo administrativo dedicado para gestão de reuniões (`/admin/atendimentos`).
+
+      **Funcionalidades:**
+      - **Calendário Mensal**: Visualização intuitiva com indicadores de dias ocupados.
+      - **Detalhes Diários**: Lista lateral com todos os agendamentos do dia selecionado.
+      - **Dados Exibidos**: Nome do lead, telefone, horário e observações.
+      - **Navegação**: Controles para navegar entre meses e atalho para o dia atual.
+
+      **Integração de Dados:**
+      Os dados são puxados diretamente da tabela `leads_vendas`, filtrando registros onde `data_reuniao` não é nulo.
+
+      ---
+
       ## Resumo Técnico - Meeting Module
       - **Renderização**: Server Component (Page) + Client Component (Interaction).
       - **SEO**: NoIndex (Página de conversão privada).

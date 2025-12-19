@@ -249,7 +249,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
   }
 
   return (
-    <div className="w-full bg-white dark:bg-zinc-900 p-4 py-12 sm:p-8 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+    <div className="w-full bg-white dark:bg-zinc-900 p-4 py-12 sm:px-32 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
       <div className="mb-8 text-center">
         <h2 className="text-3xl text-zinc-900 dark:text-white tracking-tight mb-2">
           Seja bem vindo a Haylander Martins Contabilidade!

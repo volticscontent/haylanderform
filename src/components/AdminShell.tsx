@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import { LogOut, Menu } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { AdminProvider, useAdmin } from '@/contexts/AdminContext'
 
-export default function AdminShell({
+function AdminShellContent({
   children,
   isLoggedIn,
   onLogout
@@ -13,7 +15,9 @@ export default function AdminShell({
   isLoggedIn: boolean
   onLogout: () => Promise<void>
 }) {
-  const [isSidebarOpen, setSidebarOpen] = useState(false)
+  const { isSidebarOpen, setSidebarOpen, isDesktopSidebarOpen } = useAdmin()
+  const pathname = usePathname()
+  const isChatPage = pathname?.startsWith('/admin/atendimento')
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -21,16 +25,18 @@ export default function AdminShell({
       {isLoggedIn && (
         <AdminSidebar 
           isOpen={isSidebarOpen} 
+          isDesktopOpen={isDesktopSidebarOpen}
           onClose={() => setSidebarOpen(false)} 
         />
       )}
       
       <main className={`
         min-h-screen transition-all duration-200
-        ${isLoggedIn ? 'lg:pl-64' : ''}
+        ${isLoggedIn && isDesktopSidebarOpen ? 'lg:pl-64' : ''}
+        ${isChatPage ? 'h-screen overflow-hidden' : ''}
       `}>
-        <div className="sm:p-8 p-4">
-           {isLoggedIn && (
+        <div className={isChatPage ? 'h-full' : 'sm:p-8 p-4'}>
+           {isLoggedIn && !isChatPage && (
              <div className="flex justify-between items-center mb-6">
                 {/* Mobile Menu Button */}
                 <button 
@@ -54,5 +60,23 @@ export default function AdminShell({
         </div>
       </main>
     </div>
+  )
+}
+
+export default function AdminShell({
+  children,
+  isLoggedIn,
+  onLogout
+}: {
+  children: React.ReactNode
+  isLoggedIn: boolean
+  onLogout: () => Promise<void>
+}) {
+  return (
+    <AdminProvider>
+      <AdminShellContent isLoggedIn={isLoggedIn} onLogout={onLogout}>
+        {children}
+      </AdminShellContent>
+    </AdminProvider>
   )
 }

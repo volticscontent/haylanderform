@@ -1,20 +1,71 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads } from '@/app/admin/atendimento/actions';
-import { ChatSidebar } from './ChatSidebar';
-import { ChatWindow } from './ChatWindow';
+import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads, getLeadByPhone, triggerBot } from '@/app/admin/atendimento/actions';
+
+import { ChatSidebar, ChatWindow } from '.';
+import { LeadSheet, LeadSheetData } from './LeadSheet';
 import { Chat, Message } from './types';
 
+import { useRouter } from 'next/navigation';
+import { useAdmin } from '@/contexts/AdminContext';
+
 export function ChatInterface() {
+  const router = useRouter();
+  const { setDesktopSidebarOpen } = useAdmin();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
+  // Restore sidebar when leaving chat interface
+  useEffect(() => {
+    return () => setDesktopSidebarOpen(true);
+  }, [setDesktopSidebarOpen]);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+
+  const [leadSheetOpen, setLeadSheetOpen] = useState(false);
+  const [currentLeadData, setCurrentLeadData] = useState<LeadSheetData | null>(null);
+  const [loadingLeadData, setLoadingLeadData] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  const handleViewLeadSheet = async (chat: Chat) => {
+      setLeadSheetOpen(true);
+      setDesktopSidebarOpen(false); // Close admin sidebar
+      setLoadingLeadData(true);
+      setCurrentLeadData(null);
+
+      try {
+          const phone = chat.id.split('@')[0];
+          const result = await getLeadByPhone(phone);
+          if (result.success && result.data) {
+              setCurrentLeadData(result.data as LeadSheetData);
+          }
+      } catch (error) {
+          console.error("Error loading lead sheet:", error);
+      } finally {
+          setLoadingLeadData(false);
+      }
+  };
 
   // Helper to extract text for preview
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,7 +188,12 @@ export function ChatInterface() {
         image: c.profilePicUrl || c.profilePictureUrl,
         unreadCount: c.unreadCount || 0,
         lastMessage: extractMessagePreview(c.lastMessage || c),
-        timestamp: c.lastMessage?.messageTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000))
+        timestamp: c.lastMessage?.messageTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
+        isRegistered: c.isRegistered,
+        leadId: c.leadId,
+        leadName: c.leadName,
+        leadStatus: c.leadStatus,
+        leadDataReuniao: c.leadDataReuniao
       }));
       setChats(mappedChats);
     }
@@ -200,6 +256,41 @@ export function ChatInterface() {
 
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId) return;
+
+    // Check for bot commands
+    const command = text.trim().split(' ')[0].toLowerCase();
+    if (['/apolo', '/hermes', '/icaro'].includes(command)) {
+        const botName = command.substring(1); // remove slash
+        
+        // Optimistic update for system message
+        const tempId = 'system-' + Date.now();
+        const systemMessage: Message = {
+            id: tempId,
+            fromMe: true, 
+            content: `🤖 Iniciando bot ${botName.charAt(0).toUpperCase() + botName.slice(1)}...`,
+            timestamp: Date.now() / 1000,
+            type: 'conversation',
+            status: 'pending'
+        };
+        setMessages(prev => [...prev, systemMessage]);
+
+        const res = await triggerBot(selectedChatId, botName);
+        
+        if (res.success) {
+             setMessages(prev => prev.map(m => 
+                m.id === tempId 
+                ? { ...m, content: `✅ Bot ${botName.charAt(0).toUpperCase() + botName.slice(1)} ativado com sucesso!`, status: 'sent' }
+                : m
+             ));
+        } else {
+             setMessages(prev => prev.map(m => 
+                m.id === tempId 
+                ? { ...m, content: `❌ Falha ao iniciar bot ${botName}: ${res.error}`, status: 'error' }
+                : m
+             ));
+        }
+        return;
+    }
     
     // Optimistic update
     const tempId = 'temp-' + Date.now();
@@ -270,6 +361,15 @@ export function ChatInterface() {
     }
   };
 
+  const handleViewLead = (chat: Chat) => {
+      // Assuming you want to go to the list and search for this lead, or go to details
+      // For now, redirecting to list with query params to find the user
+      const params = new URLSearchParams({
+        search: chat.leadName || chat.name
+      });
+      router.push(`/admin/lista?${params.toString()}`);
+  };
+
   const handleMassRegister = async (selectedChats: Chat[]) => {
       if (confirm(`Deseja cadastrar ${selectedChats.length} contatos?`)) {
           const leadsToRegister = selectedChats.map(c => ({ name: c.name, phone: c.id }));
@@ -286,36 +386,103 @@ export function ChatInterface() {
       }
   };
 
+  const handleExport = (chat: Chat, destination: string) => {
+      // Logic to handle export - e.g. save to local storage or state management context
+      // For now we'll just redirect to the page with query params
+      const phone = chat.id.replace(/\D/g, '');
+      const name = chat.name;
+      
+      const params = new URLSearchParams({
+        phone,
+        name
+      });
+      
+      switch(destination) {
+        case 'disparo':
+            router.push(`/admin/disparo?${params.toString()}`);
+            break;
+        case 'consulta':
+            router.push(`/admin/serpro?${params.toString()}`);
+            break;
+        case 'emissao':
+            router.push(`/admin/serpro/cnd?${params.toString()}`);
+            break;
+        case 'divida':
+            router.push(`/admin/serpro/divida-ativa?${params.toString()}`);
+            break;
+      }
+  };
+
   return (
-    <div className="flex h-full overflow-hidden bg-white dark:bg-zinc-900 rounded-[12px] shadow-sm">
-      <div className="w-1/3 border-r border-black dark:bg-black flex flex-col">
+    <div className="flex h-full overflow-hidden bg-white dark:bg-zinc-900 relative">
+      {/* Sidebar Drawer */}
+      <div className={`
+        absolute inset-y-0 left-0 z-40 w-full md:w-[350px] bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 
+        transform transition-transform duration-300 ease-in-out shadow-xl
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <ChatSidebar 
           chats={chats} 
           selectedChatId={selectedChatId} 
-          onSelectChat={setSelectedChatId}
+          onSelectChat={(id) => {
+            setSelectedChatId(id);
+            setIsSidebarOpen(false);
+          }}
           loading={loadingChats}
           onRegister={handleRegister}
+          onViewLead={handleViewLead}
           onMassRegister={handleMassRegister}
         />
       </div>
-      <div className="w-2/3 flex flex-col">
+
+      {/* Overlay for mobile or when sidebar is open over chat */}
+      {isSidebarOpen && selectedChatId && (
+          <div 
+            className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+      )}
+
+      {/* Main Content Area */}
+      <div className="w-full h-full bg-zinc-50 dark:bg-zinc-900">
         {selectedChatId ? (
           <ChatWindow 
-          chat={chats.find(c => c.id === selectedChatId)} 
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          onSendMedia={handleSendMedia}
-          loading={loadingMessages}
-          onLoadMore={handleLoadMore}
-          hasMore={hasMore}
-          loadingMore={loadingMore}
-        />
+            chat={chats.find(c => c.id === selectedChatId)} 
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onSendMedia={handleSendMedia}
+            loading={loadingMessages}
+            onLoadMore={handleLoadMore}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+            onBack={() => setIsSidebarOpen(true)}
+            onExportToDisparo={(c) => handleExport(c, 'disparo')}
+            onExportToConsulta={(c) => handleExport(c, 'consulta')}
+            onExportToEmissao={(c) => handleExport(c, 'emissao')}
+            onExportToDivida={(c) => handleExport(c, 'divida')}
+            onViewLeadSheet={handleViewLeadSheet}
+            onRegister={handleRegister}
+          />
         ) : (
-          <div className="flex-1 flex items-center justify-center text-zinc-500">
-            Selecione uma conversa para iniciar o atendimento
+          <div className="flex-1 flex items-center justify-center text-zinc-500 flex-col gap-4 h-full">
+            <div className="text-center p-8">
+              <h3 className="text-xl font-medium text-zinc-800 dark:text-zinc-200 mb-2">WhatsApp Web</h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Selecione uma conversa para iniciar o atendimento</p>
+            </div>
           </div>
         )}
       </div>
+
+      <LeadSheet 
+        lead={currentLeadData}
+        isOpen={leadSheetOpen}
+        onClose={() => {
+            setLeadSheetOpen(false);
+            setDesktopSidebarOpen(true); // Re-open admin sidebar when closing lead sheet
+        }}
+        loading={loadingLeadData}
+        mode={isMobile ? "overlay" : "inline"}
+      />
     </div>
   );
 }

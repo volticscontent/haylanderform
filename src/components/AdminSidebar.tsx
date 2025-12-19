@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
   isOpen?: boolean
+  isDesktopOpen?: boolean
   onClose?: () => void
 }
 
@@ -19,7 +20,8 @@ type NavItem = {
 
 const adminLinks: NavItem[] = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Atendimento', href: '/admin/atendimento', icon: MessageCircle },
+    { name: 'Atendimentos', href: '/admin/atendimentos', icon: Calendar },
+    { name: 'Chat', href: '/admin/atendimento', icon: MessageCircle },
     { name: 'Lista', href: '/admin/lista', icon: Users },
     { name: 'Disparo', href: '/admin/disparo', icon: Send },
     { name: 'Consulta CNPJ', href: '/admin/serpro', icon: Globe },
@@ -100,13 +102,14 @@ const docsLinks: NavItem[] = [
         children: [
             { name: 'Visão Geral', href: '/admin/docs/meeting#visao-geral', icon: Book },
             { name: 'Fluxo', href: '/admin/docs/meeting#fluxo-de-agendamento', icon: Book },
+            { name: 'Painel Admin', href: '/admin/docs/meeting#painel-administrativo', icon: Calendar },
             { name: 'Detalhes Técnicos', href: '/admin/docs/meeting#detalhes-tecnicos', icon: Book },
             { name: 'Resumo Técnico', href: '/admin/docs/meeting#resumo-tecnico-meeting-module', icon: Book },
         ]
     },
 ]
 
-export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
+export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
   const isDocs = pathname?.startsWith('/admin/docs')
 
@@ -267,7 +270,7 @@ export default function AdminSidebar({ isOpen = false, onClose }: AdminSidebarPr
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col
         transition-transform duration-300 ease-in-out
-        lg:translate-x-0
+        ${isDesktopOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'}
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">

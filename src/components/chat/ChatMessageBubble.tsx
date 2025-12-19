@@ -24,7 +24,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           href={part} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className={`hover:underline ${isMe ? 'text-white underline' : 'text-blue-600 dark:text-blue-400'}`}
+          className={`hover:underline break-all ${isMe ? 'text-blue-600 dark:text-blue-300 underline' : 'text-blue-600 dark:text-blue-400'}`}
         >
           {part}
         </a>
@@ -47,12 +47,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
       return (
         <div className="mb-1">
-          <div className="relative w-full h-64 rounded-lg overflow-hidden mb-1">
+          <div className="relative w-full rounded-lg overflow-hidden mb-1">
             <Image 
               src={message.mediaUrl} 
               alt="Imagem" 
-              fill 
-              className="object-cover"
+              width={0}
+              height={0}
+              sizes="100vw"
+              className="w-full h-auto object-contain max-h-[400px]"
               unoptimized // Allow base64/external
               onError={() => setImgError(true)}
             />
@@ -104,43 +106,28 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       );
     }
 
-    if (message.mediaType === 'sticker' && message.mediaUrl) {
-       return (
-        <div className="relative w-32 h-32 mb-1">
-          <Image 
-            src={message.mediaUrl} 
-            alt="Sticker" 
-            fill 
-            className="object-contain"
-            unoptimized 
-          />
-        </div>
-      );
-    }
-
-    return <div className="whitespace-pre-wrap break-words">{formatText(message.content)}</div>;
+    return <div className="text-sm">{formatText(message.content || '')}</div>;
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
-          isMe
-            ? 'bg-emerald-600 text-white rounded-tr-none'
-            : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tl-none border border-zinc-200 dark:border-zinc-700'
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-2`}>
+      <div 
+        className={`max-w-[85%] sm:max-w-[65%] rounded-xl p-3 shadow-sm relative ${
+          isMe 
+            ? 'bg-[#ffffff] dark:bg-[#005c4b] text-zinc-800 dark:text-zinc-100 rounded-tr-none' 
+            : 'bg-white dark:bg-[#202c33] text-zinc-800 dark:text-zinc-100 rounded-tl-none'
         }`}
       >
         {renderContent()}
-        <div
-          className={`text-[10px] mt-1 text-right ${
-            isMe ? 'text-emerald-100' : 'text-zinc-400'
-          }`}
-        >
-          {new Date(message.timestamp * 1000).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-          {message.status === 'pending' && ' 🕒'}
+        <div className={`text-[10px] flex items-center justify-end gap-1 mt-1 ${isMe ? 'text-zinc-500 dark:text-emerald-100/70' : 'text-zinc-400'}`}>
+          <span>
+            {new Date(message.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {isMe && (
+            <span className={message.status === 'read' ? 'text-blue-500 dark:text-blue-300' : ''}>
+              {message.status === 'read' ? '✓✓' : message.status === 'delivered' ? '✓✓' : '✓'}
+            </span>
+          )}
         </div>
       </div>
     </div>

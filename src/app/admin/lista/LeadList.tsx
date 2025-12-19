@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Download, MoreVertical, FileText, Phone, CheckCircle, AlertCircle, Clock, Trash2, Edit, Eye, X, User, Calendar, Mail, DollarSign, Building, Info, Send, ChevronLeft, ChevronRight } from 'lucide-react'
 import { deleteLead } from './actions'
+import { phoneMatches } from '@/lib/phone-utils'
 
 const DATE_COLUMNS = ['data_controle_24h','data_cadastro','atualizado_em','data_reuniao']
 
@@ -80,7 +81,7 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                <div className="flex items-center gap-2 text-sm text-zinc-500">
                  <span className="font-mono">{lead.cnpj || 'CNPJ N/A'}</span>
                  {lead.situacao && (
-                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-300/50 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                      {lead.situacao}
                    </span>
                  )}
@@ -260,7 +261,7 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                    <label className="text-xs text-zinc-500">Status de Envio (Disparo)</label>
                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                      ['a1', 'a2', 'a3'].includes(lead.envio_disparo || '')
-                       ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' 
+                       ? 'bg-blue-50 text-blue-700 ml-3 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' 
                        : (lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido')
                        ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
                        : lead.envio_disparo === 'error'
@@ -311,7 +312,15 @@ export default function LeadList({
     router.push(`?${params.toString()}`)
   }
 
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+
+  useEffect(() => {
+    const query = searchParams.get('search')
+    if (query !== null) {
+      setSearchTerm(query)
+    }
+  }, [searchParams])
+
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
@@ -467,7 +476,7 @@ export default function LeadList({
       const searchLower = searchTerm.toLowerCase()
       const matchesSearch = (
         (row.nome_completo?.toLowerCase() || '').includes(searchLower) ||
-        (row.telefone?.toLowerCase() || '').includes(searchLower) ||
+        phoneMatches(row.telefone, searchTerm) ||
         (row.cnpj?.toLowerCase() || '').includes(searchLower)
       )
       

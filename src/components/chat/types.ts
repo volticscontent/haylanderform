@@ -7,6 +7,9 @@ export interface Chat {
   timestamp?: number;
   isRegistered?: boolean;
   leadId?: number;
+  leadName?: string;
+  leadStatus?: string;
+  leadDataReuniao?: string;
 }
 
 export interface Message {

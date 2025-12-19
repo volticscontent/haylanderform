@@ -6,12 +6,12 @@ import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
 import { getUser, updateUser } from '@/lib/ai/tools/server-tools';
 import { AgentContext } from '@/lib/ai/types';
 
-export async function sendMessageAction(message: string, userPhone: string) {
+export async function sendMessageAction(message: string, userPhone: string, targetAgent?: string) {
   try {
     const sender = `${userPhone}@s.whatsapp.net`;
     const pushName = 'Test User';
 
-    console.log(`[Test Chat] Mensagem de ${userPhone}: ${message}`);
+    console.log(`[Test Chat] Mensagem de ${userPhone}: ${message} (Target: ${targetAgent || 'Auto'})`);
 
     // 1. Determinar o Estado do Usuário (Routing Logic)
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
@@ -60,24 +60,43 @@ export async function sendMessageAction(message: string, userPhone: string) {
     let responseText = '';
     let agentName = '';
 
-    // 2. Despachar para o Agente Correto
-    switch (userState) {
-      case 'qualified':
-        agentName = 'Vendedor (Icaro)';
-        console.log(`[Test Chat] Direcionando para ${agentName}`);
-        responseText = await runVendedorAgent(message, context);
-        break;
-      case 'customer':
-        agentName = 'Atendente (Apolo Customer)';
-        console.log(`[Test Chat] Direcionando para ${agentName}`);
-        responseText = await runAtendenteAgent(message, context);
-        break;
-      case 'lead':
-      default:
-        agentName = 'Apolo (SDR)';
-        console.log(`[Test Chat] Direcionando para ${agentName}`);
-        responseText = await runApoloAgent(message, context);
-        break;
+    // 2. Despachar para o Agente Correto (Ou Forçado)
+    if (targetAgent && targetAgent !== 'auto') {
+        switch (targetAgent.toLowerCase()) {
+            case 'vendedor':
+                agentName = 'Vendedor (Icaro)';
+                responseText = await runVendedorAgent(message, context);
+                break;
+            case 'atendente':
+                agentName = 'Atendente (Apolo Customer)';
+                responseText = await runAtendenteAgent(message, context);
+                break;
+            case 'apolo':
+            default:
+                agentName = 'Apolo (SDR)';
+                responseText = await runApoloAgent(message, context);
+                break;
+        }
+    } else {
+        // Lógica Automática Original
+        switch (userState) {
+        case 'qualified':
+            agentName = 'Vendedor (Icaro)';
+            console.log(`[Test Chat] Direcionando para ${agentName}`);
+            responseText = await runVendedorAgent(message, context);
+            break;
+        case 'customer':
+            agentName = 'Atendente (Apolo Customer)';
+            console.log(`[Test Chat] Direcionando para ${agentName}`);
+            responseText = await runAtendenteAgent(message, context);
+            break;
+        case 'lead':
+        default:
+            agentName = 'Apolo (SDR)';
+            console.log(`[Test Chat] Direcionando para ${agentName}`);
+            responseText = await runApoloAgent(message, context);
+            break;
+        }
     }
 
     return { 
@@ -91,4 +110,12 @@ export async function sendMessageAction(message: string, userPhone: string) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return { error: errorMessage };
   }
+}
+
+export async function getUserDataAction(phone: string) {
+    return await getUser(phone);
+}
+
+export async function updateUserDataAction(data: any) {
+    return await updateUser(data);
 }
