@@ -198,7 +198,7 @@ export function ChatWindow({
         {onBack && (
           <button 
             onClick={onBack}
-            className="md:hidden p-2 -ml-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors"
+            className="p-2 -ml-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
