@@ -40,8 +40,9 @@ export async function sendMessageAction(message: string, userPhone: string, targ
       // Usuário existente: Verificar regras
       if (user.situacao === 'cliente') {
         userState = 'customer';
-      } else if (user.qualificacao && user.qualificacao !== 'desqualificado') {
-        // Se já tem qualificação (MQL, SQL, ICP), vai para Vendedor
+      } else if (user.qualificacao) {
+        // Se já tem qualificação (MQL, SQL, ICP, ou até desqualificado), vai para Vendedor
+        // Agora o Vendedor tenta converter até os desqualificados
         userState = 'qualified';
       } else {
         // Padrão: Apolo (ainda qualificando ou desqualificado tentando contato)
@@ -116,6 +117,6 @@ export async function getUserDataAction(phone: string) {
     return await getUser(phone);
 }
 
-export async function updateUserDataAction(data: any) {
+export async function updateUserDataAction(data: Parameters<typeof updateUser>[0]) {
     return await updateUser(data);
 }

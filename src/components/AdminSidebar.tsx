@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Calendar } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Calendar, Workflow, GitBranch } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -33,6 +33,14 @@ const adminLinks: NavItem[] = [
 const docsLinks: NavItem[] = [
     { name: 'Introdução', href: '/admin/docs', icon: Book },
     { 
+        name: 'Arquitetura', 
+        icon: Workflow,
+        children: [
+            { name: 'Diagrama de Dados', href: '/admin/docs/diagrama-dados', icon: Database },
+            { name: 'Ciclo de Vida', href: '/admin/docs/ciclo-vida-lead', icon: GitBranch },
+        ]
+    },
+    { 
         name: 'Formulários', 
         icon: FileText,
         children: [
@@ -47,9 +55,10 @@ const docsLinks: NavItem[] = [
         name: 'Banco de Dados',  
         icon: Database,
         children: [
-            { name: 'Introdução', href: '/admin/docs/database#intro', icon: Book },
-            { name: 'Bot e Dados', href: '/admin/docs/database#bot-dados', icon: Database },
-            { name: 'Esquema SQL', href: '/admin/docs/database#esquema-sql', icon: Database },
+            { name: 'Introdução', href: '/admin/docs/database-bot#intro', icon: Book },
+            { name: 'Visualização Live', href: '/docs/bd', icon: Workflow },
+            { name: 'Bot e Dados', href: '/admin/docs/database-bot#bot-dados', icon: Database },
+            { name: 'Esquema SQL', href: '/admin/docs/database-bot#esquema-sql', icon: Database },
         ]
     },
     { 

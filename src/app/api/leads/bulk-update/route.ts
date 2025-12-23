@@ -180,72 +180,41 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Operador inválido' }, { status: 400 })
     }
 
-    // Construct Query
-    // Postgres UPDATE with JOIN:
-    // UPDATE target t SET ... FROM source s WHERE t.id = s.id AND ...
+    // Optimized Query Construction
+    // Only join the necessary tables to avoid implicit inner join filtering
     
     let sql = ''
-    if (updateTableName === 'leads') {
-        // Main table
-        // Join others to allow filtering
+    
+    // Case 1: Filter and Update are on the same table
+    if (updateTableName === whereTableName) {
         sql = `
-            UPDATE leads l
+            UPDATE ${updateTableName} ${targetAlias}
             ${setSql}
-            FROM leads_empresarial le, leads_qualificacao lq, leads_financeiro lf, leads_vendas lv, leads_atendimento la
-            WHERE l.id = le.lead_id AND l.id = lq.lead_id AND l.id = lf.lead_id AND l.id = lv.lead_id AND l.id = la.lead_id
-            AND ${whereSql}
+            WHERE ${whereSql}
         `
-        // Note: The FROM clause with commas does cross join, but WHERE links them. 
-        // Better to use LEFT JOIN logic? UPDATE doesn't support LEFT JOIN in FROM standardly, 
-        // but Postgres supports FROM with joins.
-        // However, if we use FROM table1, table2... and enforce join in WHERE, it acts as INNER JOIN.
-        // If a lead is missing in one sub-table, it won't be updated!
-        // Since we migrated ALL data, every lead has entries. So INNER JOIN is acceptable and safer.
     } else {
-        // Sub table
+        // Case 2: Different tables, need to join
+        // We use FROM clause to join the 'where' table
+        
+        // Resolve join condition based on table types (leads vs satellite)
+        let joinCondition = ''
+        
+        if (updateTableName === 'leads') {
+            // Target is leads (id), Source is satellite (lead_id)
+            joinCondition = `${targetAlias}.id = ${whereAlias}.lead_id`
+        } else if (whereTableName === 'leads') {
+            // Target is satellite (lead_id), Source is leads (id)
+            joinCondition = `${targetAlias}.lead_id = ${whereAlias}.id`
+        } else {
+            // Both are satellites (lead_id)
+            joinCondition = `${targetAlias}.lead_id = ${whereAlias}.lead_id`
+        }
+
         sql = `
             UPDATE ${updateTableName} ${targetAlias}
             ${setSql}
-            FROM leads l
-            JOIN leads_empresarial le ON l.id = le.lead_id
-            JOIN leads_qualificacao lq ON l.id = lq.lead_id
-            JOIN leads_financeiro lf ON l.id = lf.lead_id
-            JOIN leads_vendas lv ON l.id = lv.lead_id
-            JOIN leads_atendimento la ON l.id = la.lead_id
-            WHERE ${targetAlias}.lead_id = l.id
-            AND ${whereSql}
-        `
-        // Note: We join all to ensure we can filter by any column from any table.
-        // If targetAlias is one of the joined tables, we must be careful with naming.
-        // In "FROM leads l JOIN ...", we are introducing aliases.
-        // If updateTableName is 'leads_qualificacao' (lq), and we join 'leads_qualificacao lq' again?
-        // No, we should avoid joining the target table again if possible, or use different alias.
-        // Actually, for the target table, we don't need to join it in FROM if we refer to it by its alias defined in UPDATE.
-        // But we need to join others.
-        
-        // Simplified approach: Join everything to 'leads' (l), and link target to 'leads'.
-        // But we need to avoid ambiguous alias if target IS one of the joins.
-        
-        // Let's use specific joins excluding the target table to avoid ambiguity, OR just use the aliases consistent.
-        // If target is 'leads_qualificacao' (lq), we shouldn't join 'leads_qualificacao lq' in FROM.
-        // We can join the others.
-        
-        const otherTables = [
-            { name: 'leads_empresarial', alias: 'le' },
-            { name: 'leads_qualificacao', alias: 'lq' },
-            { name: 'leads_financeiro', alias: 'lf' },
-            { name: 'leads_vendas', alias: 'lv' },
-            { name: 'leads_atendimento', alias: 'la' }
-        ].filter(t => t.name !== updateTableName)
-        
-        const joins = otherTables.map(t => `JOIN ${t.name} ${t.alias} ON l.id = ${t.alias}.lead_id`).join('\n')
-        
-        sql = `
-            UPDATE ${updateTableName} ${targetAlias}
-            ${setSql}
-            FROM leads l
-            ${joins}
-            WHERE ${targetAlias}.lead_id = l.id
+            FROM ${whereTableName} ${whereAlias}
+            WHERE ${joinCondition}
             AND ${whereSql}
         `
     }

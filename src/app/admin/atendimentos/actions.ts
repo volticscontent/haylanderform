@@ -33,7 +33,7 @@ export async function getMeetings() {
       FROM leads l
       JOIN leads_vendas lv ON l.id = lv.lead_id
       LEFT JOIN leads_atendimento la ON l.id = la.lead_id
-      WHERE lv.data_reuniao IS NOT NULL AND lv.data_reuniao != ''
+      WHERE lv.data_reuniao IS NOT NULL AND CAST(lv.data_reuniao AS TEXT) <> ''
     `
     
     const result = await client.query(query)

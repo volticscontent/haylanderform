@@ -6,7 +6,8 @@ import {
   sendEnumeratedList, 
   sendCommercialPresentation,
   updateUser1,
-  callAttendant
+  callAttendant,
+  contextRetrieve
 } from '../tools/server-tools';
 
 export const APOLO_PROMPT_TEMPLATE = `
@@ -108,7 +109,9 @@ export async function runApoloAgent(message: string | any, context: AgentContext
   try {
     const parsed = JSON.parse(userDataJson);
     if (parsed.status !== 'error' && parsed.status !== 'not_found') {
+      const sensitiveKeyPattern = /(senha|token|secret|cert|apikey|api_key)/i;
       userData = Object.entries(parsed)
+        .filter(([k]) => !sensitiveKeyPattern.test(String(k)))
         .map(([k, v]) => `${k} = ${v}`)
         .join('\n');
     }
@@ -119,6 +122,20 @@ export async function runApoloAgent(message: string | any, context: AgentContext
     .replace('{{USER_NAME}}', context.userName || 'Cliente');
 
   const tools: ToolDefinition[] = [
+    {
+      name: 'context_retrieve',
+      description: 'Buscar o contexto recente da conversa do cliente (Evolution API).',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Quantidade de mensagens a buscar (padrão 30).' }
+        }
+      },
+      function: async (args) => {
+        const limit = typeof args.limit === 'number' ? args.limit : 30;
+        return await contextRetrieve(context.userId, limit);
+      }
+    },
     {
       name: 'enviar_formulario',
       description: 'Enviar o formulário de qualificação para o cliente.',
@@ -201,6 +218,20 @@ export async function runApoloAgent(message: string | any, context: AgentContext
         properties: {},
       },
       function: async () => await callAttendant(context.userPhone, 'Solicitação do cliente')
+    },
+    {
+      name: 'interpreter',
+      description: 'Ferramenta de memória compartilhada. Use para salvar informações importantes (post) ou buscar memórias relevantes (get).',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', enum: ['post', 'get'], description: 'Ação: salvar (post) ou buscar (get).' },
+          text: { type: 'string', description: 'O conteúdo a ser salvo ou o termo de busca.' },
+          category: { type: 'string', enum: ['qualificacao', 'vendas', 'atendimento'], description: 'Categoria da memória.' }
+        },
+        required: ['action', 'text']
+      },
+      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as any)
     }
   ];
 

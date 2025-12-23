@@ -124,7 +124,8 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
     mediatype: type,
     mimetype: mimetype,
     caption: caption,
-    fileName: fileName
+    fileName: fileName,
+    delay: 1200
   }
 
   const res = await withTimeout(fetch(url, {
@@ -133,7 +134,10 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
     body: JSON.stringify(body)
   }), evolutionConfig.timeoutMs)
 
-  if (!res.ok) throw new Error(`SendMediaMessage failed: ${res.status}`)
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'No error details');
+    throw new Error(`SendMediaMessage failed: ${res.status} - ${errorText}`)
+  }
   return res.json()
 }
 

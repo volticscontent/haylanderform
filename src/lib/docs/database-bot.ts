@@ -31,40 +31,78 @@ export const databaseBot = {
     - **\`leads_atendimento\`**: Controle de fluxo (envio_disparo, data_controle_24h, observações).
     - **\`leads_vendas\`**: Dados comerciais (reunião agendada, serviço negociado, procuração).
 
-    Todas as tabelas satélites possuem uma FK \`lead_id\` apontando para \`leads.id\`.
+    ### 4. Tabela \`interpreter_memories\` (Memória Compartilhada)
+    Armazena insights e contextos compartilhados entre os agentes (Apolo, Atendente, Vendedor).
+
+    | Coluna | Tipo | Descrição |
+    | :--- | :--- | :--- |
+    | \`id\` | SERIAL | Chave Primária |
+    | \`phone\` | String | Chave de Busca (Indexada). Telefone do cliente |
+    | \`content\` | Text | Conteúdo da memória ou insight |
+    | \`category\` | String | Categoria (qualificacao, vendas, atendimento) |
+    | \`embedding\` | Vector(1536) | Vetor de embedding (OpenAI text-embedding-3-small) |
+    | \`created_at\` | Timestamp | Data de criação |
+
+    ---Todas as tabelas satélites possuem uma FK \`lead_id\` apontando para \`leads.id\`.
 
     ---
 
-    ## Bot Apolo (SDR Automatizado)
+    ## Bot Apolo (SDR Automatizado) e Ecossistema de Agentes
 
-    O **Apolo** é responsável pela triagem inicial dos leads, operando de forma passiva-reativa para qualificar clientes antes do transbordo para um humano.
+    O sistema opera com 3 agentes especializados que compartilham memória e contexto:
+
+    1. **Apolo (SDR)**: Triagem e qualificação inicial.
+    2. **Vendedor (Icaro)**: Fechamento e negociação (assume leads qualificados).
+    3. **Atendente (Suporte)**: Suporte ao cliente da base (blindagem).
 
     ### Fluxo de Conversação
 
     \`\`\`mermaid
     graph TD
-        Start["Início da Conversa"] --> Saudacao{"Saudação + Menu"}
+        Start["Início da Conversa"] --> Router{"Roteador de Agentes"}
         
-        Saudacao -->|"Opção 1"| Regularizacao["Regularização MEI"]
-        Saudacao -->|"Opção 2"| Abertura["Abertura MEI"]
-        Saudacao -->|"Opção 3"| Humano["Falar com Atendente"]
-        
-        Regularizacao --> Form["Enviar Link Formulário"]
-        Abertura --> Form
-        
-        Form --> Wait["Aguardar Preenchimento"]
-        Wait --> Check{"Dados Recebidos?"}
-        
-        Check -- Sim --> Analise["Análise de Perfil"]
-        Analise -->|"Perfil Ideal"| SQL["Qualificado (SQL)"]
-        Analise -->|"Perfil Duvidoso"| MQL["Qualificado (MQL)"]
-        Analise -->|"Sem Perfil"| Desq["Desqualificado"]
-        
-        SQL --> Humano
-        MQL --> Nutricao["Fluxo de Nutrição"]
+        Router -->|Lead Novo| Apolo["Apolo (SDR)"]
+        Router -->|Qualificado| Vendedor["Vendedor (Icaro)"]
+        Router -->|Cliente Base| Atendente["Atendente (Suporte)"]
+
+        subgraph Apolo_Fluxo
+            Apolo --> Saudacao{"Saudação + Menu"}
+            Saudacao -->|"Opção 1/2"| Form["Enviar Link Formulário"]
+            Form --> Wait["Aguardar Preenchimento"]
+            Wait --> Analise["Análise de Perfil"]
+            Analise -->|"Qualificado"| Update["Update Status -> Qualificado"]
+            Update --> Vendedor
+        end
+
+        subgraph Vendedor_Fluxo
+            Vendedor --> Contexto["Ler Memória Compartilhada"]
+            Contexto --> Abordagem["Abordagem Consultiva"]
+            Abordagem --> Agendar["Agendar Reunião (Link)"]
+        end
+
+        subgraph Shared_Memory
+            Memoria[("Interpreter Memories (Vector Store)")]
+        end
+
+        Apolo -.->|Gravar Insights| Memoria
+        Vendedor -.->|Ler Contexto| Memoria
+        Atendente -.->|Ler/Gravar| Memoria
     \`\`\`
 
-    ### Gatilhos e Comandos
+    ### Ferramentas e Capacidades
+
+    #### **Memória Compartilhada (`interpreter`)**
+    - **Função**: Permite que os bots salvem e recuperem informações contextuais importantes.
+    - **Tecnologia**: Busca vetorial (Vector Search) para encontrar memórias relevantes por similaridade semântica.
+    - **Uso**: 
+        - Apolo salva: "Cliente tem dívida de 50k e urgência por bloqueio judicial."
+        - Vendedor recupera: Ao iniciar, busca contexto e já sabe da urgência.
+
+    #### **Envio de Mídia (`sendCommercialPresentation`)**
+    - **Ação**: Envia PDFs e Vídeos nativamente via API (não apenas links de texto).
+    - **Integração**: Evolution API.
+
+    #### **Gatilhos e Comandos (Apolo)**
 
     O bot opera baseado em triggers específicos integrados ao fluxo do WhatsApp.
 

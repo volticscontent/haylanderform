@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     } else {
       // Insert
       await client.query(
-        `INSERT INTO leads (nome_completo, telefone, email, senha_gov, created_at) VALUES ($1, $2, $3, $4, NOW())`,
+        `INSERT INTO leads (nome_completo, telefone, email, senha_gov, data_cadastro) VALUES ($1, $2, $3, $4, NOW())`,
         [nome_completo, telefone, email, senha_gov]
       );
     }

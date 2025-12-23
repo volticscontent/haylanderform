@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { X, Send, FileText, Film, Music } from 'lucide-react';
+import { X, Send, FileText, Music } from 'lucide-react';
 
 interface MediaPreviewModalProps {
   isOpen: boolean;
@@ -15,23 +15,25 @@ interface MediaPreviewModalProps {
 
 export function MediaPreviewModal({ isOpen, onClose, onSend, file, type }: MediaPreviewModalProps) {
   const [caption, setCaption] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
 
   useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-    setPreviewUrl(null);
-    setCaption('');
-  }, [file]);
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   if (!isOpen || !file) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSend(file, caption);
+    setCaption('');
+    onClose();
+  };
+
+  const handleClose = () => {
+    setCaption('');
     onClose();
   };
 
@@ -44,7 +46,7 @@ export function MediaPreviewModal({ isOpen, onClose, onSend, file, type }: Media
           <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
             Enviar {type === 'image' ? 'Imagem' : type === 'video' ? 'Vídeo' : type === 'audio' ? 'Áudio' : 'Arquivo'}
           </h3>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+          <button onClick={handleClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
             <X size={20} className="text-zinc-500" />
           </button>
         </div>
@@ -107,7 +109,7 @@ export function MediaPreviewModal({ isOpen, onClose, onSend, file, type }: Media
           <div className="flex justify-end gap-2">
             <button 
                 type="button" 
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             >
                 Cancelar

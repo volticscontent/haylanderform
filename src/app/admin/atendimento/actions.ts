@@ -29,14 +29,25 @@ export async function getChats() {
     // Get all registered phone numbers to minimize DB queries
     const registeredMap = new Map();
     try {
-        const { rows: leads } = await pool.query('SELECT id, telefone, nome_completo, situacao FROM leads');
+        const { rows: leads } = await pool.query(`
+          SELECT 
+            l.id, 
+            l.telefone, 
+            l.nome_completo, 
+            lq.situacao,
+            lv.data_reuniao
+          FROM leads l
+          LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
+          LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
+        `);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         leads.forEach((lead: any) => {
             if (lead.telefone) {
                 const leadData = {
                     id: lead.id,
                     name: lead.nome_completo,
-                    status: lead.situacao
+                    status: lead.situacao,
+                    data_reuniao: lead.data_reuniao
                 };
                 
                 const variations = generatePhoneVariations(lead.telefone);
@@ -110,8 +121,74 @@ export async function getChats() {
 export async function getLeadByPhone(phone: string) {
     try {
         const cleanPhone = phone.replace(/\D/g, '');
+        
+        const query = `
+            SELECT 
+                l.id,
+                l.telefone, 
+                l.nome_completo, 
+                l.email,
+                l.data_cadastro,
+                l.atualizado_em,
+                
+                -- leads_empresarial
+                le.razao_social,
+                le.cnpj, 
+                le.cartao_cnpj,
+                le.tipo_negocio,
+                le.faturamento_mensal,
+                le.endereco,
+                le.numero,
+                le.complemento,
+                le.bairro,
+                le.cidade,
+                le.estado,
+                le.cep,
+
+                -- leads_atendimento
+                la.observacoes,
+                la.data_controle_24h,
+                la.envio_disparo,
+                la.data_ultima_consulta,
+                la.atendente_id,
+
+                -- leads_financeiro
+                lf.calculo_parcelamento, 
+                lf.valor_divida_ativa,
+                lf.valor_divida_municipal,
+                lf.valor_divida_estadual,
+                lf.valor_divida_federal,
+                lf.tipo_divida,
+                lf.tem_divida,
+                lf.tempo_divida,
+
+                -- leads_qualificacao
+                lq.situacao,
+                lq.qualificacao,
+                lq.motivo_qualificacao,
+                lq.interesse_ajuda,
+                lq.pos_qualificacao,
+                lq.possui_socio,
+
+                -- leads_vendas
+                lv.servico_negociado,
+                lv.status_atendimento,
+                lv.data_reuniao,
+                lv.procuracao,
+                lv.procuracao_ativa,
+                lv.procuracao_validade
+
+            FROM leads l
+            LEFT JOIN leads_empresarial le ON l.id = le.lead_id
+            LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
+            LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
+            LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
+            LEFT JOIN leads_atendimento la ON l.id = la.lead_id
+            WHERE l.telefone = $1
+        `;
+
         // Try exact match first
-        let result = await pool.query('SELECT * FROM leads WHERE telefone = $1', [cleanPhone]);
+        let result = await pool.query(query, [cleanPhone]);
         
         if (result.rows.length === 0) {
             // Try variations
@@ -119,7 +196,11 @@ export async function getLeadByPhone(phone: string) {
             if (variations.length > 0) {
                 // Build OR clause for variations
                 const placeholders = variations.map((_, i) => `$${i + 1}`).join(', ');
-                result = await pool.query(`SELECT * FROM leads WHERE telefone IN (${placeholders}) LIMIT 1`, variations);
+                
+                // Need to rebuild query for IN clause
+                const variationQuery = query.replace('WHERE l.telefone = $1', `WHERE l.telefone IN (${placeholders}) LIMIT 1`);
+                
+                result = await pool.query(variationQuery, variations);
             }
         }
 

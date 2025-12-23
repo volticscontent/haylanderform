@@ -73,55 +73,173 @@ export async function POST(request: Request) {
 
     if (resolvedUserId) {
       // Update existing user
-      await client.query(`
-        UPDATE public.leads SET
-          nome_completo = $1, cpf = $2, data_nascimento = $3, nome_mae = $4,
-          email = $5, senha_gov = $6,
-          cep = $7, endereco = $8, numero = $9, complemento = $10,
-          bairro = $11, cidade = $12, estado = $13,
-          nome_fantasia = $14, atividade_principal = $15, atividades_secundarias = $16,
-          local_atividade = $17, titulo_eleitor_ou_recibo_ir = $18,
-          atualizado_em = NOW()
-        WHERE id = $19
-      `, [
-        form.nome_completo, form.cpf, form.data_nascimento, form.nome_mae,
-        form.email, form.senha_gov,
-        form.cep, form.endereco, form.numero, form.complemento ?? null,
-        form.bairro, form.cidade, form.estado,
-        form.nome_fantasia, form.atividade_principal, form.atividades_secundarias ?? null,
-        form.local_atividade, form.titulo_eleitor_ou_recibo_ir ?? null,
-        resolvedUserId
-      ])
+      try {
+        await client.query('BEGIN');
+
+        // Update leads (core identity)
+        await client.query(`
+          UPDATE public.leads SET
+            nome_completo = $1, 
+            cpf = $2, 
+            data_nascimento = $3, 
+            nome_mae = $4,
+            email = $5, 
+            senha_gov = $6,
+            atualizado_em = NOW()
+          WHERE id = $7
+        `, [
+          form.nome_completo, 
+          form.cpf, 
+          form.data_nascimento, 
+          form.nome_mae,
+          form.email, 
+          form.senha_gov,
+          resolvedUserId
+        ]);
+
+        // Upsert leads_empresarial (business data)
+        // Store extra MEI fields in dados_serpro JSONB
+        const extraData = {
+          mei_form_data: {
+            atividade_principal: form.atividade_principal,
+            atividades_secundarias: form.atividades_secundarias,
+            local_atividade: form.local_atividade,
+            titulo_eleitor_ou_recibo_ir: form.titulo_eleitor_ou_recibo_ir
+          }
+        };
+
+        // Check if leads_empresarial exists
+        const checkEmp = await client.query('SELECT id, dados_serpro FROM leads_empresarial WHERE lead_id = $1', [resolvedUserId]);
+        
+        if (checkEmp.rows.length > 0) {
+          // Merge with existing dados_serpro if any
+          const currentDados = checkEmp.rows[0].dados_serpro || {};
+          const newDados = { ...currentDados, ...extraData };
+
+          await client.query(`
+            UPDATE leads_empresarial SET
+              nome_fantasia = $1,
+              endereco = $2,
+              numero = $3,
+              complemento = $4,
+              bairro = $5,
+              cidade = $6,
+              estado = $7,
+              cep = $8,
+              dados_serpro = $9,
+              updated_at = NOW()
+            WHERE lead_id = $10
+          `, [
+            form.nome_fantasia,
+            form.endereco,
+            form.numero,
+            form.complemento ?? null,
+            form.bairro,
+            form.cidade,
+            form.estado,
+            form.cep,
+            JSON.stringify(newDados),
+            resolvedUserId
+          ]);
+        } else {
+          await client.query(`
+            INSERT INTO leads_empresarial (
+              lead_id,
+              nome_fantasia,
+              endereco,
+              numero,
+              complemento,
+              bairro,
+              cidade,
+              estado,
+              cep,
+              dados_serpro
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          `, [
+            resolvedUserId,
+            form.nome_fantasia,
+            form.endereco,
+            form.numero,
+            form.complemento ?? null,
+            form.bairro,
+            form.cidade,
+            form.estado,
+            form.cep,
+            JSON.stringify(extraData)
+          ]);
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
     } else {
-      // Insert new user or update if phone exists (but we checked phone earlier and set resolvedUserId if found)
-      // Since resolvedUserId is null here, it means phone was not found. So we insert.
-      const insertRes = await client.query(`
-        INSERT INTO public.leads (
-          nome_completo, cpf, data_nascimento, nome_mae,
-          telefone, email, senha_gov,
-          cep, endereco, numero, complemento,
-          bairro, cidade, estado,
-          nome_fantasia, atividade_principal, atividades_secundarias,
-          local_atividade, titulo_eleitor_ou_recibo_ir,
-          data_cadastro, atualizado_em
-        ) VALUES (
-          $1, $2, $3, $4,
-          $5, $6, $7,
-          $8, $9, $10, $11,
-          $12, $13, $14,
-          $15, $16, $17,
-          $18, $19,
-          NOW(), NOW()
-        ) RETURNING id
-      `, [
-        form.nome_completo, form.cpf, form.data_nascimento, form.nome_mae,
-        form.telefone, form.email, form.senha_gov,
-        form.cep, form.endereco, form.numero, form.complemento ?? null,
-        form.bairro, form.cidade, form.estado,
-        form.nome_fantasia, form.atividade_principal, form.atividades_secundarias ?? null,
-        form.local_atividade, form.titulo_eleitor_ou_recibo_ir ?? null
-      ])
-      resultId = insertRes.rows[0].id
+      // Insert new user
+      try {
+        await client.query('BEGIN');
+
+        // Insert into leads
+        const insertRes = await client.query(`
+          INSERT INTO public.leads (
+            nome_completo, cpf, data_nascimento, nome_mae,
+            email, senha_gov, telefone, data_cadastro
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+          RETURNING id
+        `, [
+          form.nome_completo, 
+          form.cpf, 
+          form.data_nascimento, 
+          form.nome_mae,
+          form.email, 
+          form.senha_gov, 
+          form.telefone // Use telefone from form if creating new user
+        ]);
+
+        const newUserId = insertRes.rows[0].id;
+        resultId = newUserId;
+
+        // Insert into leads_empresarial
+        const extraData = {
+          mei_form_data: {
+            atividade_principal: form.atividade_principal,
+            atividades_secundarias: form.atividades_secundarias,
+            local_atividade: form.local_atividade,
+            titulo_eleitor_ou_recibo_ir: form.titulo_eleitor_ou_recibo_ir
+          }
+        };
+
+        await client.query(`
+          INSERT INTO leads_empresarial (
+            lead_id,
+            nome_fantasia,
+            endereco,
+            numero,
+            complemento,
+            bairro,
+            cidade,
+            estado,
+            cep,
+            dados_serpro
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `, [
+          newUserId,
+          form.nome_fantasia,
+          form.endereco,
+          form.numero,
+          form.complemento ?? null,
+          form.bairro,
+          form.cidade,
+          form.estado,
+          form.cep,
+          JSON.stringify(extraData)
+        ]);
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
     }
 
     await client.end()

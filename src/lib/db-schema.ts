@@ -4,6 +4,10 @@ export interface LeadsTable {
   telefone: string;
   nome_completo: string | null;
   email: string | null;
+  cpf: string | null;
+  data_nascimento: Date | null;
+  nome_mae: string | null;
+  senha_gov: string | null;
   data_cadastro: Date | null;
   atualizado_em: Date | null;
 }

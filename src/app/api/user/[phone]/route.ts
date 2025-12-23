@@ -66,6 +66,8 @@ export async function PUT(
 
   // Extract fields
   const {
+    nome_completo,
+    telefone,
     email,
     senha_gov,
     cnpj,
@@ -107,11 +109,13 @@ export async function PUT(
     await client.query(`
       UPDATE leads 
       SET 
-        email = COALESCE($2, email),
-        senha_gov = COALESCE($3, senha_gov),
+        nome_completo = COALESCE($2, nome_completo),
+        telefone = COALESCE($3, telefone),
+        email = COALESCE($4, email),
+        senha_gov = COALESCE($5, senha_gov),
         atualizado_em = NOW()
       WHERE id = $1
-    `, [leadId, email, senha_gov]);
+    `, [leadId, nome_completo, telefone, email, senha_gov]);
 
     // 3. Update leads_empresarial
     await client.query(`

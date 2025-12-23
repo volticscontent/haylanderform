@@ -6,12 +6,16 @@ import { disparoApi } from './disparo-api'
 import { listApi } from './list-api'
 import { meeting } from './meeting'
 import { databaseBot } from './database-bot'
+import { diagramaDados } from './diagrama-dados'
+import { cicloVidaLead } from './ciclo-vida-lead'
 
 export const docsContent = {
   intro,
   forms,
   meeting,
   'database-bot': databaseBot,
+  'diagrama-dados': diagramaDados,
+  'ciclo-vida-lead': cicloVidaLead,
   'admin-panel': adminPanel,
   'serpro-api': serproApi,
   'disparo-api': disparoApi,

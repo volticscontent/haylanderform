@@ -37,7 +37,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
           ...meeting,
           parsedDate
         }
-      } catch (e) {
+      } catch {
         return null
       }
     }).filter((m): m is (Meeting & { parsedDate: Date }) => m !== null)
@@ -129,7 +129,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
 
           {/* Days Grid */}
           <div className="flex-1 grid grid-cols-7 auto-rows-fr bg-zinc-200 dark:bg-zinc-800 gap-px">
-            {days.map((day, dayIdx) => {
+            {days.map((day) => {
               const dayStr = format(day, 'yyyy-MM-dd')
               const meetingCount = meetingsByDay[dayStr] || 0
               const isSelected = isSameDay(day, selectedDate)

@@ -133,6 +133,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     // Prepare payload
     // We map form state to DB columns expected by API
     const payload: UpdatePayload = {
+        nome_completo: formData.nome_completo,
         email: formData.email,
         senha_gov: formData.senha_gov,
         cnpj: formData.cnpj,
@@ -168,7 +169,8 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
     }
 
     try {
-        const res = await fetch(`/api/user/${phone}`, {
+        const targetPhone = phone || formData.telefone;
+        const res = await fetch(`/api/user/${targetPhone}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -267,14 +269,36 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Nome Completo</label>
                 <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                    <input type="text" value={formData.nome_completo} readOnly className="w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-500 cursor-not-allowed" />
+                    <input 
+                        type="text" 
+                        name="nome_completo"
+                        value={formData.nome_completo} 
+                        onChange={handleChange}
+                        readOnly={!!phone} 
+                        className={cn(
+                            "w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-500",
+                            !phone && "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white cursor-text",
+                            phone && "cursor-not-allowed"
+                        )} 
+                    />
                 </div>
             </div>
             <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Telefone</label>
                 <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                    <input type="text" value={formData.telefone} readOnly className="w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-500 cursor-not-allowed" />
+                    <input 
+                        type="text" 
+                        name="telefone"
+                        value={formData.telefone} 
+                        onChange={handleChange}
+                        readOnly={!!phone} 
+                        className={cn(
+                            "w-full pl-10 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-500",
+                            !phone && "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white cursor-text",
+                            phone && "cursor-not-allowed"
+                        )} 
+                    />
                 </div>
             </div>
         </div>

@@ -22,7 +22,7 @@ export const forms = {
           participant U as Usuário
           participant F as "LeadForm (Frontend)"
           participant API as "API (/api/user/[phone])"
-          participant DB as "Tabela (haylander)"
+          participant DB as "Banco de Dados (Modular)"
           participant W as WhatsApp
 
           U->>F: Acessa formulário (com/sem telefone)
@@ -43,7 +43,7 @@ export const forms = {
           F->>API: PUT /api/user/[phone]
           Note right of F: Payload inclui: <br/>- Dados Pessoais<br/>- Dados Dívida<br/>- Status 'a1'<br/>- Agendamento +24h
 
-          API->>DB: UPDATE haylander
+          API->>DB: UPDATE leads + satélites
           DB-->>API: Confirmação
           API-->>F: Sucesso
 
@@ -51,12 +51,12 @@ export const forms = {
           Note right of W: Inicia conversa com Atendente/Bot
       \`\`\`
 
-      1. **Carregamento**: Se um telefone é fornecido na URL, o sistema busca os dados existentes na tabela \`haylander\` via API (\`GET /api/user/[phone]\`) para pré-preencher o formulário.
+      1. **Carregamento**: Se um telefone é fornecido na URL, o sistema busca os dados existentes nas tabelas modulares (\`leads\` e satélites) via API (\`GET /api/user/[phone]\`) para pré-preencher o formulário.
       2. **Preenchimento**: O usuário informa ou confirma dados como Email, Senha Gov, CNPJ, Tipo de Negócio, Faturamento e detalha suas dívidas (Municipal, Estadual, Federal, Ativa).
       3. **Cálculo Dinâmico**: O formulário calcula automaticamente opções de parcelamento baseadas no valor total das dívidas informadas.
       4. **Submissão**: Os dados são enviados via \`PUT\` para \`/api/user/[phone]\`.
       5. **Pós-Processamento**:
-      - O status de envio (\`envio_disparo\`) é atualizado para 'a1'.
+      - O status de envio (\`envio_disparo\`) é atualizado para 'a1' na tabela \`leads_atendimento\`.
       - A data de controle (\`data_controle_24h\`) é agendada para 24h no futuro.
       - O usuário é redirecionado para o WhatsApp para continuar o atendimento.
 
@@ -79,7 +79,7 @@ export const forms = {
           E -- Não --> C
           E -- Sim --> F["POST /api/mei/submit"]
           
-          F --> G[("Tabela haylander")]
+          F --> G[("Tabelas Modulares")]
           G --> H["Atualizar ou Criar Registro"]
           
           H --> I["Gerar Resumo Formatado"]
@@ -89,7 +89,7 @@ export const forms = {
 
       1. **Validação**: O formulário possui validações de campos obrigatórios, formato de CPF, E-mail e CEP.
       2. **Submissão**: Os dados são enviados via \`POST\` para \`/api/mei/submit\`.
-      3. **Armazenamento**: Os dados são salvos na tabela principal (\`haylander\`), unificando as informações do cliente.
+      3. **Armazenamento**: Os dados são normalizados e salvos nas tabelas satélites (\`leads_empresarial\`, etc).
       4. **Integração**: Após o envio, o sistema gera um resumo dos dados formatado e redireciona o usuário para o WhatsApp, facilitando a conferência pelo atendente.
 
       ## 3. Formulário de Cadastro e-CAC (ECACForm)
@@ -130,14 +130,14 @@ export const forms = {
       ## Resumo Técnico - LeadForm
       - **Renderização**: Client Component (\`use client\`)
       - **Método HTTP**: \`PUT\` (Atualização)
-      - **Tabela Banco**: \`haylander\`
+      - **Tabela Banco**: \`leads\` + Satélites
       - **Automação**: Atualiza agendamento (24h)
       - **Validação**: Condicional (Dívidas)
 
       ## Resumo Técnico - MEIForm
       - **Renderização**: Client Component (\`use client\`)
       - **Método HTTP**: \`POST\` (Criação)
-      - **Tabela Banco**: \`haylander\`
+      - **Tabela Banco**: \`leads\` + Satélites
       - **Automação**: Gera resumo p/ WhatsApp
       - **Validação**: Estrutural (CPF, CEP, Campos)
     `

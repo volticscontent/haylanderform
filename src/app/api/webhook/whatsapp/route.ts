@@ -11,6 +11,14 @@ const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL;
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
 const EVOLUTION_INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME;
 
+export async function GET() {
+  return NextResponse.json({ 
+    status: 'online', 
+    message: 'Webhook is active and ready to receive POST requests',
+    timestamp: new Date().toISOString()
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -58,6 +66,19 @@ export async function POST(req: Request) {
     if (fromMe) {
       console.log('[Webhook] Ignorando mensagem enviada por mim.');
       return NextResponse.json({ status: 'ignored_from_me' });
+    }
+
+    const restrictForTest =
+      process.env.WHATSAPP_TEST_RESTRICT_REMOTE_JID === 'true' ||
+      (process.env.EVOLUTION_INSTANCE_NAME || '').toLowerCase().includes('teste');
+
+    if (restrictForTest && sender) {
+      const allowedSuffix = process.env.WHATSAPP_TEST_ALLOWED_JID_SUFFIX || '3182354127';
+      const senderDigits = sender.replace('@s.whatsapp.net', '').replace(/\D/g, '');
+      if (!senderDigits.endsWith(allowedSuffix)) {
+        console.log(`[Webhook] Ignorando remetente não permitido em modo teste: ${sender}`);
+        return NextResponse.json({ status: 'ignored_not_allowed' });
+      }
     }
 
     if (!message || !sender) {

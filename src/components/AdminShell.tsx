@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import { LogOut, Menu } from 'lucide-react'
 import { usePathname } from 'next/navigation'

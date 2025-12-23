@@ -1,6 +1,6 @@
 'use client'
 
-import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Info, Calendar, Clock, AlertCircle, GripVertical } from 'lucide-react'
+import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle } from 'lucide-react'
 import React, { useState, useEffect, useRef } from 'react'
 
 
@@ -220,154 +220,181 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
 function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
     return (
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          
-          {/* 1. Dados de Contato */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <User className="w-4 h-4" /> Dados Pessoais e Contato
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
-              <InfoItem icon={<Phone className="w-3 h-3 opacity-50" />} label="Telefone" value={lead.telefone} />
-              <InfoItem icon={<Mail className="w-3 h-3 opacity-50" />} label="Email" value={lead.email} />
-              <div className="md:col-span-2">
-                 <InfoItem label="Razão Social" value={lead.razao_social} />
-              </div>
-            </div>
-          </section>
+            
+            {/* 1. Informações de Qualificação */}
+            <section>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500" /> Informações de Qualificação
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InfoItem label="Qualificação" value={lead.qualificacao} />
+                    <InfoItem label="Interesse em Ajuda" value={lead.interesse_ajuda} />
+                    
+                    <div className="md:col-span-2">
+                         <InfoItem label="Motivo da Qualificação" value={lead.motivo_qualificacao} italic />
+                    </div>
 
-          {/* 2. Dados da Empresa */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Building className="w-4 h-4" /> Dados da Empresa
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Tipo de Negócio" value={lead.tipo_negocio} />
-              <InfoItem label="Faturamento Mensal" value={lead.faturamento_mensal} />
-              <InfoItem label="Possui Sócio?" value={lead.possui_socio ? 'Sim' : 'Não'} />
-              <InfoItem label="Cartão CNPJ" value={lead.cartao_cnpj} truncate />
-            </div>
-          </section>
+                    <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <BadgeItem label="Protestos" value={lead.tem_protestos} />
+                        <BadgeItem label="Exec. Fiscal" value={lead.tem_execucao_fiscal} />
+                        <BadgeItem label="Dív. Ativa" value={lead.tem_divida_ativa} />
+                        <BadgeItem label="Parcelamento" value={lead.tem_parcelamento} />
+                    </div>
 
-          {/* 3. Qualificação */}
-          <section>
-             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-               <CheckCircle className="w-4 h-4" /> Qualificação
-             </h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InfoItem label="Status (Qualificação)" value={lead.qualificacao} />
-                <div className="space-y-1">
-                  <label className="text-xs text-zinc-500 select-none">Interesse em Ajuda?</label>
-                  <p 
-                    draggable={!!lead.interesse_ajuda}
-                    onDragStart={(e) => {
-                        e.dataTransfer.setData('text/plain', lead.interesse_ajuda || '');
-                        e.dataTransfer.effectAllowed = 'copy';
-                    }}
-                    className={`font-medium ${lead.interesse_ajuda === 'Sim' ? 'text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-zinc-200'} ${lead.interesse_ajuda ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 transition-colors inline-block' : ''}`}
-                  >
-                    {lead.interesse_ajuda || '-'}
-                  </p>
+                    <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <DollarSign className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            <span className="text-sm font-semibold text-red-900 dark:text-red-200">Dados Financeiros</span>
+                        </div>
+                        <InfoItem label="Tipo de Dívida" value={lead.tipo_divida} className="text-red-600 dark:text-red-400" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <InfoItem label="Dívida Ativa" value={lead.valor_divida_ativa} isMono isCurrency />
+                            <InfoItem label="Dívida Federal" value={lead.valor_divida_federal} isMono isCurrency />
+                            <InfoItem label="Dívida Estadual" value={lead.valor_divida_estadual} isMono isCurrency />
+                            <InfoItem label="Dívida Municipal" value={lead.valor_divida_municipal} isMono isCurrency />
+                        </div>
+                    </div>
+
+                     <div className="md:col-span-2 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                         <div className="flex items-center gap-2 mb-2">
+                            <FileText className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                            <span className="text-sm font-semibold text-yellow-900 dark:text-yellow-200">Cálculo de Parcelamento</span>
+                        </div>
+                        <p 
+                            draggable={!!lead.calculo_parcelamento}
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', lead.calculo_parcelamento || '');
+                                e.dataTransfer.effectAllowed = 'copy';
+                            }}
+                            className={`text-zinc-900 dark:text-zinc-200 text-sm whitespace-pre-wrap font-mono leading-relaxed ${lead.calculo_parcelamento ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors' : ''}`}
+                        >
+                            {lead.calculo_parcelamento || 'Nenhum cálculo disponível.'}
+                        </p>
+                    </div>
                 </div>
-                <div className="md:col-span-2">
-                  <InfoItem label="Motivo da Qualificação" value={lead.motivo_qualificacao} italic />
+            </section>
+
+            {/* 2. Informações do Cliente */}
+            <section>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <User className="w-4 h-4 text-blue-500" /> Informações do Cliente
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                     <InfoItem icon={<User className="w-3 h-3 opacity-50" />} label="Nome Completo" value={lead.nome_completo} />
+                     <InfoItem label="Razão Social" value={lead.razao_social} />
+                     <InfoItem label="CNPJ" value={lead.cnpj} isMono />
+                     <InfoItem icon={<Phone className="w-3 h-3 opacity-50" />} label="Telefone" value={lead.telefone} />
+                     <InfoItem icon={<Mail className="w-3 h-3 opacity-50" />} label="Email" value={lead.email} />
+                     <InfoItem label="Tipo de Negócio" value={lead.tipo_negocio} />
+                     <InfoItem label="Faturamento Mensal" value={lead.faturamento_mensal} isCurrency />
+                     <InfoItem label="Porte da Empresa" value={lead.porte_empresa} />
+                     <InfoItem label="Sócios" value={lead.possui_socio ? 'Sim' : 'Não'} />
+                     <InfoItem label="Idade Sócios" value={lead.idades_socios} />
                 </div>
-             </div>
-          </section>
+            </section>
 
-          {/* 4. Dados Financeiros e Dívidas */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Dados Financeiros
-            </h3>
-            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 space-y-4">
-               <InfoItem label="Tipo de Dívida" value={lead.tipo_divida} className="text-red-600 dark:text-red-400" />
-               <div className="grid grid-cols-2 gap-4">
-                 <InfoItem label="Dívida Ativa" value={lead.valor_divida_ativa} isMono />
-                 <InfoItem label="Dívida Federal" value={lead.valor_divida_federal} isMono />
-                 <InfoItem label="Dívida Estadual" value={lead.valor_divida_estadual} isMono />
-                 <InfoItem label="Dívida Municipal" value={lead.valor_divida_municipal} isMono />
-               </div>
-            </div>
-          </section>
+            {/* 3. Informação do Comercial */}
+            <section>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <Building className="w-4 h-4 text-purple-500" /> Informação do Comercial
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InfoItem label="Situação" value={lead.situacao} />
+                    <InfoItem label="Serviço Escolhido" value={lead.servico_escolhido} />
+                    <InfoItem label="Serviço Negociado" value={lead.servico_negociado} />
+                    
+                    <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                        <BadgeItem label="Reunião Agendada" value={lead.reuniao_agendada} />
+                        <BadgeItem label="Vendido" value={lead.vendido} />
+                    </div>
 
-          {/* 5. Cálculo Parcelamento (Destaque) */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Cálculo Parcelamento da Dívida
-            </h3>
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-              <p 
-                draggable={!!lead.calculo_parcelamento}
-                onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', lead.calculo_parcelamento || '');
-                    e.dataTransfer.effectAllowed = 'copy';
-                }}
-                className={`text-zinc-900 dark:text-zinc-200 text-sm whitespace-pre-wrap font-mono leading-relaxed ${lead.calculo_parcelamento ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors' : ''}`}
-              >
-                {lead.calculo_parcelamento || 'Nenhum cálculo disponível.'}
-              </p>
-            </div>
-          </section>
+                    <InfoItem icon={<Calendar className="w-3 h-3" />} label="Data Reunião" value={lead.data_reuniao} />
+                    
+                     <div className="space-y-1 md:col-span-2">
+                        <label className="text-xs text-zinc-500 select-none">Status de Envio (Disparo)</label>
+                        <span 
+                            draggable={!!lead.envio_disparo}
+                            onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', lead.envio_disparo || '');
+                                e.dataTransfer.effectAllowed = 'copy';
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            ['a1', 'a2', 'a3'].includes(lead.envio_disparo || '')
+                            ? 'bg-blue-50 text-blue-700 ml-3 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' 
+                            : (lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido')
+                            ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                            : lead.envio_disparo === 'error'
+                            ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
+                        } ${lead.envio_disparo ? 'cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity' : ''}`}>
+                            {['a1', 'a2', 'a3'].includes(lead.envio_disparo || '') && <Clock className="w-3 h-3" />}
+                            {(lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
+                            {(!lead.envio_disparo || lead.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
+                            {lead.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
+                            {lead.envio_disparo || 'Pendente'}
+                        </span>
+                    </div>
 
-          {/* 6. Informações do Sistema */}
-          <section>
-             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-               <Info className="w-4 h-4" /> Informações do Sistema
-             </h3>
-             <div className="grid grid-cols-2 gap-6">
-                <InfoItem icon={<Calendar className="w-3 h-3" />} label="Data de Cadastro" value={lead.data_cadastro ? new Date(lead.data_cadastro).toLocaleString('pt-BR') : '-'} />
-                <InfoItem icon={<Clock className="w-3 h-3" />} label="Última Atualização" value={lead.atualizado_em ? new Date(lead.atualizado_em).toLocaleString('pt-BR') : '-'} />
-                <InfoItem icon={<Clock className="w-3 h-3" />} label="Controle 24h" value={lead.data_controle_24h ? new Date(lead.data_controle_24h).toLocaleString('pt-BR') : '-'} />
-                <InfoItem icon={<Clock className="w-3 h-3" />} label="Última Consulta" value={lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toLocaleString('pt-BR') : '-'} />
-                
-                <InfoItem label="Procuração" value={lead.procuracao ? 'Sim' : 'Não'} />
-                
-                <div className="space-y-1 md:col-span-2">
-                   <label className="text-xs text-zinc-500 select-none">Status de Envio (Disparo)</label>
-                   <span 
-                     draggable={!!lead.envio_disparo}
-                     onDragStart={(e) => {
-                         e.dataTransfer.setData('text/plain', lead.envio_disparo || '');
-                         e.dataTransfer.effectAllowed = 'copy';
-                     }}
-                     className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                     ['a1', 'a2', 'a3'].includes(lead.envio_disparo || '')
-                       ? 'bg-blue-50 text-blue-700 ml-3 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' 
-                       : (lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido')
-                       ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                       : lead.envio_disparo === 'error'
-                       ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                       : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-                   } ${lead.envio_disparo ? 'cursor-grab active:cursor-grabbing hover:opacity-80 transition-opacity' : ''}`}>
-                     {['a1', 'a2', 'a3'].includes(lead.envio_disparo || '') && <Clock className="w-3 h-3" />}
-                     {(lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
-                     {(!lead.envio_disparo || lead.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
-                     {lead.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
-                     {lead.envio_disparo || 'Pendente'}
-                   </span>
+                    {lead.observacoes && (
+                        <div className="space-y-1 md:col-span-2">
+                            <label className="text-xs text-zinc-500 select-none">Observações Internas</label>
+                            <p 
+                                draggable={!!lead.observacoes}
+                                onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/plain', lead.observacoes || '');
+                                    e.dataTransfer.effectAllowed = 'copy';
+                                }}
+                                className="text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg cursor-grab active:cursor-grabbing hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                            >
+                                {lead.observacoes}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="md:col-span-2 border-t border-zinc-200 dark:border-zinc-800 pt-4 mt-2">
+                         <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Dados do Sistema</h4>
+                         <div className="grid grid-cols-2 gap-4">
+                            <InfoItem icon={<Calendar className="w-3 h-3" />} label="Cadastro" value={lead.data_cadastro ? new Date(lead.data_cadastro).toLocaleString('pt-BR') : '-'} />
+                            <InfoItem icon={<Clock className="w-3 h-3" />} label="Atualização" value={lead.atualizado_em ? new Date(lead.atualizado_em).toLocaleString('pt-BR') : '-'} />
+                            <InfoItem icon={<Clock className="w-3 h-3" />} label="Controle 24h" value={lead.data_controle_24h ? new Date(lead.data_controle_24h).toLocaleString('pt-BR') : '-'} />
+                            <InfoItem icon={<Clock className="w-3 h-3" />} label="Última Consulta" value={lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toLocaleString('pt-BR') : '-'} />
+                         </div>
+                    </div>
                 </div>
-                {lead.observacoes && (
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs text-zinc-500 select-none">Observações Internas</label>
-                    <p 
-                        draggable={!!lead.observacoes}
-                        onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', lead.observacoes || '');
-                            e.dataTransfer.effectAllowed = 'copy';
-                        }}
-                        className="text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg cursor-grab active:cursor-grabbing hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-                    >
-                      {lead.observacoes}
-                    </p>
-                  </div>
-                )}
-             </div>
-          </section>
+            </section>
         </div>
     )
 }
 
-function InfoItem({ icon, label, value, truncate, isMono, italic, className, isCurrency }: any) {
+function BadgeItem({ label, value }: { label: string, value: string | boolean | null }) {
+    const isYes = value === 'Sim' || value === true || (typeof value === 'string' && value.toLowerCase() === 'sim');
+    
+    // Determine status for styling
+    let statusColor = 'text-zinc-400 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900';
+    if (isYes) statusColor = 'text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10';
+    
+    return (
+        <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${statusColor} text-center transition-all`}>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-medium">{label}</span>
+            <span className={`text-xs font-bold`}>
+                {isYes ? 'SIM' : 'NÃO'}
+            </span>
+        </div>
+    )
+}
+
+interface InfoItemProps {
+    icon?: React.ReactNode;
+    label: string;
+    value?: string | number | boolean | null;
+    truncate?: boolean;
+    isMono?: boolean;
+    italic?: boolean;
+    className?: string;
+    isCurrency?: boolean;
+}
+
+function InfoItem({ icon, label, value, truncate, isMono, italic, className, isCurrency }: InfoItemProps) {
     const handleDragStart = (e: React.DragEvent) => {
         if (!value) {
             e.preventDefault()
@@ -395,30 +422,6 @@ function InfoItem({ icon, label, value, truncate, isMono, italic, className, isC
                 <span className={truncate ? 'truncate' : ''} title={truncate ? String(value) : undefined}>
                     {isCurrency && value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : (value || '-')}
                 </span>
-            </div>
-        </div>
-    )
-}
-
-function StatusBadge({ label, value }: any) {
-    const handleDragStart = (e: React.DragEvent) => {
-        if (!value) {
-            e.preventDefault()
-            return
-        }
-        e.dataTransfer.setData('text/plain', String(value))
-        e.dataTransfer.effectAllowed = 'copy'
-    }
-
-    return (
-        <div className="space-y-1">
-            <label className="text-xs text-zinc-500 select-none">{label}</label>
-            <div 
-                draggable={!!value}
-                onDragStart={handleDragStart}
-                className={`text-zinc-900 dark:text-zinc-200 font-medium ${value ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 inline-block' : ''}`}
-            >
-                {value || '-'}
             </div>
         </div>
     )

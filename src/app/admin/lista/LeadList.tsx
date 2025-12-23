@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, Download, MoreVertical, FileText, Phone, CheckCircle, AlertCircle, Clock, Trash2, Edit, Eye, X, User, Calendar, Mail, DollarSign, Building, Info, Send, ChevronLeft, ChevronRight } from 'lucide-react'
-import { deleteLead } from './actions'
+import { Search, Download, MoreVertical, FileText, Phone, CheckCircle, AlertCircle, Clock, Trash2, Edit, Eye, X, User, Calendar, DollarSign, Building, Info, Send, ChevronLeft, ChevronRight } from 'lucide-react'
+import { deleteLead, updateLeadFields } from './actions'
 import { phoneMatches } from '@/lib/phone-utils'
 
 const DATE_COLUMNS = ['data_controle_24h','data_cadastro','atualizado_em','data_reuniao']
@@ -37,28 +37,135 @@ type LeadRecord = {
   possui_socio: boolean | null
   pos_qualificacao: boolean | null
   servico_negociado: string | null
+  status_atendimento: string | null
   data_ultima_consulta: string | null
   procuracao: boolean | null
-  idades_socios: string | null
-  porte_empresa: string | null
-  score_serasa: string | null
-  tem_cartorios: string | null
-  motivo_divida: string | null
-  tem_protestos: string | null
-  tem_divida_ativa: string | null
-  tem_execucao_fiscal: string | null
-  tem_parcelamento: string | null
-  parcelamento_ativo: string | null
-  // Novas colunas do vendedor
-  servico_escolhido: string | null
-  reuniao_agendada: boolean | null
-  vendido: boolean | null
   data_reuniao: string | null
-  confirmacao_qualificacao: boolean | null
 }
 
-function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClose: () => void }) {
-  if (!lead) return null
+function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
+  const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState<LeadRecord | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setFormData(lead)
+    setIsEditing(initialEditMode)
+  }, [lead, initialEditMode])
+
+  if (!lead || !formData) return null
+
+  const handleChange = (field: keyof LeadRecord, value: LeadRecord[keyof LeadRecord]) => {
+    setFormData(prev => prev ? ({ ...prev, [field]: value }) : null)
+  }
+
+  const handleSave = async () => {
+    if (!formData || !lead.telefone) return
+    setSaving(true)
+    try {
+      const updates: Record<string, unknown> = {}
+      let hasChanges = false
+      
+      // Compare fields
+      Object.keys(formData).forEach((key) => {
+        const k = key as keyof LeadRecord
+        // Simple comparison
+        if (formData[k] != lead[k]) {
+          updates[k] = formData[k]
+          hasChanges = true
+        }
+      })
+
+      if (hasChanges) {
+        const res = await updateLeadFields(lead.telefone, updates)
+        if (res.success) {
+          setIsEditing(false)
+          // Update local state in parent
+          if (onUpdate) onUpdate({ ...lead, ...updates } as LeadRecord)
+          router.refresh()
+          alert('Atualizado com sucesso!')
+        } else {
+          alert('Erro ao atualizar: ' + res.message)
+        }
+      } else {
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error(error)
+      alert('Erro ao salvar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const EditableField = ({ 
+    label, 
+    field, 
+    type = 'text', 
+    options = [] 
+  }: { label: string, field: keyof LeadRecord, type?: string, options?: string[] }) => {
+    const value = formData[field]
+    
+    if (!isEditing) {
+      let displayValue = value
+      if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
+      if (!value && value !== 0 && value !== false) displayValue = '-'
+      
+      return (
+        <div className="space-y-1">
+          <label className="text-xs text-zinc-500">{label}</label>
+          <div className="text-zinc-900 dark:text-zinc-200 font-medium break-words text-sm">
+             {displayValue}
+          </div>
+        </div>
+      )
+    }
+
+    if (type === 'select' && options.length > 0) {
+        return (
+            <div className="space-y-1">
+                <label className="text-xs text-zinc-500">{label}</label>
+                <select 
+                    value={String(value || '')}
+                    onChange={(e) => handleChange(field, e.target.value)}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                >
+                    <option value="">Selecione...</option>
+                    {options.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </div>
+        )
+    }
+
+    if (type === 'textarea') {
+        return (
+            <div className="space-y-1 md:col-span-2">
+                <label className="text-xs text-zinc-500">{label}</label>
+                <textarea
+                    value={String(value || '')}
+                    onChange={(e) => handleChange(field, e.target.value)}
+                    rows={4}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                />
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-1">
+            <label className="text-xs text-zinc-500">{label}</label>
+            <input 
+                type={type}
+                value={String(value || '')}
+                onChange={(e) => handleChange(field, type === 'checkbox' ? e.target.checked : e.target.value)}
+                className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+            />
+        </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -88,12 +195,39 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                </div>
              </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+                <button 
+                    onClick={() => setIsEditing(true)}
+                    className="p-2 px-4 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
+                >
+                    <Edit className="w-4 h-4" /> Editar
+                </button>
+            ) : (
+                <>
+                    <button 
+                        onClick={() => setIsEditing(false)}
+                        className="p-2 px-4 rounded-md bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition-colors text-sm font-medium"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="p-2 px-4 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
+                    >
+                        {saving ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                        Salvar
+                    </button>
+                </>
+            )}
+            <button 
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+            >
+                <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -105,23 +239,10 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
               <User className="w-4 h-4" /> Dados Pessoais e Contato
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Telefone</label>
-                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 font-mono">
-                  <Phone className="w-3 h-3 opacity-50" /> {lead.telefone}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Email</label>
-                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200">
-                  <Mail className="w-3 h-3 opacity-50" /> {lead.email || '-'}
-                </div>
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-xs text-zinc-500">Razão Social</label>
-                <div className="text-zinc-900 dark:text-zinc-200 font-medium">
-                   {lead.razao_social || '-'}
-                </div>
+              <EditableField label="Telefone" field="telefone" />
+              <EditableField label="Email" field="email" />
+              <div className="md:col-span-2">
+                <EditableField label="Razão Social" field="razao_social" />
               </div>
             </div>
           </section>
@@ -132,24 +253,24 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
               <Building className="w-4 h-4" /> Dados da Empresa
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Tipo de Negócio</label>
-                <p className="text-zinc-900 dark:text-zinc-200">{lead.tipo_negocio || '-'}</p>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Faturamento Mensal</label>
-                <p className="text-zinc-900 dark:text-zinc-200">{lead.faturamento_mensal || '-'}</p>
-              </div>
+              <EditableField label="Tipo de Negócio" field="tipo_negocio" />
+              <EditableField label="Faturamento Mensal" field="faturamento_mensal" />
               <div className="space-y-1">
                 <label className="text-xs text-zinc-500">Possui Sócio?</label>
-                <p className="text-zinc-900 dark:text-zinc-200">{lead.possui_socio ? 'Sim' : 'Não'}</p>
+                {isEditing ? (
+                    <select 
+                        value={formData.possui_socio ? 'true' : 'false'}
+                        onChange={(e) => handleChange('possui_socio', e.target.value === 'true')}
+                        className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                    >
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                    </select>
+                ) : (
+                    <p className="text-zinc-900 dark:text-zinc-200">{lead.possui_socio ? 'Sim' : 'Não'}</p>
+                )}
               </div>
-              <div className="space-y-1">
-                 <label className="text-xs text-zinc-500">Cartão CNPJ</label>
-                 <p className="text-zinc-900 dark:text-zinc-200 truncate" title={lead.cartao_cnpj || ''}>
-                   {lead.cartao_cnpj || '-'}
-                 </p>
-              </div>
+              <EditableField label="Cartão CNPJ" field="cartao_cnpj" />
             </div>
           </section>
 
@@ -159,19 +280,24 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                <CheckCircle className="w-4 h-4" /> Qualificação
              </h3>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1">
-                  <label className="text-xs text-zinc-500">Status (Qualificação)</label>
-                  <p className="text-zinc-900 dark:text-zinc-200 font-medium">{lead.qualificacao || '-'}</p>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-zinc-500">Interesse em Ajuda?</label>
-                  <p className={`font-medium ${lead.interesse_ajuda === 'Sim' ? 'text-green-600 dark:text-green-400' : 'text-zinc-900 dark:text-zinc-200'}`}>
-                    {lead.interesse_ajuda || '-'}
-                  </p>
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-xs text-zinc-500">Motivo da Qualificação</label>
-                  <p className="text-zinc-900 dark:text-zinc-200 italic">{lead.motivo_qualificacao || '-'}</p>
+                <EditableField 
+                    label="Status (Qualificação)" 
+                    field="qualificacao" 
+                    type="select" 
+                    options={['MQL', 'ICP', 'SQL']} 
+                />
+                <EditableField 
+                    label="Situação" 
+                    field="situacao" 
+                    type="select" 
+                    options={['nao_respondido', 'desqualificado', 'qualificado', 'cliente']} 
+                />
+                <EditableField 
+                    label="Interesse em Ajuda?" 
+                    field="interesse_ajuda" 
+                />
+                <div className="md:col-span-2">
+                    <EditableField label="Motivo da Qualificação" field="motivo_qualificacao" />
                 </div>
              </div>
           </section>
@@ -182,27 +308,12 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
               <DollarSign className="w-4 h-4" /> Dados Financeiros
             </h3>
             <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 space-y-4">
-               <div className="space-y-1">
-                 <label className="text-xs text-red-600 dark:text-red-400 font-medium">Tipo de Dívida</label>
-                 <p className="text-zinc-900 dark:text-zinc-200">{lead.tipo_divida || '-'}</p>
-               </div>
+               <EditableField label="Tipo de Dívida" field="tipo_divida" />
                <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1">
-                   <label className="text-xs text-zinc-500">Dívida Ativa</label>
-                   <p className="font-mono text-zinc-900 dark:text-zinc-200">{lead.valor_divida_ativa || '-'}</p>
-                 </div>
-                 <div className="space-y-1">
-                   <label className="text-xs text-zinc-500">Dívida Federal</label>
-                   <p className="font-mono text-zinc-900 dark:text-zinc-200">{lead.valor_divida_federal || '-'}</p>
-                 </div>
-                 <div className="space-y-1">
-                   <label className="text-xs text-zinc-500">Dívida Estadual</label>
-                   <p className="font-mono text-zinc-900 dark:text-zinc-200">{lead.valor_divida_estadual || '-'}</p>
-                 </div>
-                 <div className="space-y-1">
-                   <label className="text-xs text-zinc-500">Dívida Municipal</label>
-                   <p className="font-mono text-zinc-900 dark:text-zinc-200">{lead.valor_divida_municipal || '-'}</p>
-                 </div>
+                 <EditableField label="Dívida Ativa" field="valor_divida_ativa" />
+                 <EditableField label="Dívida Federal" field="valor_divida_federal" />
+                 <EditableField label="Dívida Estadual" field="valor_divida_estadual" />
+                 <EditableField label="Dívida Municipal" field="valor_divida_municipal" />
                </div>
             </div>
           </section>
@@ -213,10 +324,20 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
               <FileText className="w-4 h-4" /> Cálculo Parcelamento da Dívida
             </h3>
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-              <p className="text-zinc-900 dark:text-zinc-200 text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                {lead.calculo_parcelamento || 'Nenhum cálculo disponível.'}
-              </p>
+               <EditableField label="Cálculo" field="calculo_parcelamento" type="textarea" />
             </div>
+          </section>
+
+          {/* 7. Vendas e Agendamento */}
+          <section>
+             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+               <Calendar className="w-4 h-4" /> Vendas e Agendamento
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <EditableField label="Data Reunião" field="data_reuniao" type="datetime-local" />
+                <EditableField label="Serviço Negociado" field="servico_negociado" />
+                <EditableField label="Status Atendimento" field="status_atendimento" />
+             </div>
           </section>
 
           {/* 6. Informações do Sistema */}
@@ -239,50 +360,10 @@ function LeadDetailsSidebar({ lead, onClose }: { lead: LeadRecord | null, onClos
                     {lead.atualizado_em ? new Date(lead.atualizado_em).toLocaleString('pt-BR') : '-'}
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-zinc-500">Controle 24h</label>
-                  <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm">
-                    <Clock className="w-3 h-3" />
-                    {lead.data_controle_24h ? new Date(lead.data_controle_24h).toLocaleString('pt-BR') : '-'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-zinc-500">Última Consulta</label>
-                  <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm">
-                    <Clock className="w-3 h-3" />
-                    {lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toLocaleString('pt-BR') : '-'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                   <label className="text-xs text-zinc-500">Procuração</label>
-                   <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
-                </div>
+                
                 <div className="space-y-1 md:col-span-2">
-                   <label className="text-xs text-zinc-500">Status de Envio (Disparo)</label>
-                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                     ['a1', 'a2', 'a3'].includes(lead.envio_disparo || '')
-                       ? 'bg-blue-50 text-blue-700 ml-3 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' 
-                       : (lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido')
-                       ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                       : lead.envio_disparo === 'error'
-                       ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                       : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-                   }`}>
-                     {['a1', 'a2', 'a3'].includes(lead.envio_disparo || '') && <Clock className="w-3 h-3" />}
-                     {(lead.envio_disparo === 'concluido' || lead.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
-                     {(!lead.envio_disparo || lead.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
-                     {lead.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
-                     {lead.envio_disparo || 'Pendente'}
-                   </span>
+                    <EditableField label="Observações Internas" field="observacoes" type="textarea" />
                 </div>
-                {lead.observacoes && (
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs text-zinc-500">Observações Internas</label>
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg">
-                      {lead.observacoes}
-                    </p>
-                  </div>
-                )}
              </div>
           </section>
         </div>
@@ -324,6 +405,7 @@ export default function LeadList({
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
+  const [startInEditMode, setStartInEditMode] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkColumn, setBulkColumn] = useState<keyof LeadRecord | ''>('')
@@ -390,21 +472,9 @@ export default function LeadList({
     { id: 'tipo_negocio', label: 'Tipo de negócio' },
     { id: 'faturamento_mensal', label: 'Faturamento mensal' },
     { id: 'possui_socio', label: 'Possui sócio' },
-    { id: 'idades_socios', label: 'Idades dos sócios' },
-    { id: 'porte_empresa', label: 'Porte da empresa' },
-    { id: 'score_serasa', label: 'Score Serasa' },
-    { id: 'tem_cartorios', label: 'Tem cartórios' },
-    { id: 'motivo_divida', label: 'Motivo da dívida' },
-    { id: 'tem_protestos', label: 'Tem protestos' },
-    { id: 'tem_divida_ativa', label: 'Tem dívida ativa' },
-    { id: 'tem_execucao_fiscal', label: 'Tem execução fiscal' },
-    { id: 'tem_parcelamento', label: 'Tem parcelamento' },
-    { id: 'parcelamento_ativo', label: 'Parcelamento ativo' },
-    { id: 'servico_escolhido', label: 'Serviço escolhido' },
-    { id: 'reuniao_agendada', label: 'Reunião agendada' },
-    { id: 'vendido', label: 'Vendido' },
+    { id: 'servico_negociado', label: 'Serviço negociado' },
+    { id: 'status_atendimento', label: 'Status atendimento' },
     { id: 'data_reuniao', label: 'Data da reunião' },
-    { id: 'confirmacao_qualificacao', label: 'Confirmação qualificação' },
   ]
 
   // Estado de colunas da ficha visíveis
@@ -492,7 +562,14 @@ export default function LeadList({
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col h-[calc(100vh-140px)] relative">
-      {selectedLead && <LeadDetailsSidebar lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+      {selectedLead && (
+         <LeadDetailsSidebar 
+           lead={selectedLead} 
+           onClose={() => setSelectedLead(null)} 
+           onUpdate={(updated) => setSelectedLead(updated)}
+           initialEditMode={startInEditMode}
+         />
+       )}
       
       {/* List Toolbar */}
        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
@@ -1035,6 +1112,7 @@ export default function LeadList({
                           <div className="p-1" role="menu" aria-orientation="vertical">
                             <button
                               onClick={() => {
+                                setStartInEditMode(false)
                                 setSelectedLead(row)
                                 setOpenMenuId(null)
                               }}
@@ -1046,8 +1124,9 @@ export default function LeadList({
                             </button>
                             <button
                               onClick={() => {
+                                setStartInEditMode(true)
+                                setSelectedLead(row)
                                 setOpenMenuId(null)
-                                alert('Funcionalidade de edição em breve')
                               }}
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
                               role="menuitem"
