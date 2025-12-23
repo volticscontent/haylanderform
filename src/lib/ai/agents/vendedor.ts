@@ -6,7 +6,8 @@ import {
   updateUser, 
   searchServices, 
   getUser,
-  contextRetrieve
+  contextRetrieve,
+  interpreter
 } from '../tools/server-tools';
 
 export const VENDEDOR_PROMPT_TEMPLATE = `
@@ -138,12 +139,18 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
     },
     {
       name: 'agendar_reuniao',
-      description: 'Agendar uma reunião com o cliente. Retorna o link.',
+      description: 'Agendar uma reunião com o cliente. Requer data e hora.',
       parameters: {
         type: 'object',
-        properties: {},
+        properties: {
+          data_horario: {
+            type: 'string',
+            description: 'Data e hora da reunião (ex: 25/12/2023 14:00)'
+          }
+        },
+        required: ['data_horario']
       },
-      function: async () => await scheduleMeeting(context.userPhone)
+      function: async (args) => await scheduleMeeting(context.userPhone, args.data_horario as string)
     },
     {
       name: 'chamar_atendente',
@@ -194,7 +201,7 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
         },
         required: ['action', 'text']
       },
-      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as any)
+      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as 'qualificacao' | 'vendas' | 'atendimento')
     }
   ];
 

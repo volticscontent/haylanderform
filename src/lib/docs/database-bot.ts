@@ -91,14 +91,14 @@ export const databaseBot = {
 
     ### Ferramentas e Capacidades
 
-    #### **Memória Compartilhada (`interpreter`)**
+    #### **Memória Compartilhada (interpreter)**
     - **Função**: Permite que os bots salvem e recuperem informações contextuais importantes.
     - **Tecnologia**: Busca vetorial (Vector Search) para encontrar memórias relevantes por similaridade semântica.
     - **Uso**: 
         - Apolo salva: "Cliente tem dívida de 50k e urgência por bloqueio judicial."
         - Vendedor recupera: Ao iniciar, busca contexto e já sabe da urgência.
 
-    #### **Envio de Mídia (`sendCommercialPresentation`)**
+    #### **Envio de Mídia (sendCommercialPresentation)**
     - **Ação**: Envia PDFs e Vídeos nativamente via API (não apenas links de texto).
     - **Integração**: Evolution API.
 
@@ -106,30 +106,30 @@ export const databaseBot = {
 
     O bot opera baseado em triggers específicos integrados ao fluxo do WhatsApp.
 
-    #### **0. Atualização Cadastral** (\`conferencia_de_registro\`)
-    Processo contínuo que injeta dados atualizados do banco no contexto do bot (\`userPrompt\`), permitindo que ele personalize o atendimento (ex: chamando o cliente pelo nome).
+    #### **0. Atualização Cadastral** (conferencia_de_registro)
+    Processo contínuo que injeta dados atualizados do banco no contexto do bot (userPrompt), permitindo que ele personalize o atendimento (ex: chamando o cliente pelo nome).
 
-    #### **1. Menu Principal** (\`enviar_lista_enumerada\`)
-    - **Gatilho**: \`[Trigger_1]\`
+    #### **1. Menu Principal** (enviar_lista_enumerada)
+    - **Gatilho**: [Trigger_1]
     - **Ação**: Apresenta as opções de serviço (1 a 5).
     - **Regra**: Nunca deve enviar perguntas abertas neste estágio.
 
-    #### **2. Envio de Formulário** (\`enviar_formulario\`)
-    - **Gatilho**: \`[Trigger_2]\`
-    - **Ação**: Envia o link único do formulário web (\`haylanderform.vercel.app\`).
+    #### **2. Envio de Formulário** (enviar_formulario)
+    - **Gatilho**: [Trigger_2]
+    - **Ação**: Envia o link único do formulário web (haylanderform.vercel.app).
     - **Motivo**: A coleta de dados sensíveis (CNPJ, Faturamento) é mais segura e estruturada via formulário web do que via chat.
 
-    #### **3. Apresentação Comercial** (\`envio_vd\`)
-    - **Gatilho**: \`[Trigger_3]\`
+    #### **3. Apresentação Comercial** (envio_vd)
+    - **Gatilho**: [Trigger_3]
     - **Ação**: Envia material rico (PDF/Vídeo) explicando os serviços.
 
-    #### **4. Transbordo Humano** (\`chamar_atendente\`)
-    - **Gatilho**: \`[Trigger_4]\`
+    #### **4. Transbordo Humano** (chamar_atendente)
+    - **Gatilho**: [Trigger_4]
     - **Ação**: Marca a conversa como "Pendente de Atendimento" e notifica a equipe.
 
     ### Matriz de Qualificação
 
-    Após o preenchimento do formulário, o Apolo classifica o lead usando a função \`update_User1\`:
+    Após o preenchimento do formulário, o Apolo classifica o lead usando a função update_User1:
 
     | Classificação | Critério | Ação do Bot |
     | :--- | :--- | :--- |

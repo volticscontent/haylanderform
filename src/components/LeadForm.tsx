@@ -14,6 +14,24 @@ interface LeadFormProps {
   observacao?: string;
 }
 
+interface UpdatePayload {
+    nome_completo: string;
+    email: string;
+    senha_gov: string;
+    cnpj: string;
+    tipo_negocio: string;
+    possui_socio: string;
+    faturamento_mensal: string;
+    observacoes: string;
+    interesse_ajuda: string;
+    calculo_parcelamento: string;
+    tipo_divida?: string;
+    valor_divida_municipal?: string | null;
+    valor_divida_estadual?: string | null;
+    valor_divida_federal?: string | null;
+    valor_divida_ativa?: string | null;
+}
+
 export default function LeadForm({ phone, observacao }: LeadFormProps) {
   const [debts, setDebts] = useState<{ id: string; origin: string; value: string }[]>([]);
   const [formData, setFormData] = useState({

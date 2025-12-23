@@ -90,10 +90,10 @@ export async function sendEnumeratedList(): Promise<string> {
 export const updateUser1 = updateUser;
 
 // 2. createUser
-export async function createUser(data: Record<string, any>): Promise<string> {
+export async function createUser(data: Record<string, unknown>): Promise<string> {
   const client = await pool.connect();
   try {
-    const { nome_completo, telefone, email, ...rest } = data;
+    const { nome_completo, telefone, email } = data;
     const res = await client.query(
       `INSERT INTO leads (nome_completo, telefone, email, data_cadastro) VALUES ($1, $2, $3, NOW()) RETURNING id`,
       [nome_completo, telefone, email]
@@ -108,7 +108,7 @@ export async function createUser(data: Record<string, any>): Promise<string> {
 }
 
 // 3. updateUser
-export async function updateUser(data: Record<string, any>): Promise<string> {
+export async function updateUser(data: Record<string, unknown>): Promise<string> {
     const client = await pool.connect();
     try {
         const { telefone, ...fields } = data;
@@ -117,7 +117,7 @@ export async function updateUser(data: Record<string, any>): Promise<string> {
         // Basic fields for leads table
         const leadsFields = ['nome_completo', 'email', 'cpf', 'nome_mae', 'senha_gov', 'situacao', 'observacoes'];
         const updateFields: string[] = [];
-        const values: any[] = [];
+        const values: unknown[] = [];
         let i = 1;
 
         for (const [key, value] of Object.entries(fields)) {
@@ -165,7 +165,7 @@ export async function checkAvailability(dateStr: string): Promise<string> {
 }
 
 // 5. scheduleMeeting
-export async function scheduleMeeting(phone: string, dateStr: string, type: string = 'Reunião de Fechamento'): Promise<string> {
+export async function scheduleMeeting(phone: string, dateStr: string, _type: string = 'Reunião de Fechamento'): Promise<string> {
   const client = await pool.connect();
   try {
     const userRes = await client.query('SELECT id FROM leads WHERE telefone = $1', [phone]);
@@ -245,11 +245,13 @@ export async function contextRetrieve(phone: string, limit: number = 30): Promis
         const jid = toWhatsAppJid(phone);
         const data = await evolutionFindMessages(jid, limit);
         
-        if (!data || !data.messages || !Array.isArray(data.messages.records)) {
+        const records = data?.messages?.records;
+
+        if (!Array.isArray(records)) {
              return "[]";
         }
         
-        const messages = data.messages.records.map((m: any) => {
+        const messages = records.map((m: { key: { fromMe: boolean }; message: unknown }) => {
             const fromMe = m.key.fromMe;
             const text = extractMessageText(m.message);
             if (!text) return null;
@@ -347,7 +349,7 @@ export async function interpreter(
                 created_at TIMESTAMP DEFAULT NOW()
             );
         `);
-    } catch (err) {
+    } catch {
         // Fallback: Create without embedding column if vector extension is missing
         await client.query(`
             CREATE TABLE IF NOT EXISTS interpreter_memories (
@@ -374,7 +376,7 @@ export async function interpreter(
                     `INSERT INTO interpreter_memories (phone, content, category, embedding) VALUES ($1, $2, $3, $4::vector)`,
                     [phone, text, category, vectorStr]
                 );
-             } catch (e) {
+             } catch {
                  // Fallback: Insert without embedding (column missing or other error)
                  await client.query(
                     `INSERT INTO interpreter_memories (phone, content, category) VALUES ($1, $2, $3)`,
@@ -405,7 +407,7 @@ export async function interpreter(
                     LIMIT 5
                 `, [vectorStr, phone]);
                 rows = res.rows;
-            } catch (e) {
+            } catch {
                 // Fallback: Text search (ILIKE)
                 const res = await client.query(`
                     SELECT content, category, created_at

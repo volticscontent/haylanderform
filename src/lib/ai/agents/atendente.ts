@@ -128,7 +128,7 @@ export async function runAtendenteAgent(message: string | any, context: AgentCon
         },
         required: ['action', 'text']
       },
-      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as any)
+      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as 'qualificacao' | 'vendas' | 'atendimento')
     }
   ];
 

@@ -7,7 +7,8 @@ import {
   sendCommercialPresentation,
   updateUser1,
   callAttendant,
-  contextRetrieve
+  contextRetrieve,
+  interpreter
 } from '../tools/server-tools';
 
 export const APOLO_PROMPT_TEMPLATE = `
@@ -231,7 +232,7 @@ export async function runApoloAgent(message: string | any, context: AgentContext
         },
         required: ['action', 'text']
       },
-      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as any)
+      function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as 'qualificacao' | 'vendas' | 'atendimento')
     }
   ];
 

@@ -145,8 +145,8 @@ export default function TestChatPage() {
     setSavingUser(true);
     try {
       const payload = {
-        telefone: phoneNumber,
-        ...userData
+        ...userData,
+        telefone: phoneNumber.toString()
       };
       const result = await updateUserDataAction(payload);
       const parsed = JSON.parse(result);
