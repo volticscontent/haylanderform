@@ -1,1 +1,0 @@
-export { docsContent } from './docs'
