@@ -12,6 +12,17 @@ export interface TableSchema {
   columns: ColumnInfo[];
 }
 
+const ALLOWED_TABLES = [
+  'leads',
+  'leads_empresarial',
+  'leads_qualificacao',
+  'leads_financeiro',
+  'leads_vendas',
+  'leads_atendimento',
+  'interpreter_memories',
+  'disparos'
+]
+
 export async function getDatabaseSchema(): Promise<TableSchema[]> {
   const query = `
     SELECT 
@@ -47,10 +58,12 @@ export async function getDatabaseSchema(): Promise<TableSchema[]> {
       })
     })
     
-    return Object.entries(tables).map(([name, cols]) => ({
-      table_name: name,
-      columns: cols
-    }))
+    return Object.entries(tables)
+      .filter(([name]) => ALLOWED_TABLES.includes(name))
+      .map(([name, cols]) => ({
+        table_name: name,
+        columns: cols
+      }))
     
   } catch (error) {
     console.error('Error fetching database schema:', error)

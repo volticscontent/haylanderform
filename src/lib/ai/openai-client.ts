@@ -36,13 +36,32 @@ export async function runAgent(
     },
   }));
 
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+  const callOpenAI = async (msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[], toolsList?: OpenAI.Chat.Completions.ChatCompletionTool[]) => {
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+          try {
+              return await openai.chat.completions.create({
+                  model,
+                  messages: msgs,
+                  tools: toolsList && toolsList.length > 0 ? toolsList : undefined,
+                  tool_choice: toolsList && toolsList.length > 0 ? 'auto' : undefined,
+              });
+          } catch (error) {
+              attempts++;
+              console.warn(`OpenAI API attempt ${attempts} failed:`, error);
+              if (attempts >= maxAttempts) throw error;
+              await new Promise(res => setTimeout(res, 1000 * attempts)); // Exponential backoff-ish
+          }
+      }
+      throw new Error("Max attempts reached");
+  };
+
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Using a fast model as per workflow (gpt-4o-mini mentioned in workflow)
-      messages,
-      tools: toolsConfig.length > 0 ? toolsConfig : undefined,
-      tool_choice: toolsConfig.length > 0 ? 'auto' : undefined,
-    });
+    const response = await callOpenAI(messages, toolsConfig);
 
     const choice = response.choices[0];
     const message = choice.message;
@@ -54,25 +73,40 @@ export async function runAgent(
       for (const toolCall of message.tool_calls) {
         if (toolCall.type === 'function') {
           const toolName = toolCall.function.name;
-          const toolArgs = JSON.parse(toolCall.function.arguments);
-          
-          const tool = tools.find(t => t.name === toolName);
-          if (tool) {
-            const toolResult = await tool.function(toolArgs);
-            messages.push({
-              role: 'tool',
-              tool_call_id: toolCall.id,
-              content: toolResult,
-            });
+          let toolResult = '';
+
+          try {
+              const toolArgs = JSON.parse(toolCall.function.arguments);
+              const tool = tools.find(t => t.name === toolName);
+              
+              if (tool) {
+                try {
+                    toolResult = await tool.function(toolArgs);
+                } catch (toolExecError) {
+                    console.error(`Error executing tool ${toolName}:`, toolExecError);
+                    toolResult = JSON.stringify({ 
+                        status: "error", 
+                        message: `Erro ao executar ferramenta ${toolName}: ${toolExecError instanceof Error ? toolExecError.message : String(toolExecError)}` 
+                    });
+                }
+              } else {
+                  toolResult = JSON.stringify({ status: "error", message: `Ferramenta ${toolName} não encontrada.` });
+              }
+          } catch (jsonError) {
+              console.error(`Error parsing arguments for tool ${toolName}:`, jsonError);
+              toolResult = JSON.stringify({ status: "error", message: "Erro ao processar argumentos da ferramenta (JSON inválido)." });
           }
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: toolResult,
+          });
         }
       }
 
       // Second call to get final response
-      const secondResponse = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages,
-      });
+      const secondResponse = await callOpenAI(messages);
 
       return secondResponse.choices[0].message.content || '';
     }

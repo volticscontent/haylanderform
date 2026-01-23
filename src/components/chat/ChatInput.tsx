@@ -40,7 +40,10 @@ export function ChatInput({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!disabled) setIsDragging(true);
+    // Only show drag state for text, not files
+    if (!disabled && e.dataTransfer.types.includes('text/plain') && !e.dataTransfer.types.includes('Files')) {
+        setIsDragging(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -135,7 +138,8 @@ export function ChatInput({
   return (
     <div className="p-3 sm:p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
       <div className="flex items-end gap-2 max-w-4xl mx-auto">
-        <input 
+        {/* Media upload disabled for now */}
+        {/* <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange} 
@@ -150,7 +154,7 @@ export function ChatInput({
             title="Anexar arquivo"
         >
             <Paperclip size={22} />
-        </button>
+        </button> */}
 
         <div 
             className={`flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center border transition-colors ${
@@ -158,6 +162,7 @@ export function ChatInput({
             ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50 dark:bg-emerald-900/10' 
             : 'border-transparent focus-within:border-zinc-300 dark:focus-within:border-zinc-700'
             }`}
+            // Drag and drop restored (but filtered in handlers)
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -183,14 +188,16 @@ export function ChatInput({
                 <Send size={22} />
             </button>
         ) : (
-            <button 
+            // Voice recording disabled for now
+            /* <button 
                 onClick={onStartRecording}
                 disabled={disabled}
                 className="p-3 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors mb-0.5"
                 title="Gravar áudio"
             >
                 <Mic size={22} />
-            </button>
+            </button> */
+            <div className="w-[46px]"></div> // Placeholder to keep layout stable if needed, or remove
         )}
       </div>
     </div>

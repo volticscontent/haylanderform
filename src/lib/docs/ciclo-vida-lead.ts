@@ -91,5 +91,21 @@ sequenceDiagram
     - **Quem decide:** Humano (Haylander) ou Integração Pós-Venda.
     - **Critério:** Contrato assinado.
     - **Ação no Banco:** Tabela \`leads_qualificacao\`, coluna \`situacao\` = 'cliente'.
+
+    ---
+
+    ## Infraestrutura de Memória e Contexto
+
+    O sistema utiliza uma arquitetura híbrida para manter o contexto das conversas e garantir a continuidade entre agentes:
+
+    1. **Redis (Hot Storage):**
+       - Armazena o contexto imediato da conversa e histórico recente.
+       - Garante baixa latência nas respostas do agente.
+       - Cache de intenções e estado atual do usuário.
+
+    2. **PostgreSQL + pgvector (Cold/Deep Storage):**
+       - Armazena memórias de longo prazo na tabela \`interpreter_memories\`.
+       - Utiliza busca vetorial (embeddings) para recuperar informações relevantes de conversas passadas.
+       - Fallback robusto caso o Redis esteja indisponível.
 `
 }

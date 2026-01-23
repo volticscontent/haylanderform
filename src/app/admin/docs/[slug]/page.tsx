@@ -4,7 +4,6 @@ import Mermaid from '@/components/Mermaid'
 import CodeWindow from '@/components/CodeWindow'
 import { getDatabaseSchema } from '@/lib/db-introspection'
 import { Database } from 'lucide-react'
-import { databaseBot } from '@/lib/docs/database-bot'
 
 export const dynamic = 'force-dynamic'
 
@@ -175,7 +174,7 @@ export default async function DocPage({
   }
 
   // Special handling for dynamic database documentation
-  if (slug === 'database') {
+  if (slug === 'diagrama-dados') {
     const schema = await getDatabaseSchema()
     
     return (
@@ -187,7 +186,7 @@ export default async function DocPage({
                     <Database className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
                 <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
-                    Documentação do Banco de Dados
+                    Diagrama de Dados
                 </h1>
             </div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400">
@@ -198,7 +197,7 @@ export default async function DocPage({
         {/* Bot e Dados */}
         <section id="bot-dados" className="scroll-mt-20 mb-12">
             <div className="prose dark:prose-invert max-w-none">
-                {renderContent(databaseBot.content)}
+                {renderContent(docsContent['diagrama-dados'].content)}
             </div>
         </section>
 

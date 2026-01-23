@@ -81,7 +81,7 @@ export const disparoApi = {
 
       ## Regras de Negócio
 
-      - **Janela de 24h**: O sistema verifica automaticamente se houve interação recente para evitar classificar a mensagem como SPAM.
+      - **Janela de 24h (Meta Policy)**: O sistema verifica o campo \`data_controle_24h\` na tabela \`leads_atendimento\`. Se a última interação do cliente foi há mais de 24 horas, o disparo é **ignorado** (status: \`skipped\`) para evitar bloqueios por SPAM, conforme políticas da Meta.
       - **Higienização de Números**: Remove caracteres não numéricos e valida o formato E.164 (DDI + DDD + Número) antes do envio.
       - **Rate Limiting**: Disparos são controlados para não exceder os limites da API do WhatsApp Business.
 
