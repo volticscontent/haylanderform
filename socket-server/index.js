@@ -30,7 +30,32 @@ const io = new Server(server, {
 // --- Redis Subscriber (Para mensagens enviadas pelo Backend/Webhook) ---
 // Isso garante que o frontend receba as mensagens que o PRÓPRIO BOT enviou
 // sem depender do round-trip da Evolution API
-const redisSub = new Redis(REDIS_URL || 'redis://localhost:6379');
+const redisSub = new Redis(REDIS_URL || 'redis://localhost:6379', {
+    // Configuração de resiliência para quando o Redis não estiver rodando
+    retryStrategy(times) {
+        // Aumenta o tempo de espera entre tentativas (max 30s) para não spammar logs
+        const delay = Math.min(times * 2000, 30000);
+        return delay;
+    },
+    // Evita crash por maxRetriesPerRequest quando a conexão cai
+    maxRetriesPerRequest: null
+});
+
+// Tratamento de erro para evitar crash da aplicação (Unhandled error event)
+redisSub.on('error', (err) => {
+    if (err.code === 'ECONNREFUSED') {
+        // Log menos alarmante para ambiente local sem Redis
+        // console.warn apenas na primeira tentativa ou periodicamente seria ideal, 
+        // mas aqui evitamos o spam do stack trace completo
+        if (redisSub.status === 'reconnecting') {
+            // Silêncio durante tentativas de reconexão normais
+        } else {
+            console.warn(`⚠️ Redis indisponível (${err.address}:${err.port}). Usando Fallback HTTP.`);
+        }
+    } else {
+        console.error('❌ Erro no Redis:', err.message);
+    }
+});
 
 redisSub.subscribe('chat-updates', (err, count) => {
     if (err) {
