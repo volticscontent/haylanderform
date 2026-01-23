@@ -82,12 +82,25 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
       fetch(`/api/user/${phone}`)
         .then(async (res) => {
             if (!res.ok) {
-                if (res.status === 404) throw new Error("Usuário não encontrado");
+                if (res.status === 404) {
+                    // User not found, treat as new user (return null)
+                    return null;
+                }
                 throw new Error("Erro ao buscar dados");
             }
             return res.json();
         })
         .then((data) => {
+          if (!data) {
+             // Initialize form for new user
+             setFormData((prev) => ({
+                 ...prev,
+                 telefone: phone,
+             }));
+             setStatus("idle");
+             return;
+          }
+
           // Load existing debts
           const loadedDebts = [];
           if (data.valor_divida_municipal) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Municipal', value: data.valor_divida_municipal });

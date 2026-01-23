@@ -4,6 +4,39 @@ import { evolutionFindChats, evolutionFindMessages, evolutionSendTextMessage, ev
 import pool from "@/lib/db";
 import { generatePhoneVariations } from "@/lib/phone-utils";
 
+interface Lead {
+    id: number;
+    telefone: string;
+    nome_completo: string | null;
+    situacao: string | null;
+    data_reuniao: string | null;
+}
+
+interface Chat {
+    id: string;
+    remoteJid?: string;
+    pushName?: string | null;
+    unreadCount?: number;
+    profilePicUrl?: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    lastMessage?: any;
+    conversationTimestamp?: number;
+    [key: string]: unknown;
+}
+
+interface Message {
+    key?: {
+        remoteJid: string;
+        fromMe: boolean;
+        id: string;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    message?: any;
+    base64?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any;
+}
+
 export async function triggerBot(chatId: string, botName: string) {
     try {
         console.log(`Triggering bot ${botName} for chat ${chatId}`);
@@ -25,11 +58,15 @@ export async function triggerBot(chatId: string, botName: string) {
 export async function getChats() {
   try {
     const chats = await evolutionFindChats();
+    const chatsArray = Array.isArray(chats) ? (chats as Chat[]) : [];
     
     // Get all registered phone numbers to minimize DB queries
     const registeredMap = new Map();
+    const matchedLeadIds = new Set<number>();
+    let allLeads: Lead[] = [];
+
     try {
-        const { rows: leads } = await pool.query(`
+        const { rows: leads } = await pool.query<Lead>(`
           SELECT 
             l.id, 
             l.telefone, 
@@ -40,8 +77,9 @@ export async function getChats() {
           LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
           LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
         `);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        leads.forEach((lead: any) => {
+        allLeads = leads;
+
+        leads.forEach((lead) => {
             if (lead.telefone) {
                 const leadData = {
                     id: lead.id,
@@ -60,9 +98,7 @@ export async function getChats() {
     }
     
     // Enrich chats with lastMessage and registration status
-    if (Array.isArray(chats)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const enrichedChats = await Promise.all(chats.map(async (chat: any) => {
+    const enrichedChats = await Promise.all(chatsArray.map(async (chat) => {
         const jid = chat.remoteJid || chat.id;
         const phone = jid ? jid.split('@')[0].replace(/\D/g, '') : '';
         
@@ -81,6 +117,10 @@ export async function getChats() {
                     break;
                 }
             }
+        }
+
+        if (leadInfo) {
+            matchedLeadIds.add(leadInfo.id);
         }
 
         const enrichedChat = { 
@@ -107,11 +147,33 @@ export async function getChats() {
           console.error(`Failed to fetch last message for ${chat.id}`, e);
         }
         return enrichedChat;
-      }));
-      return { success: true, data: enrichedChats };
-    }
+    }));
 
-    return { success: true, data: chats };
+    // Find leads with appointments that were not matched to any chat
+    const virtualChats = allLeads
+        .filter((lead) => lead.data_reuniao && !matchedLeadIds.has(lead.id) && lead.telefone)
+        .map((lead) => {
+            const phone = lead.telefone.replace(/\D/g, '');
+            const jid = `${phone}@s.whatsapp.net`;
+            return {
+                id: jid,
+                remoteJid: jid,
+                name: lead.nome_completo || phone,
+                pushName: lead.nome_completo,
+                profilePicUrl: null,
+                unreadCount: 0,
+                lastMessage: null,
+                conversationTimestamp: Math.floor(new Date(lead.data_reuniao!).getTime() / 1000), // Use meeting time
+                isRegistered: true,
+                leadId: lead.id,
+                leadName: lead.nome_completo,
+                leadStatus: lead.situacao,
+                leadDataReuniao: lead.data_reuniao,
+                isVirtual: true
+            };
+        });
+
+    return { success: true, data: [...enrichedChats, ...virtualChats] };
   } catch (error) {
     console.error("Error fetching chats:", error);
     return { success: false, error: "Failed to fetch chats" };
@@ -273,12 +335,11 @@ export async function getMessages(jid: string, page: number = 1) {
     const response = await evolutionFindMessages(jid, 20, page);
     
     // Normalize structure
-    let records = response?.messages?.records || (Array.isArray(response) ? response : []);
+    let records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
 
     // Enrich media messages with base64
     if (Array.isArray(records)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      records = await Promise.all(records.map(async (msg: any) => {
+      records = await Promise.all(records.map(async (msg) => {
         const content = msg.message || msg;
         
         // Check for any media type that might need base64

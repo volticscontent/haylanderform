@@ -77,6 +77,14 @@ erDiagram
         date data_controle_24h
         string atendente_id
     }
+
+    interpreter_memories {
+        int id PK
+        string phone UK
+        text content
+        string category
+        vector embedding
+    }
 \`\`\`
 
 ## Detalhamento dos Módulos
@@ -98,14 +106,28 @@ Dados duros e técnicos, muitas vezes enriquecidos via API (Serpro).
 - **Quem usa:** Apolo (coleta inicial) e Vendedor (análise técnica).
 - **Destaque:** Armazena o JSON bruto da API do Serpro para consultas futuras.
 
-### 4. Vendas (\`leads_vendas\`)
+### 4. Memória (\`interpreter_memories\`)
+Armazena insights e contextos compartilhados entre os agentes (Apolo, Atendente, Vendedor).
+- **Tecnologia:** PostgreSQL + pgvector.
+- **Campos Chave:**
+    - \`embedding\`: Vetor de 1536 dimensões para busca semântica.
+    - \`category\`: Contexto da memória (vendas, suporte, etc).
+
+### 5. Vendas (\`leads_vendas\`)
 O "balcão" de negociação.
 - **Quem usa:** Vendedor (Icaro).
 - **Foco:** Agendamento de reunião e definição de escopo (serviço).
 
-### 5. Financeiro (\`leads_financeiro\`)
+### 6. Financeiro (\`leads_financeiro\`)
 Inteligência de dívidas.
 - **Quem usa:** Sistema de Cálculo Automático e Vendedor.
 - **Foco:** Valores exatos para gerar propostas de parcelamento.
+
+### 7. Atendimento (\`leads_atendimento\`)
+Controle de fluxo e suporte.
+- **Quem usa:** Atendente e Sistema de Disparos.
+- **Campos Chave:**
+    - \`data_controle_24h\`: Timestamp da última interação do cliente. Usado para validar a janela de 24h da Meta.
+    - \`envio_disparo\`: Status de campanhas.
 `
 }

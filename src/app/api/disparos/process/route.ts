@@ -162,9 +162,22 @@ export async function GET() {
         
         let sentCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
 
         for (const target of targets.rows) {
           try {
+             // 1. Meta 24h Window Restriction
+             const lastInteraction = target.data_controle_24h ? new Date(target.data_controle_24h) : null;
+             const now = new Date();
+             // If no date or diff > 24h, skip
+             const diffHours = lastInteraction ? (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60) : 999;
+
+             if (diffHours > 24) {
+                 console.warn(`[Disparo] Skipping ${target.telefone}: Outside 24h window (Last: ${target.data_controle_24h})`);
+                 skippedCount++;
+                 continue;
+             }
+
              // Replace placeholders in body
              const messageText = disparo.body.replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_: string, key: string) => {
                const val = target[key];
@@ -188,9 +201,9 @@ export async function GET() {
               stats = $1, 
               updated_at = NOW() 
           WHERE id = $2
-        `, [JSON.stringify({ sent: sentCount, failed: failCount, total: targets.rows.length }), disparo.id]);
+        `, [JSON.stringify({ sent: sentCount, failed: failCount, skipped: skippedCount, total: targets.rows.length }), disparo.id]);
 
-        report.push({ id: disparo.id, status: 'completed', sent: sentCount });
+        report.push({ id: disparo.id, status: 'completed', sent: sentCount, skipped: skippedCount, failed: failCount });
 
       } catch (err: unknown) {
         console.error(`Erro ao processar disparo ${disparo.id}:`, err);

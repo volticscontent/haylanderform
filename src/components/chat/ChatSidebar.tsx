@@ -3,8 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Chat } from './types';
-import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu } from 'lucide-react';
+import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { SchedulingModal } from './SchedulingModal';
 
 interface ChatSidebarProps {
   chats: Chat[];
@@ -16,7 +17,7 @@ interface ChatSidebarProps {
   onMassRegister: (chats: Chat[]) => void;
 }
 
-type TabType = 'all' | 'unread' | 'unregistered';
+type TabType = 'all' | 'unread' | 'unregistered' | 'scheduled';
 
 export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRegister, onViewLead, onMassRegister }: ChatSidebarProps) {
   const { setSidebarOpen } = useAdmin();
@@ -24,6 +25,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
   const [selectedForMassAction, setSelectedForMassAction] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
 
   const filteredChats = useMemo(() => {
     let filtered = chats;
@@ -33,6 +35,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
       filtered = filtered.filter(c => (c.unreadCount || 0) > 0);
     } else if (activeTab === 'unregistered') {
       filtered = filtered.filter(c => !c.isRegistered);
+    } else if (activeTab === 'scheduled') {
+      filtered = filtered.filter(c => !!c.leadDataReuniao);
     }
 
     // Filter by search term
@@ -110,6 +114,13 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             </div>
             <div className="flex gap-1">
                 <button 
+                    onClick={() => setIsSchedulingModalOpen(true)}
+                    className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    title="Enviar Agendamento"
+                >
+                    <Calendar size={18} />
+                </button>
+                <button 
                     onClick={toggleSelectionMode}
                     className={`p-2 rounded-lg transition-colors ${
                     isSelectionMode 
@@ -166,9 +177,22 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                         ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm' 
                         : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                 }`}
+                title="Não Cadastrados"
             >
                 <UserX size={12} />
-                Novos
+                <span className="hidden sm:inline">Novos</span>
+            </button>
+            <button 
+                onClick={() => setActiveTab('scheduled')}
+                className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${
+                    activeTab === 'scheduled' 
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm' 
+                        : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
+                title="Com Agendamento"
+            >
+                <Calendar size={12} />
+                <span className="hidden sm:inline">Agendados</span>
             </button>
         </div>
       </div>
@@ -296,7 +320,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
 
                         {/* Registered User Action */}
                         {!isSelectionMode && chat.isRegistered && (
-                             <div className="mt-2 flex justify-start">
+                             <div className="mt-2 flex justify-start gap-1 flex-wrap">
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); onViewLead(chat); }}
                                   className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-300/10 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 transition-colors font-medium"
@@ -305,6 +329,12 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                                     <ExternalLink size={12} />
                                     {chat.leadStatus === 'qualificado' && chat.leadDataReuniao ? 'Call' : (chat.leadStatus === 'cliente' ? 'Ver Cliente' : 'Ver Lead')}
                                 </button>
+                                {chat.leadDataReuniao && (
+                                  <span className="flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-md dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800 font-medium">
+                                      <Calendar size={12} />
+                                      {new Date(chat.leadDataReuniao).toLocaleDateString()}
+                                  </span>
+                                )}
                              </div>
                         )}
     
@@ -328,6 +358,11 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             })
         )}
       </div>
+      {/* Modal */}
+      <SchedulingModal 
+        isOpen={isSchedulingModalOpen}
+        onClose={() => setIsSchedulingModalOpen(false)}
+      />
     </div>
   );
 }

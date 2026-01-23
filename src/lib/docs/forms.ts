@@ -57,7 +57,7 @@ export const forms = {
       4. **Submissão**: Os dados são enviados via \`PUT\` para \`/api/user/[phone]\`.
       5. **Pós-Processamento**:
       - O status de envio (\`envio_disparo\`) é atualizado para 'a1' na tabela \`leads_atendimento\`.
-      - A data de controle (\`data_controle_24h\`) é agendada para 24h no futuro.
+      - A data de controle (\`data_controle_24h\`) é atualizada para o momento atual (\`NOW()\`), abrindo uma janela de 24h para disparos ativos.
       - O usuário é redirecionado para o WhatsApp para continuar o atendimento.
 
       ## 2. Formulário de Abertura de MEI (MEIForm)

@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" server.ts",
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "funnel-graph-js": "^1.4.2",
+    "ioredis": "^5.8.2",
     "lucide-react": "^0.556.0",
     "mermaid": "^11.12.2",
     "next": "16.0.7",
@@ -20,8 +22,11 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "recharts": "^3.5.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

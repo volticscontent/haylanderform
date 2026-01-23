@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { io } from 'socket.io-client';
 import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads, getLeadByPhone, triggerBot } from '@/app/admin/atendimento/actions';
 
 import { ChatSidebar, ChatWindow } from '.';
@@ -15,6 +16,11 @@ export function ChatInterface() {
   const { setDesktopSidebarOpen } = useAdmin();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const selectedChatIdRef = React.useRef(selectedChatId);
+
+  useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
 
   // Restore sidebar when leaving chat interface
   useEffect(() => {
@@ -188,21 +194,125 @@ export function ChatInterface() {
         image: c.profilePicUrl || c.profilePictureUrl,
         unreadCount: c.unreadCount || 0,
         lastMessage: extractMessagePreview(c.lastMessage || c),
-        timestamp: c.lastMessage?.messageTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
+        timestamp: c.lastMessage?.messageTimestamp || c.conversationTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
         isRegistered: c.isRegistered,
         leadId: c.leadId,
         leadName: c.leadName,
         leadStatus: c.leadStatus,
         leadDataReuniao: c.leadDataReuniao
       }));
-      setChats(mappedChats);
+
+      // Deduplicate chats based on ID
+      const uniqueChats = Array.from(new Map(mappedChats.map((c: Chat) => [c.id, c])).values());
+      
+      // Sort by timestamp descending (future/recent first)
+      uniqueChats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      setChats(uniqueChats);
     }
     setLoadingChats(false);
   }, []);
 
-  const loadMessages = useCallback(async (jid: string, pageNum = 1) => {
-    if (pageNum === 1) setLoadingMessages(true);
-    else setLoadingMore(true);
+  // --- SOCKET IO CLIENT ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [socket, setSocket] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    // Connect to external Socket Server
+    // Em produção, a URL deve vir de ENV ou hardcoded para o servidor externo
+    // Como estamos na Vercel, localhost:3001 não funciona para o cliente final, 
+    // precisaria ser a URL pública do socket server.
+    // Mas para teste local: 'http://localhost:3001'
+    
+    // ATENÇÃO: Se o servidor socket não estiver rodando ou bloqueado, isso falha silenciosamente.
+    const socketUrl = 'http://localhost:3003'; 
+    
+    console.log('Connecting to Socket.io:', socketUrl);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const newSocket: any = io(socketUrl, {
+      transports: ['websocket'],
+      withCredentials: true
+    });
+
+    newSocket.on('connect', () => {
+      console.log('✅ Socket connected:', newSocket.id);
+      setIsConnected(true);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+      setIsConnected(false);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    newSocket.on('chat-update-global', (data: any) => {
+        console.log('🔔 Global chat update received:', data);
+        
+        // Se for uma nova mensagem para o chat atual, adicionamos à lista
+        if (selectedChatIdRef.current && data.chatId === selectedChatIdRef.current) {
+             console.log('👀 Update belongs to current chat:', data.chatId);
+             const normalized = normalizeMessage(data);
+             setMessages(prev => {
+                if (prev.some(m => m.id === normalized.id)) {
+                    console.log('⚠️ Message already exists, skipping:', normalized.id);
+                    return prev;
+                }
+                console.log('➕ Adding message to state:', normalized.id);
+                // Add to top (reverse order in UI) - Note: In ChatWindow messages are reversed or not?
+                // If ChatWindow renders array as is (bottom to top), new messages should be at the end.
+                // Wait, loadMessages reverses the array from API. 
+                // Let's check how they are rendered. Usually [oldest, ..., newest].
+                return [...prev, normalized]; 
+             });
+        } else {
+             console.log('🙈 Update ignored for current view (different chat or no chat selected)');
+        }
+
+        // Atualizar lista de chats (última mensagem, unread count, etc)
+        // Por simplicidade, recarregamos a lista ou atualizamos o item específico
+        loadChats(); 
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [loadChats]); // Removed selectedChatId dependency to avoid reconnect loops
+
+  // Join chat room when selected
+  useEffect(() => {
+    if (!socket || !selectedChatId) return;
+
+    socket.emit('join-chat', selectedChatId);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleNewMessage = (data: any) => {
+      console.log('📩 New message in room:', data);
+      const normalized = normalizeMessage(data);
+      
+      setMessages(prev => {
+        // Deduplicate
+        if (prev.some(m => m.id === normalized.id)) return prev;
+        // Add to top (reverse order in UI)
+        return [normalized, ...prev]; 
+      });
+    };
+
+    socket.on('new-message', handleNewMessage);
+
+    return () => {
+      socket.emit('leave-chat', selectedChatId);
+      socket.off('new-message', handleNewMessage);
+    };
+  }, [socket, selectedChatId]);
+
+  const loadMessages = useCallback(async (jid: string, pageNum = 1, silent = false) => {
+    if (pageNum === 1 && !silent) setLoadingMessages(true);
+    else if (pageNum > 1) setLoadingMore(true);
 
     const res = await getMessages(jid, pageNum);
     
@@ -213,37 +323,34 @@ export function ChatInterface() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedMessages = records.map((m: any) => normalizeMessage(m)).reverse();
       
+      // Deduplicate mappedMessages itself (just in case API returns duplicates)
+      const uniqueMappedMessages = Array.from(new Map(mappedMessages.map((m: Message) => [m.id, m])).values());
+
       if (pageNum === 1) {
-        setMessages(mappedMessages);
+        setMessages(uniqueMappedMessages);
       } else {
         // Filter out duplicates based on ID
         setMessages(prev => {
             const existingIds = new Set(prev.map(msg => msg.id));
-            const newUniqueMessages = mappedMessages.filter(msg => !existingIds.has(msg.id));
+            const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
             return [...newUniqueMessages, ...prev];
         });
       }
       setHasMore(records.length >= 20);
     }
     
-    if (pageNum === 1) setLoadingMessages(false);
+    if (pageNum === 1 && !silent) setLoadingMessages(false);
     else setLoadingMore(false);
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadChats();
-    }, 0);
-    return () => clearTimeout(timer);
+    loadChats();
   }, [loadChats]);
 
   useEffect(() => {
     if (selectedChatId) {
-      setTimeout(() => setPage(1), 0);
-      const timer = setTimeout(() => {
-        loadMessages(selectedChatId, 1);
-      }, 0);
-      return () => clearTimeout(timer);
+      setPage(1);
+      loadMessages(selectedChatId, 1);
     }
   }, [selectedChatId, loadMessages]);
 
@@ -307,8 +414,21 @@ export function ChatInterface() {
 
     const res = await sendMessage(selectedChatId, text);
     if (res.success) {
-      loadMessages(selectedChatId);
+      setMessages(prev => prev.map(m => {
+        if (m.id === tempId) {
+            // If we have the real message data, use it
+            if (res.data && res.data.key) {
+                return normalizeMessage(res.data);
+            }
+            // Otherwise just update status
+            return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
+        }
+        return m;
+      }));
     } else {
+      setMessages(prev => prev.map(m => 
+        m.id === tempId ? { ...m, status: 'error' } : m
+      ));
       alert('Erro ao enviar mensagem');
     }
   };
@@ -342,10 +462,39 @@ export function ChatInterface() {
     const res = await sendMedia(selectedChatId, formData);
     
     if (res.success) {
-      loadMessages(selectedChatId);
+      setMessages(prev => prev.map(m => {
+        if (m.id === tempId) {
+            if (res.data && res.data.key) {
+                return normalizeMessage(res.data);
+            }
+            return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
+        }
+        return m;
+      }));
+
+      // Update sidebar
+      setChats(prev => {
+        const newChats = [...prev];
+        const idx = newChats.findIndex(c => c.id === selectedChatId);
+        if (idx !== -1) {
+            const chat = { ...newChats[idx] };
+            if (type === 'image') chat.lastMessage = '📷 [Imagem] ' + (caption || '');
+            else if (type === 'video') chat.lastMessage = '🎥 [Vídeo]';
+            else if (type === 'audio') chat.lastMessage = '🎵 [Áudio]';
+            else if (type === 'document') chat.lastMessage = 'Vk [Documento]';
+            else chat.lastMessage = '[Arquivo]';
+            
+            chat.timestamp = Math.floor(Date.now() / 1000);
+            newChats.splice(idx, 1);
+            newChats.unshift(chat);
+        }
+        return newChats;
+      });
     } else {
+      setMessages(prev => prev.map(m => 
+        m.id === tempId ? { ...m, status: 'error' } : m
+      ));
       alert('Erro ao enviar mídia');
-      // Remove optimistic message on failure if needed
     }
   };
 

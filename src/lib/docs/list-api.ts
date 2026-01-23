@@ -60,7 +60,9 @@ export const listApi = {
         "telefone": "5511999999999",
         "cnpj": "12.345.678/0001-90",
         "situacao": "ativo",
-        "data_ultima_consulta": "2023-10-25T10:00:00.000Z"
+        "data_ultima_consulta": "2023-10-25T10:00:00.000Z",
+        "data_controle_24h": "2023-10-25T15:30:00.000Z",
+        "envio_disparo": "a1"
         // ... outros campos
       }
       \`\`\`
@@ -96,6 +98,7 @@ export const listApi = {
       **Colunas Permitidas:**
       - Dados Cadastrais: \`nome_completo\`, \`cnpj\`, \`email\`, \`telefone\`
       - Status: \`situacao\`, \`qualificacao\`, \`envio_disparo\`
+      - Atendimento: \`data_controle_24h\`, \`observacoes\`
       - Financeiro: \`valor_divida_ativa\`, \`faturamento_mensal\`
       - Metadados: \`data_cadastro\`, \`atualizado_em\`
 

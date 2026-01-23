@@ -99,23 +99,35 @@ export async function PUT(
       [identifier]
     );
     
-    if (idRes.rowCount === 0) {
-      await client.query('ROLLBACK');
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-    const leadId = idRes.rows[0].id;
+    let leadId;
 
-    // 2. Update leads (Core)
-    await client.query(`
-      UPDATE leads 
-      SET 
-        nome_completo = COALESCE($2, nome_completo),
-        telefone = COALESCE($3, telefone),
-        email = COALESCE($4, email),
-        senha_gov = COALESCE($5, senha_gov),
-        atualizado_em = NOW()
-      WHERE id = $1
-    `, [leadId, nome_completo, telefone, email, senha_gov]);
+    if (idRes.rowCount === 0) {
+       // User not found, create new
+       const newPhone = isEmail ? (telefone || null) : identifier;
+       const newEmail = isEmail ? identifier : (email || null);
+       
+       const insertRes = await client.query(
+         `INSERT INTO leads (telefone, nome_completo, email, senha_gov, data_cadastro, atualizado_em) 
+          VALUES ($1, $2, $3, $4, NOW(), NOW()) 
+          RETURNING id`,
+         [newPhone, nome_completo || 'Desconhecido', newEmail, senha_gov || null]
+       );
+       leadId = insertRes.rows[0].id;
+    } else {
+       leadId = idRes.rows[0].id;
+
+       // 2. Update leads (Core)
+       await client.query(`
+        UPDATE leads 
+        SET 
+          nome_completo = COALESCE($2, nome_completo),
+          telefone = COALESCE($3, telefone),
+          email = COALESCE($4, email),
+          senha_gov = COALESCE($5, senha_gov),
+          atualizado_em = NOW()
+        WHERE id = $1
+      `, [leadId, nome_completo, telefone, email, senha_gov]);
+    }
 
     // 3. Update leads_empresarial
     await client.query(`
@@ -156,11 +168,11 @@ export async function PUT(
     // 6. Update leads_atendimento (Trigger logic moved here)
     await client.query(`
       INSERT INTO leads_atendimento (lead_id, observacoes, envio_disparo, data_controle_24h)
-      VALUES ($1, $2, 'a1', NOW() + INTERVAL '24 hours')
+      VALUES ($1, $2, 'a1', NOW())
       ON CONFLICT (lead_id) DO UPDATE SET
         observacoes = COALESCE(EXCLUDED.observacoes, leads_atendimento.observacoes),
         envio_disparo = 'a1',
-        data_controle_24h = NOW() + INTERVAL '24 hours',
+        data_controle_24h = NOW(),
         updated_at = NOW()
     `, [leadId, observacoes]);
 

@@ -1,4 +1,6 @@
 import pool from '../../db';
+import { redis } from '@/lib/redis';
+import { cosineSimilarity } from '@/lib/utils';
 import { evolutionFindMessages, evolutionSendMediaMessage } from '@/lib/evolution';
 import { generateEmbedding } from '../embedding';
 
@@ -45,6 +47,28 @@ function extractMessageText(raw: unknown): string | null {
   if (isObject(raw.stickerMessage)) return '[sticker]';
 
   return null;
+}
+
+function parseDateStr(dateStr: string): Date | null {
+    // Expected format: dd/MM/yyyy HH:mm
+    const parts = dateStr.split(' ');
+    if (parts.length !== 2) return null;
+
+    const [datePart, timePart] = parts;
+    const dateSplit = datePart.split('/');
+    const timeSplit = timePart.split(':');
+
+    if (dateSplit.length !== 3 || timeSplit.length !== 2) return null;
+
+    const day = parseInt(dateSplit[0], 10);
+    const month = parseInt(dateSplit[1], 10) - 1; // Month is 0-indexed
+    const year = parseInt(dateSplit[2], 10);
+    const hour = parseInt(timeSplit[0], 10);
+    const minute = parseInt(timeSplit[1], 10);
+
+    const d = new Date(year, month, day, hour, minute);
+    if (isNaN(d.getTime())) return null;
+    return d;
 }
 
 // 1. getUser
@@ -115,7 +139,7 @@ export async function updateUser(data: Record<string, unknown>): Promise<string>
         if (!telefone) return JSON.stringify({ status: "error", message: "Telefone is required" });
 
         // Basic fields for leads table
-        const leadsFields = ['nome_completo', 'email', 'cpf', 'nome_mae', 'senha_gov', 'situacao', 'observacoes'];
+        const leadsFields = ['nome_completo', 'email', 'cpf', 'nome_mae', 'senha_gov', 'situacao', 'observacoes', 'qualificacao'];
         const updateFields: string[] = [];
         const values: unknown[] = [];
         let i = 1;
@@ -133,6 +157,19 @@ export async function updateUser(data: Record<string, unknown>): Promise<string>
             await client.query(`UPDATE leads SET ${updateFields.join(', ')} WHERE telefone = $${i}`, values);
         }
 
+        // Always update 24h window when user interacts/updates
+        const resId = await client.query('SELECT id FROM leads WHERE telefone = $1', [telefone]);
+        if (resId.rows.length > 0) {
+             const leadId = resId.rows[0].id;
+             // Upsert into leads_atendimento (Check first to avoid ON CONFLICT issues if constraint missing)
+             const check = await client.query('SELECT id FROM leads_atendimento WHERE lead_id = $1', [leadId]);
+             if (check.rows.length > 0) {
+                 await client.query('UPDATE leads_atendimento SET data_controle_24h = NOW() WHERE lead_id = $1', [leadId]);
+             } else {
+                 await client.query('INSERT INTO leads_atendimento (lead_id, data_controle_24h) VALUES ($1, NOW())', [leadId]);
+             }
+        }
+
         return JSON.stringify({ status: "success", message: "User updated" });
     } catch (error) {
         console.error('updateUser error:', error);
@@ -148,9 +185,20 @@ export async function checkAvailability(dateStr: string): Promise<string> {
   try {
     // Check if there is a meeting at this time
     // dateStr format expected: 'dd/MM/yyyy HH:mm'
+    
+    // Simple validation
+    if (!/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/.test(dateStr)) {
+        return JSON.stringify({ available: false, message: "Formato de data inválido. Use dd/MM/yyyy HH:mm" });
+    }
+
+    const parsedDate = parseDateStr(dateStr);
+    if (!parsedDate) {
+        return JSON.stringify({ available: false, message: "Data inválida." });
+    }
+
     const res = await client.query(
         `SELECT l.nome_completo FROM leads l JOIN leads_vendas lv ON l.id = lv.lead_id WHERE lv.data_reuniao = $1`,
-        [dateStr]
+        [parsedDate]
     );
     if (res.rows.length > 0) {
         return JSON.stringify({ available: false, message: "Horário indisponível." });
@@ -165,7 +213,7 @@ export async function checkAvailability(dateStr: string): Promise<string> {
 }
 
 // 5. scheduleMeeting
-export async function scheduleMeeting(phone: string, dateStr: string, _type: string = 'Reunião de Fechamento'): Promise<string> {
+export async function scheduleMeeting(phone: string, dateStr: string): Promise<string> {
   const client = await pool.connect();
   try {
     const userRes = await client.query('SELECT id FROM leads WHERE telefone = $1', [phone]);
@@ -178,9 +226,12 @@ export async function scheduleMeeting(phone: string, dateStr: string, _type: str
         INSERT INTO leads_vendas (lead_id) VALUES ($1) ON CONFLICT (lead_id) DO NOTHING
     `, [leadId]);
 
+    const parsedDate = parseDateStr(dateStr);
+    if (!parsedDate) return JSON.stringify({ status: "error", message: "Data inválida." });
+
     await client.query(`
         UPDATE leads_vendas SET data_reuniao = $1 WHERE lead_id = $2
-    `, [dateStr, leadId]);
+    `, [parsedDate, leadId]);
 
     return JSON.stringify({ status: "success", message: `Reunião agendada para ${dateStr}` });
   } catch (error) {
@@ -206,23 +257,31 @@ export async function callAttendant(phone: string, reason: string = 'Solicitaç�
 
         console.log(`Sending notification to attendant ${attendantNumber} via ${apiUrl}...`);
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': apiKey
-            },
-            body: JSON.stringify({
-                number: attendantNumber,
-                text: `🔔 *Solicitação de Atendimento*\n\nO cliente *${phone}* solicitou falar com um atendente.\n\n📝 *Motivo:* ${reason}\n\n🔗 *Link para conversa:* https://wa.me/${phone}`
-            })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Failed to send WhatsApp notification:", errorText);
-        } else {
-            console.log("Notification sent successfully.");
+        try {
+          const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': apiKey
+              },
+              body: JSON.stringify({
+                  number: attendantNumber,
+                  text: `🔔 *Solicitação de Atendimento*\n\nO cliente *${phone}* solicitou falar com um atendente.\n\n📝 *Motivo:* ${reason}\n\n🔗 *Link para conversa:* https://wa.me/${phone}`
+              }),
+              signal: controller.signal
+          });
+
+          if (!response.ok) {
+              const errorText = await response.text();
+              console.error("Failed to send WhatsApp notification:", errorText);
+          } else {
+              console.log("Notification sent successfully.");
+          }
+        } finally {
+          clearTimeout(timeoutId);
         }
 
         return JSON.stringify({ status: "success", message: "Atendente notificado. Aguarde um momento." });
@@ -288,11 +347,28 @@ export async function searchServices(query: string): Promise<string> {
 export async function sendCommercialPresentation(phone: string, type: 'apc' | 'video' = 'apc'): Promise<string> {
   const jid = toWhatsAppJid(phone);
   
+  // Default values (fallback)
+  const defaultApc = 'https://pub-9bcc48f0ec304eabbad08c9e3dec23de.r2.dev/apc%20haylander.pdf';
+  const defaultVideo = 'https://pub-9bcc48f0ec304eabbad08c9e3dec23de.r2.dev/0915.mp4';
+
+  let mediaUrl = type === 'apc' ? defaultApc : defaultVideo;
+
   try {
+      // Fetch from DB
+      try {
+          const settingKey = type === 'apc' ? 'apresentacao_comercial' : 'video_ecac';
+          const res = await pool.query('SELECT value FROM system_settings WHERE key = $1', [settingKey]);
+          if (res.rows.length > 0 && res.rows[0].value) {
+              mediaUrl = res.rows[0].value;
+          }
+      } catch (dbErr) {
+          console.error('Error fetching system setting, using default:', dbErr);
+      }
+
     if (type === 'apc') {
       await evolutionSendMediaMessage(
         jid,
-        'https://pub-9bcc48f0ec304eabbad08c9e3dec23de.r2.dev/apc%20haylander.pdf',
+        mediaUrl,
         'document',
         'Apresentação Comercial Haylander',
         'Apresentacao_Haylander.pdf',
@@ -306,7 +382,7 @@ export async function sendCommercialPresentation(phone: string, type: 'apc' | 'v
     } else {
       await evolutionSendMediaMessage(
         jid,
-        'https://pub-9bcc48f0ec304eabbad08c9e3dec23de.r2.dev/0915.mp4',
+        mediaUrl,
         'video',
         'Vídeo Tutorial',
         'tutorial.mp4',
@@ -335,8 +411,12 @@ export async function interpreter(
   category: 'qualificacao' | 'vendas' | 'atendimento' = 'atendimento'
 ): Promise<string> {
   const client = await pool.connect();
+  const redisKey = `interpreter_memory:${phone}`;
+  
   try {
-    // 1. Ensure table exists (Soft check)
+    console.log(`[Interpreter] Action: ${action}, Phone: ${phone}, Text: "${text}"`);
+
+    // 1. Ensure table exists (Soft check - Postgres Backup)
     // We try to create with vector first. If it fails (e.g. type vector does not exist), we try without.
     try {
         await client.query(`
@@ -366,6 +446,22 @@ export async function interpreter(
     if (action === 'post') {
         const embedding = await generateEmbedding(text);
         
+        // --- Redis Write (Primary Speed Layer) ---
+        try {
+            const memoryObj = {
+                content: text,
+                category,
+                embedding: embedding || [], // Ensure array
+                created_at: new Date().toISOString()
+            };
+            await redis.lpush(redisKey, JSON.stringify(memoryObj));
+            await redis.ltrim(redisKey, 0, 49); // Keep last 50 memories
+            console.log('[Interpreter] Memory saved to Redis');
+        } catch (err) {
+            console.error('Redis write error:', err);
+        }
+        // -----------------------------------------
+
         if (embedding && embedding.length > 0) {
              try {
                 // Try insert with vector
@@ -389,45 +485,93 @@ export async function interpreter(
                 [phone, text, category]
             );
         }
+        console.log('[Interpreter] Memory saved to Postgres');
         return JSON.stringify({ status: "stored", message: "Memória armazenada com sucesso." });
 
     } else { // GET
         const embedding = await generateEmbedding(text);
-        let rows = [];
+        
+        interface InterpreterMemory {
+            content: string;
+            category: string;
+            embedding?: number[];
+            created_at: string;
+            similarity?: number;
+        }
 
-        if (embedding && embedding.length > 0) {
-            try {
-                // Try vector search (Cosine Similarity)
-                const vectorStr = JSON.stringify(embedding);
-                const res = await client.query(`
-                    SELECT content, category, created_at, 1 - (embedding <=> $1::vector) as similarity
-                    FROM interpreter_memories
-                    WHERE phone = $2
-                    ORDER BY similarity DESC
-                    LIMIT 5
-                `, [vectorStr, phone]);
-                rows = res.rows;
-            } catch {
-                // Fallback: Text search (ILIKE)
+        let rows: InterpreterMemory[] = [];
+
+        // --- Redis Read (Primary Speed Layer) ---
+        try {
+            const rawMemories = await redis.lrange(redisKey, 0, -1);
+            if (rawMemories.length > 0) {
+                const memories = rawMemories.map(m => JSON.parse(m) as InterpreterMemory);
+                
+                if (embedding && embedding.length > 0) {
+                    // Calculate Cosine Similarity in memory (fast for small lists)
+                    const scored = memories.map((m) => {
+                        const sim = (m.embedding && m.embedding.length > 0) 
+                            ? cosineSimilarity(embedding, m.embedding) 
+                            : 0;
+                        return { ...m, similarity: sim };
+                    });
+                    
+                    // Sort by similarity desc
+                    scored.sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
+                    
+                    // Filter by threshold if needed, but for now just take top 5
+                    rows = scored.slice(0, 5);
+                } else {
+                    // Just return latest (already sorted by LPUSH)
+                    rows = memories.slice(0, 5);
+                }
+                console.log(`[Interpreter] Redis Hit! Found ${rows.length} memories.`);
+            } else {
+                console.log('[Interpreter] Redis Miss. Fallback to Postgres.');
+            }
+        } catch (err) {
+             console.error('Redis read error:', err);
+        }
+        // ----------------------------------------
+
+        // Fallback to Postgres if Redis yielded no results
+        if (rows.length === 0) {
+            console.log('[Interpreter] Querying Postgres...');
+            if (embedding && embedding.length > 0) {
+                try {
+                    // Try vector search (Cosine Similarity)
+                    const vectorStr = JSON.stringify(embedding);
+                    const res = await client.query(`
+                        SELECT content, category, created_at, 1 - (embedding <=> $1::vector) as similarity
+                        FROM interpreter_memories
+                        WHERE phone = $2
+                        ORDER BY similarity DESC
+                        LIMIT 5
+                    `, [vectorStr, phone]);
+                    rows = res.rows;
+                } catch {
+                    // Fallback: Text search (ILIKE)
+                    const res = await client.query(`
+                        SELECT content, category, created_at
+                        FROM interpreter_memories
+                        WHERE phone = $1 AND content ILIKE $2
+                        ORDER BY created_at DESC
+                        LIMIT 5
+                    `, [phone, `%${text}%`]);
+                    rows = res.rows;
+                }
+            } else {
+                // Just get latest for phone
                 const res = await client.query(`
                     SELECT content, category, created_at
                     FROM interpreter_memories
-                    WHERE phone = $1 AND content ILIKE $2
+                    WHERE phone = $1
                     ORDER BY created_at DESC
                     LIMIT 5
-                `, [phone, `%${text}%`]);
-                 rows = res.rows;
+                `, [phone]);
+                rows = res.rows;
             }
-        } else {
-             // Just get latest for phone
-             const res = await client.query(`
-                SELECT content, category, created_at
-                FROM interpreter_memories
-                WHERE phone = $1
-                ORDER BY created_at DESC
-                LIMIT 5
-            `, [phone]);
-            rows = res.rows;
+            console.log(`[Interpreter] Postgres Result: Found ${rows.length} memories.`);
         }
 
         if (rows.length === 0) {

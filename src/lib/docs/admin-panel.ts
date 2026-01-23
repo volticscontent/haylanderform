@@ -18,13 +18,14 @@ export const adminPanel = {
       - **Status do Bot**: Monitoramento de uptime do agente Apolo.
 
       ### 2. Lista de Leads (Tabela Interativa)
-      O componente central da gestão. A visualização é enriquecida com dados de múltiplas tabelas (\`leads_empresarial\`, \`leads_qualificacao\`, \`leads_financeiro\`, etc.).
+      O componente central da gestão. A visualização é enriquecida com dados de múltiplas tabelas (\`leads_empresarial\`, \`leads_qualificacao\`, \`leads_financeiro\`, \`leads_atendimento\`).
       
       - **Dados Exibidos**:
         - **Dados Básicos**: Nome, Telefone, Email, Data de Cadastro.
         - **Empresarial**: CNPJ, Razão Social (via Join).
         - **Financeiro**: Cálculo de Parcelamento, Dívidas.
         - **Qualificação**: Situação (MQL/SQL), Interesse.
+        - **Atendimento**: Janela de Disparo 24h, Status do Envio.
         - **Comercial**: Status de Venda, Reunião Agendada.
       
       - **Filtros**: Por Status, Dívida, Data de Cadastro, etc.
@@ -71,7 +72,7 @@ export const adminPanel = {
       - \`Toast\`: Notificações de feedback (Sucesso/Erro).
 
       ### Server Actions
-      Todas as mutações de dados (Delete, Update) utilizam Server Actions do Next.js 14, garantindo que a lógica de banco de dados nunca seja exposta ao cliente (browser).
+      Todas as mutações de dados (Delete, Update) utilizam Server Actions do Next.js 16, garantindo que a lógica de banco de dados nunca seja exposta ao cliente (browser).
 
       Example:
       \`\`\`typescript

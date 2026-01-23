@@ -3,7 +3,34 @@ import { runApoloAgent } from '@/lib/ai/agents/apolo';
 import { runVendedorAgent } from '@/lib/ai/agents/vendedor';
 import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
 import { AgentContext } from '@/lib/ai/types';
-import { getUser, updateUser } from '@/lib/ai/tools/server-tools';
+import { getUser, updateUser, createUser } from '@/lib/ai/tools/server-tools';
+import { addToHistory, getChatHistory } from '@/lib/chat-history';
+import redis from '@/lib/redis';
+
+// Helper to notify Socket Server (Redis Pub/Sub -> HTTP Fallback)
+async function notifySocketServer(channel: string, message: object) {
+  try {
+    // 1. Try Redis Pub/Sub (Fastest)
+    await redis.publish(channel, JSON.stringify(message));
+  } catch (redisError) {
+    console.warn('[Webhook] Redis publish failed, trying HTTP fallback:', redisError);
+    
+    // 2. HTTP Fallback to Socket Server
+    try {
+      // Assuming Socket Server runs on localhost:3002 as configured
+      // In production, this URL should be in env vars
+      const socketServerUrl = 'http://localhost:3003/notify';
+      await fetch(socketServerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+      console.log('[Webhook] HTTP notification sent to Socket Server successfully.');
+    } catch (httpError) {
+      console.error('[Webhook] Both Redis and HTTP notification failed:', httpError);
+    }
+  }
+}
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL;
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY;
@@ -52,11 +79,34 @@ export async function POST(req: Request) {
         console.log('[Webhook] Imagem recebida mas sem base64. Habilite "Include Base64" no Webhook da Evolution API.');
       }
     }
-    // 3. Document extraction (PDF) - Placeholder for future implementation
+    // 3. Document extraction (PDF)
     else if (msgData?.documentMessage) {
       const caption = msgData.documentMessage.caption || '';
-      message = caption + ' [Arquivo recebido. O sistema ainda não processa o conteúdo interno de PDFs, mas analisará a legenda/nome.]';
-      console.log('[Webhook] Documento recebido. Leitura de conteúdo PDF temporariamente desativada.');
+      const fileName = msgData.documentMessage.fileName || 'documento.pdf';
+      message = `${caption} [Arquivo PDF: ${fileName} - O sistema ainda não processa conteúdo interno]`;
+      console.log('[Webhook] Documento recebido.');
+    }
+    // 4. Audio extraction
+    else if (msgData?.audioMessage) {
+      message = '[Áudio recebido] (O sistema ainda não transcreve áudios)';
+      console.log('[Webhook] Áudio recebido.');
+    }
+    // 5. Sticker extraction
+    else if (msgData?.stickerMessage) {
+        message = '[Sticker recebido]';
+        console.log('[Webhook] Sticker recebido.');
+    }
+    // 6. Video extraction
+    else if (msgData?.videoMessage) {
+        const caption = msgData.videoMessage.caption || '';
+        message = `${caption} [Vídeo recebido]`;
+        console.log('[Webhook] Vídeo recebido.');
+    }
+    // 7. Contact/Location extraction
+    else if (msgData?.contactMessage || msgData?.contactsArrayMessage) {
+        message = '[Contato recebido]';
+    } else if (msgData?.locationMessage) {
+        message = '[Localização recebida]';
     }
 
     const sender = body.data?.key?.remoteJid;
@@ -90,6 +140,16 @@ export async function POST(req: Request) {
     const logMsg = typeof message === 'string' ? message : '[Conteúdo Multimodal/Imagem]';
     console.log(`[Webhook] Mensagem de ${userPhone}: ${logMsg}`);
 
+    // 0. Salvar mensagem do usuário no histórico
+    await addToHistory(userPhone, 'user', message);
+
+    // Publish INCOMING message to Redis for Real-time
+    const incomingSocketMsg = {
+        chatId: sender,
+        ...body.data
+    };
+    await notifySocketServer('chat-updates', incomingSocketMsg);
+
     // 1. Determinar o Estado do Usuário (Routing Logic)
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
     
@@ -111,7 +171,8 @@ export async function POST(req: Request) {
     if (!user) {
       // Novo usuário: Criar e mandar para Apolo
       console.log('[Router] Novo usuário detectado. Criando registro...');
-      await updateUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido', situacao: 'aguardando_qualificação' });
+      await createUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido' });
+      await updateUser({ telefone: userPhone, situacao: 'aguardando_qualificação' });
       userState = 'lead';
     } else {
       // Usuário existente: Atualizar dados (sync)
@@ -133,21 +194,22 @@ export async function POST(req: Request) {
       // Usuário existente: Verificar regras
       if (user.situacao === 'cliente') {
         userState = 'customer';
-      } else if (user.qualificacao && user.qualificacao !== 'desqualificado') {
-        // Se já tem qualificação (MQL, SQL, ICP), vai para Vendedor
+      } else if (user.qualificacao) {
+        // Se já tem qualificação (MQL, SQL, ICP ou Desqualificado), vai para Vendedor (Repescagem incluída)
         userState = 'qualified';
       } else {
-        // Padrão: Apolo (ainda qualificando ou desqualificado tentando contato)
+        // Padrão: Apolo (ainda qualificando ou sem status)
         userState = 'lead';
       }
     }
 
     // Contexto compartilhado
+    const history = await getChatHistory(userPhone);
     const context: AgentContext = {
       userId: sender,
       userName: pushName,
       userPhone: userPhone,
-      history: [] // Em produção, carregar histórico do Redis/DB
+      history: history 
     };
 
     let responseText = '';
@@ -169,8 +231,21 @@ export async function POST(req: Request) {
         break;
     }
 
-    // 3. Enviar resposta
-    await sendWhatsAppMessage(sender, responseText);
+    // 3. Salvar resposta e Enviar
+    if (responseText) {
+      await addToHistory(userPhone, 'assistant', responseText);
+    }
+
+    const sentMessage = await sendWhatsAppMessage(sender, responseText);
+
+    if (sentMessage) {
+        // Publish OUTGOING message to Redis
+        const outgoingSocketMsg = {
+            chatId: sender,
+            ...sentMessage
+        };
+        await notifySocketServer('chat-updates', outgoingSocketMsg);
+    }
 
     return NextResponse.json({ status: 'success' });
   } catch (error: unknown) {
@@ -180,7 +255,7 @@ export async function POST(req: Request) {
 }
 
 async function sendWhatsAppMessage(to: string, text: string) {
-  if (!text) return;
+  if (!text) return null;
 
   // Prioritize Evolution Config if available
   if (EVOLUTION_API_URL && EVOLUTION_INSTANCE_NAME && EVOLUTION_API_KEY) {
@@ -205,13 +280,15 @@ async function sendWhatsAppMessage(to: string, text: string) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`[Evolution] Erro na resposta da API: ${response.status} - ${errorText}`);
+        return null;
       } else {
         const data = await response.json();
         console.log('[Evolution] Mensagem enviada com sucesso:', JSON.stringify(data));
+        return data;
       }
-      return;
     } catch (error) {
       console.error('Erro ao enviar mensagem via Evolution:', error);
+      return null;
     }
   }
 
@@ -221,11 +298,11 @@ async function sendWhatsAppMessage(to: string, text: string) {
     console.log(`Para: ${to}`);
     console.log(`Texto: ${text}`);
     console.log('----------------------------');
-    return;
+    return { key: { id: 'mock-' + Date.now() }, message: { conversation: text } };
   }
 
   try {
-    await fetch(`${WHATSAPP_API_URL}/message/sendText`, {
+    const res = await fetch(`${WHATSAPP_API_URL}/message/sendText`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -236,7 +313,9 @@ async function sendWhatsAppMessage(to: string, text: string) {
         text: text
       })
     });
+    return await res.json();
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
+    return null;
   }
 }

@@ -1,6 +1,7 @@
 import { AgentContext } from '../types';
 import { runAgent, ToolDefinition } from '../openai-client';
 import { 
+  checkAvailability,
   scheduleMeeting, 
   callAttendant, 
   updateUser, 
@@ -46,12 +47,17 @@ Informações Reais do Cliente:
 
 # Ferramentas Disponíveis
 
-1. **agendar_reuniao**
-   - **OBJETIVO FINAL:** Toda sua conversa deve convergir para isso.
-   - **Importante:** Essa ferramenta retorna um **link**. Você deve **colar o link** na resposta ao cliente.
-   - **Argumento sugerido:** "Para esse caso, o ideal é alinharmos os detalhes diretamente com o Haylander. Ele desenha o escopo e já deixa tudo encaminhado na reunião."
+1. **verificar_disponibilidade**
+   - **Uso:** Antes de agendar, verifique se o horário sugerido pelo cliente está livre.
+   - **Argumento:** Data e hora (ex: "25/12/2023 14:00").
 
-2. **services** (Base de Conhecimento & Flexibilidade)
+2. **agendar_reuniao**
+   - **OBJETIVO FINAL:** Toda sua conversa deve convergir para isso.
+   - **Uso:** Quando o cliente concordar com um horário LIVRE.
+   - **Ação:** Confirme o agendamento usando esta ferramenta. Ela vai registrar no sistema.
+   - **Resposta:** Após o sucesso da ferramenta, confirme para o cliente: "Perfeito! Reunião confirmada para [data/hora]. O Haylander já foi avisado." (Não invente links externos, o agendamento é interno).
+
+3. **services** (Base de Conhecimento & Flexibilidade)
    - **Padrão:**
      - *Regularização MEI/CNPJ Inapto.*
      - *Parcelamento de Dívidas (Federais/Ativas).*
@@ -60,7 +66,7 @@ Informações Reais do Cliente:
      - Qualquer solicitação fora do padrão (Auditoria, BPO Financeiro complexo, Societário).
      - **Ação:** Acolha a demanda ("Perfeito, temos expertise nisso") e direcione para a reunião. **Não** invente detalhes técnicos que não sabe, foque na competência do Haylander em resolver isso.
 
-3. **update_user**
+4. **update_user**
    - **Uso Crítico:** Sempre que surgir algo importante para a reunião, registre no campo 'observacoes'.
    - **O que registrar (resumo em 3–6 linhas):**
      - Dor principal + impacto (ex: emissão de nota, crédito, bloqueio, risco).
@@ -69,8 +75,8 @@ Informações Reais do Cliente:
      - Objeções (preço/tempo/desconfiança) e o que destravou.
    - **Exemplo:** observacoes: "Quer holding familiar e reorganização societária. Dor: travado para crédito. Urgência: 15 dias. Quer entender escopo e próximos passos."
 
-4. **chamar_atendente**
-   - **Gatilho:** Apenas se o cliente se recusar a agendar pelo link ou exigir falar agora.
+5. **chamar_atendente**
+   - **Gatilho:** Apenas se o cliente exigir falar agora ou houver erro técnico.
 
 # Comportamento e Script
 
@@ -88,13 +94,13 @@ Você faz 1 pergunta de diagnóstico por vez.
 ### 3. O Fechamento (Agendamento)
 Você não vende o papel, vende a clareza e o plano que o cliente recebe na reunião.
 Regras:
-- Assim que estiver claro que há dor real + interesse, acione **agendar_reuniao**.
-- Coloque o link na mensagem e peça uma confirmação simples.
-*Exemplo:* "Perfeito. O próximo passo é alinharmos isso direto com o Haylander e já sair com um plano fechado. Pode agendar por esse link: [LINK]. Me avisa quando confirmar que eu já deixo o contexto registrado pra ele."
+- Pergunte qual o melhor horário para o cliente (manhã ou tarde).
+- Use **verificar_disponibilidade** se ele sugerir um horário específico.
+- Se disponível, use **agendar_reuniao**.
+*Exemplo:* "Perfeito. O próximo passo é alinharmos isso direto com o Haylander. Qual o melhor horário para você amanhã à tarde?"
 
 ### 4. Quando escalar para humano
-- Se o cliente **se recusar** a agendar pelo link.
-- Se o cliente **exigir falar agora**.
+- Se o cliente **se recusar** a agendar ou **exigir falar agora**.
 - Se houver conflito/erro recorrente.
 Nesse caso, use **chamar_atendente** com um motivo claro.
 
@@ -136,6 +142,21 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
         const limit = typeof args.limit === 'number' ? args.limit : 30;
         return await contextRetrieve(context.userId, limit);
       }
+    },
+    {
+      name: 'verificar_disponibilidade',
+      description: 'Verificar se um horário está disponível para reunião.',
+      parameters: {
+        type: 'object',
+        properties: {
+          data_horario: {
+            type: 'string',
+            description: 'Data e hora desejada (ex: 25/12/2023 14:00)'
+          }
+        },
+        required: ['data_horario']
+      },
+      function: async (args) => await checkAvailability(args.data_horario as string)
     },
     {
       name: 'agendar_reuniao',

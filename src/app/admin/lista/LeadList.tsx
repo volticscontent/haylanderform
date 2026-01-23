@@ -1093,59 +1093,60 @@ export default function LeadList({
                   })}
 
                   <td className="px-6 py-4 text-right relative">
-                    <div className="relative inline-block text-left">
+                    <div className="flex items-center justify-end gap-2">
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenMenuId(openMenuId === row.telefone ? null : row.telefone)
+                        onClick={() => {
+                          setStartInEditMode(true)
+                          setSelectedLead(row)
                         }}
-                        className={`p-1 rounded-md transition-colors ${openMenuId === row.telefone ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                        title="Editar"
                       >
-                        <MoreVertical className="w-4 h-4" />
+                        <Edit className="w-4 h-4" />
                       </button>
                       
-                      {openMenuId === row.telefone && (
-                        <div 
-                          ref={menuRef}
-                          className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 z-50 focus:outline-none animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
+                      <div className="relative inline-block text-left">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuId(openMenuId === row.telefone ? null : row.telefone)
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${openMenuId === row.telefone ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
                         >
-                          <div className="p-1" role="menu" aria-orientation="vertical">
-                            <button
-                              onClick={() => {
-                                setStartInEditMode(false)
-                                setSelectedLead(row)
-                                setOpenMenuId(null)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                              role="menuitem"
-                            >
-                              <Eye className="w-4 h-4 text-zinc-400" />
-                              Visualizar ficha
-                            </button>
-                            <button
-                              onClick={() => {
-                                setStartInEditMode(true)
-                                setSelectedLead(row)
-                                setOpenMenuId(null)
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                              role="menuitem"
-                            >
-                              <Edit className="w-4 h-4 text-zinc-400" />
-                              Editar
-                            </button>
-                            <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
-                            <button
-                              onClick={() => handleDelete(row.telefone)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              role="menuitem"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Apagar
-                            </button>
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        
+                        {openMenuId === row.telefone && (
+                          <div 
+                            ref={menuRef}
+                            className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 z-50 focus:outline-none animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
+                          >
+                            <div className="p-1" role="menu" aria-orientation="vertical">
+                              <button
+                                onClick={() => {
+                                  setStartInEditMode(false)
+                                  setSelectedLead(row)
+                                  setOpenMenuId(null)
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                role="menuitem"
+                              >
+                                <Eye className="w-4 h-4 text-zinc-400" />
+                                Visualizar ficha
+                              </button>
+                              <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
+                              <button
+                                onClick={() => handleDelete(row.telefone)}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                role="menuitem"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Apagar
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

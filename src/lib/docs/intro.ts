@@ -45,7 +45,7 @@ Conexão direta com o Serpro para consulta de status MEI, DAS e PGMEI, com gest�
 ### 4. Automação e Disparos
 Ferramentas para envio de mensagens em massa e controle de fluxo de conversas via Bot (Apolo).
 - [Ver API de Disparos](/admin/docs?section=disparo-api)
-- [Ver Documentação do Bot](/admin/docs?section=database-bot)
+- [Ver Documentação do Bot](/admin/docs?section=bot-architecture)
 
 ### 5. Agendamento de Reuniões
 Interface simplificada para que leads agendem conversas técnicas via WhatsApp, com validação de cadastro prévio.
@@ -59,7 +59,7 @@ Interface simplificada para que leads agendem conversas técnicas via WhatsApp, 
 | :--- | :--- |
 | **Frontend** | React, Tailwind CSS, Lucide Icons, Mermaid.js |
 | **Backend** | Next.js API Routes, Server Actions |
-| **Banco de Dados** | PostgreSQL, Vercel Postgres |
+| **Banco de Dados** | PostgreSQL, Vercel Postgres, Redis (Speed Layer), pgvector |
 | **Autenticação** | Jose (JWT), Cookies Seguros |
 | **Integrações** | Serpro (Gov.br), WhatsApp API |
 
