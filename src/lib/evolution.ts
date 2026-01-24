@@ -100,11 +100,12 @@ export async function evolutionGetBase64FromMediaMessage(message: unknown) {
 
 export async function evolutionSendTextMessage(jid: string, text: string) {
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(evolutionConfig.instance)}`
+  const number = String(jid).replace('@s.whatsapp.net', '').replace(/\D/g, '')
   const res = await withTimeout(fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
     body: JSON.stringify({
-      number: jid,
+      number: number,
       text: text,
       delay: 1200,
       linkPreview: true
@@ -117,9 +118,10 @@ export async function evolutionSendTextMessage(jid: string, text: string) {
 
 export async function evolutionSendMediaMessage(jid: string, media: string, type: 'image' | 'video' | 'audio' | 'document', caption?: string, fileName?: string, mimetype?: string) {
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendMedia/${encodeURIComponent(evolutionConfig.instance)}`
+  const number = String(jid).replace('@s.whatsapp.net', '').replace(/\D/g, '')
   
   const body = {
-    number: jid,
+    number: number,
     media: media, // Base64 or URL
     mediatype: type,
     mimetype: mimetype,
@@ -143,9 +145,10 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
 
 export async function evolutionSendWhatsAppAudio(jid: string, audio: string) {
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendWhatsAppAudio/${encodeURIComponent(evolutionConfig.instance)}`
+  const number = String(jid).replace('@s.whatsapp.net', '').replace(/\D/g, '')
   
   const body = {
-    number: jid,
+    number: number,
     audio: audio // Base64
   }
 
