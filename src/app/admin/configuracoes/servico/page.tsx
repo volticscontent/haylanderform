@@ -15,6 +15,13 @@ function formatCurrencyBRL(n: number) {
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatDateTimeBR(s?: string) {
+  if (!s) return "-";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString("pt-BR");
+}
+
 export default function ServicoPage() {
   const [items, setItems] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
@@ -147,6 +154,7 @@ export default function ServicoPage() {
                 <th className="py-2 px-3">Nome</th>
                 <th className="py-2 px-3">Valor</th>
                 <th className="py-2 px-3">Descrição</th>
+                <th className="py-2 px-3">Adicionado</th>
                 <th className="py-2 px-3 w-40">Ações</th>
               </tr>
             </thead>
@@ -164,6 +172,9 @@ export default function ServicoPage() {
                   </td>
                   <td className="py-2 px-3 text-zinc-700 dark:text-zinc-300">
                     {svc.description || "-"}
+                  </td>
+                  <td className="py-2 px-3 text-zinc-700 dark:text-zinc-300">
+                    {formatDateTimeBR(svc.created_at)}
                   </td>
                   <td className="py-2 px-3">
                     <div className="flex gap-2">
@@ -187,7 +198,7 @@ export default function ServicoPage() {
                 <tr>
                   <td
                     className="py-6 px-3 text-zinc-500 dark:text-zinc-400"
-                    colSpan={4}
+                    colSpan={5}
                   >
                     Nenhum serviço cadastrado.
                   </td>
@@ -197,7 +208,7 @@ export default function ServicoPage() {
                 <tr>
                   <td
                     className="py-6 px-3 text-zinc-500 dark:text-zinc-400"
-                    colSpan={4}
+                    colSpan={5}
                   >
                     Carregando...
                   </td>

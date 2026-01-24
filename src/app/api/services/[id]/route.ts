@@ -110,12 +110,12 @@ async function getServiceColumns() {
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await ensureServicesTable();
     const { nameCol, valueCol, descriptionCol } = await getServiceColumns();
-    const id = params.id;
+    const id = (await params).id;
     const body = await req.json();
     const name: string | undefined = body?.name;
     const description: string | undefined = body?.description;
@@ -156,11 +156,11 @@ export async function PUT(
 
 export async function DELETE(
   _: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await ensureServicesTable();
-    const id = params.id;
+    const id = (await params).id;
     const res = await pool.query("DELETE FROM services WHERE id = $1", [id]);
     if (res.rowCount === 0) {
       return NextResponse.json(
