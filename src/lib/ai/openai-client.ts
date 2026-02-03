@@ -73,6 +73,7 @@ export async function runAgent(
       for (const toolCall of message.tool_calls) {
         if (toolCall.type === 'function') {
           const toolName = toolCall.function.name;
+          console.log(`[Agent] 🛠️ Calling tool: ${toolName}`, toolCall.function.arguments);
           let toolResult = '';
 
           try {
@@ -82,6 +83,7 @@ export async function runAgent(
               if (tool) {
                 try {
                     toolResult = await tool.function(toolArgs);
+                    console.log(`[Agent] ✅ Tool ${toolName} output:`, toolResult.substring(0, 100) + (toolResult.length > 100 ? '...' : ''));
                 } catch (toolExecError) {
                     console.error(`Error executing tool ${toolName}:`, toolExecError);
                     toolResult = JSON.stringify({ 

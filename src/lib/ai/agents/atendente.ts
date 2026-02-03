@@ -5,11 +5,14 @@ import {
   getUser, 
   callAttendant,
   contextRetrieve,
-  interpreter
+  interpreter,
+  sendMedia,
+  getAvailableMedia
 } from '../tools/server-tools';
 
 export const ATENDENTE_PROMPT_TEMPLATE = `
 Você é o Apolo (versão Atendimento ao Cliente).
+Hoje é: {{CURRENT_DATE}}
 Você atende clientes que já estão na base (Situação = Cliente).
 
 **SUA MISSÃO:**
@@ -30,6 +33,7 @@ Se o cliente pedir algo que exija análise/decisão comercial ou técnica avanç
 3. Se faltar algo, peça **apenas o que falta**, um item por vez.
 4. Se o cliente pedir atualização de dados, use **update_user**.
 5. Se o pedido for complexo/urgente/fora de escopo, use **chamar_atendente**.
+6. Se o cliente pedir materiais de suporte ou tutoriais, verifique a lista de mídias disponíveis e use **enviar_midia**.
 
 Informações Reais do Cliente:
 {{USER_DATA}}
@@ -42,6 +46,11 @@ Informações Reais do Cliente:
 2. **chamar_atendente**
    - Use quando o cliente exigir humano, houver urgência, ou solicitação fora de escopo.
    - Antes de escalar, registre um resumo em 'observacoes' via **update_user** quando possível.
+
+3. **enviar_midia**
+   - Use para enviar tutoriais, manuais ou vídeos explicativos se o cliente solicitar.
+   - **Mídias Disponíveis (escolha pelo ID):**
+{{MEDIA_LIST}}
 
 # Padrões de Atendimento
 
@@ -73,9 +82,25 @@ export async function runAtendenteAgent(message: string | any, context: AgentCon
     }
   } catch {}
 
-  const systemPrompt = ATENDENTE_PROMPT_TEMPLATE.replace('{{USER_DATA}}', userData);
+  const availableMedia = await getAvailableMedia();
+  const systemPrompt = ATENDENTE_PROMPT_TEMPLATE
+    .replace('{{USER_DATA}}', userData)
+    .replace('{{MEDIA_LIST}}', availableMedia)
+    .replace('{{CURRENT_DATE}}', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 
   const tools: ToolDefinition[] = [
+    {
+      name: 'enviar_midia',
+      description: 'Enviar um arquivo de mídia (PDF, Vídeo, Áudio). Consulte a lista de mídias disponíveis no prompt.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'A chave (ID) do arquivo de mídia a ser enviado.' }
+        },
+        required: ['key']
+      },
+      function: async (args) => await sendMedia(context.userPhone, args.key as string)
+    },
     {
       name: 'context_retrieve',
       description: 'Buscar o contexto recente da conversa do cliente (Evolution API).',

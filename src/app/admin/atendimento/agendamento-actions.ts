@@ -37,7 +37,7 @@ export async function searchLeadsForScheduling(term: string): Promise<{ success:
         le.nome_fantasia ILIKE $1
     `;
 
-    const params: any[] = [searchTerm];
+    const params: (string | number)[] = [searchTerm];
 
     if (cleanTerm.length > 0) {
         query += ` OR l.telefone LIKE $2 OR le.cnpj LIKE $2`;

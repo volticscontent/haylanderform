@@ -7,6 +7,8 @@ import { MessageBubble } from './ChatMessageBubble';
 import { ChatInput } from './ChatInput';
 import { MediaPreviewModal } from './MediaPreviewModal';
 import { ChevronDown, ArrowLeft, MoreVertical, FileText, UserPlus } from 'lucide-react';
+import { formatMessageDate, shouldGroupMessages } from './dateUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatWindowProps {
   chat?: Chat;
@@ -43,15 +45,15 @@ export function ChatWindow({
     onViewLeadSheet,
     onRegister
 }: ChatWindowProps) {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const isRecording = false;
+  const recordingTime = 0;
   const [mediaPreview, setMediaPreview] = useState<{file: File, type: 'image' | 'video' | 'audio' | 'document'} | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  // const audioChunksRef = useRef<Blob[]>([]);
+  // const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevLoadingMoreRef = useRef(loadingMore);
@@ -126,71 +128,52 @@ export function ChatWindow({
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp4' }); 
-        const audioFile = new File([audioBlob], 'audio.mp4', { type: 'audio/mp4' });
-        
-        // Check if we should send (if track wasn't just stopped by cancel)
-        if (audioChunksRef.current.length > 0) {
-            onSendMedia(audioFile, 'audio', undefined, true);
-        }
-        
-        // Stop tracks
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      alert('Erro ao acessar microfone. Verifique as permissões.');
-    }
-  };
-
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
+    // Recording disabled
   };
 
   const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      // Clear chunks so onstop knows to ignore
-      audioChunksRef.current = [];
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
+    // Recording disabled
   };
 
-  if (!chat) return null;
+  if (!chat) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 text-center p-8">
+        <div className="w-64 h-64 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-8 relative overflow-hidden">
+             <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.1] bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px]"></div>
+             <div className="relative z-10 p-6 bg-white dark:bg-zinc-700 rounded-2xl shadow-lg transform -rotate-6">
+                <div className="flex gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-600"></div>
+                    <div className="flex-1 space-y-2">
+                        <div className="h-2 bg-zinc-200 dark:bg-zinc-600 rounded w-20"></div>
+                        <div className="h-2 bg-zinc-200 dark:bg-zinc-600 rounded w-12"></div>
+                    </div>
+                </div>
+                <div className="h-20 bg-zinc-50 dark:bg-zinc-800 rounded-lg"></div>
+             </div>
+        </div>
+        <h2 className="text-2xl font-light text-zinc-800 dark:text-zinc-200 mb-2">Haylander Chat</h2>
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-md">
+          Selecione uma conversa para começar o atendimento. Você pode filtrar por leads não cadastrados ou agendamentos.
+        </p>
+        <div className="mt-8 flex gap-4 text-xs text-zinc-400">
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                Online
+            </div>
+            <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                Sincronizado
+            </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#EFE7DD] dark:bg-[#0b141a] relative">
       {/* Background Pattern Overlay */}
-      <div className="absolute inset-0 opacity-[0.06] dark:opacity-[0.06] pointer-events-none" 
-           style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")' }}>
+      <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.05] pointer-events-none bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px]">
       </div>
 
       {/* Header */}
@@ -326,11 +309,50 @@ export function ChatWindow({
               </div>
             )}
             
-            {/* Group messages by date? For now just list */}
-            <div className="ml-7 flex flex-col gap-2">
-                {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
-                ))}
+            {/* Messages List with Grouping */}
+            <div className="flex flex-col gap-0.5 px-2 pb-2">
+                <AnimatePresence initial={false}>
+                {messages.map((msg, index) => {
+                    const prevMsg = messages[index - 1];
+                    const nextMsg = messages[index + 1];
+                    
+                    const showDateSeparator = !prevMsg || formatMessageDate(msg.timestamp) !== formatMessageDate(prevMsg.timestamp);
+                    const isGrouped = shouldGroupMessages(msg, prevMsg);
+                    const isLastInGroup = !shouldGroupMessages(nextMsg, msg);
+                    const isFirstInGroup = !isGrouped;
+
+                    return (
+                        <React.Fragment key={msg.id}>
+                            {showDateSeparator && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex justify-center my-6 sticky top-2 z-10"
+                                >
+                                    <span className="bg-white/80 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 text-[11px] font-medium px-3 py-1 rounded-full shadow-sm backdrop-blur-sm border border-zinc-100 dark:border-zinc-700 uppercase tracking-wide">
+                                        {formatMessageDate(msg.timestamp)}
+                                    </span>
+                                </motion.div>
+                            )}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.2 }}
+                                layout
+                                className="w-full"
+                            >
+                                <MessageBubble 
+                                    message={msg} 
+                                    isFirst={isFirstInGroup}
+                                    isLast={isLastInGroup}
+                                />
+                            </motion.div>
+                        </React.Fragment>
+                    );
+                })}
+                </AnimatePresence>
             </div>
 
             <div ref={messagesEndRef} />
@@ -353,7 +375,6 @@ export function ChatWindow({
         <ChatInput 
             onSendMessage={onSendMessage}
             onFileSelect={handleFileSelect}
-            onStartRecording={startRecording}
             onStopRecording={stopRecording}
             onCancelRecording={cancelRecording}
             isRecording={isRecording}

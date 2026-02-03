@@ -211,6 +211,31 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             const errorData = await res.json().catch(() => ({}));
             throw new Error(errorData.error || "Erro ao salvar dados");
         }
+
+        // Trigger Serpro consultation in background if CNPJ is provided
+        if (formData.cnpj) {
+             const cleanCnpj = formData.cnpj.replace(/\D/g, '');
+             if (cleanCnpj.length === 14) {
+                 const service = formData.tipo_negocio === 'MEI' ? 'CCMEI_DADOS' : 'SIT_FISCAL';
+                 console.log(`[LeadForm] Triggering background Serpro consultation (${service}) for ${cleanCnpj}`);
+                 
+                 fetch('/api/serpro', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ 
+                        cnpj: cleanCnpj, 
+                        service,
+                        // Default to current year for PGMEI if needed, but CCMEI_DADOS doesn't need it
+                     }) 
+                 }).then(async (serproRes) => {
+                     if (serproRes.ok) {
+                         console.log('[LeadForm] Serpro consultation success');
+                     } else {
+                         console.error('[LeadForm] Serpro consultation failed', await serproRes.text());
+                     }
+                 }).catch(err => console.error('[LeadForm] Serpro trigger error:', err));
+             }
+        }
         
         setStatus("success");
         
@@ -246,7 +271,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             const message = encodeURIComponent("Formulario preenchido e agora?");
             window.location.href = `https://wa.me/553197599216?text=${message}`;
           }}
-          className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          className="text-zinc-600 dark:text-zinc-400 hover:underline font-medium"
         >
           Clique aqui se não for redirecionado
         </button>
@@ -257,7 +282,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
   if (status === "loading") {
       return (
           <div className="w-full min-h-[400px] flex flex-col items-center justify-center">
-              <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <div className="w-10 h-10 border-4 border-zinc-600 border-t-transparent rounded-full animate-spin mb-4"></div>
               <p className="text-zinc-500 dark:text-zinc-400">Carregando suas informações...</p>
           </div>
       );
@@ -273,7 +298,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
             <p className="text-zinc-600 dark:text-zinc-400 mb-6">{errorMsg || "Não foi possível carregar os dados."}</p>
             <button
                 onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-zinc-600 text-white rounded-lg hover:bg-zinc-700 transition-colors"
             >
                 Tentar Novamente
             </button>
@@ -282,22 +307,22 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
   }
 
   return (
-    <div className="w-full bg-white dark:bg-zinc-900 p-4 py-12 sm:px-32 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
-      <div className="mb-8 text-center">
-        <h2 className="text-3xl text-zinc-900 dark:text-white tracking-tight mb-2">
+    <div className="w-full bg-white dark:bg-zinc-900 sm:px-32 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+      <div className="mb-8 text-center py-8 bg-zinc-100 dark:bg-zinc-800 rounded-b-lg">
+        <h2 className="text-3xl font-bold text-zinc-900 dark:text-white tracking-tight mb-2">
           Seja bem vindo a Haylander Martins Contabilidade!
         </h2>
-        <p className="text-zinc-500 dark:text-zinc-400">
+        <p className="text-zinc-800 dark:text-zinc-400">
           Complete sua qualificação para prosseguirmos com o atendimento.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 mb-32">
         
         {/* Dados Pessoais (Read Only) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
             <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Nome Completo</label>
+                <label className="text-sm font-bold text-zinc-800 dark:text-zinc-300">Nome Completo</label>
                 <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <input 
@@ -315,7 +340,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                 </div>
             </div>
             <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Telefone</label>
+                <label className="text-sm font-bold text-zinc-800 dark:text-zinc-300">Telefone</label>
                 <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <input 
@@ -335,9 +360,9 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Email e Senha Gov */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
             <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Email</label>
+                <label className="text-sm font-bold text-zinc-800 dark:text-zinc-300">Email</label>
                 <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <input 
@@ -347,12 +372,12 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                       value={formData.email} 
                       onChange={handleChange}
                       placeholder="seu@email.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" 
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white" 
                     />
                 </div>
             </div>
             <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Senha Gov.br</label>
+                <label className="text-sm font-bold text-zinc-800 dark:text-zinc-300">Senha Gov.br</label>
                 <div className="relative">
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <input 
@@ -362,7 +387,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                       value={formData.senha_gov} 
                       onChange={handleChange}
                       placeholder="Senha do Gov.br"
-                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" 
+                      className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white" 
                     />
                 </div>
             </div>
@@ -370,8 +395,8 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
 
 
         {/* CNPJ */}
-        <div className="space-y-2">
-          <label htmlFor="cnpj" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">CNPJ</label>
+        <div className="space-y-2 px-4">
+          <label htmlFor="cnpj" className="text-sm font-bold text-zinc-800 dark:text-zinc-300">CNPJ</label>
           <div className="relative">
             <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <input
@@ -382,14 +407,14 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
               value={formData.cnpj}
               onChange={handleChange}
               placeholder="00.000.000/0000-00"
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
             />
           </div>
         </div>
 
         {/* Tipo de Negócio */}
-        <div className="space-y-2">
-            <label htmlFor="tipo_negocio" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Qual é o tipo de negócio?</label>
+        <div className="space-y-2 px-4">
+            <label htmlFor="tipo_negocio" className="text-sm font-bold text-zinc-800 dark:text-zinc-300">Qual é o tipo de negócio?</label>
             <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                 <select
@@ -398,7 +423,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                     required
                     value={formData.tipo_negocio}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none dark:text-white"
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none appearance-none dark:text-white"
                 >
                     <option value="">Selecione...</option>
                     <option value="MEI">MEI</option>
@@ -411,8 +436,8 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Dívida (Conditional) */}
-        <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block">Você possui dívida?</label>
+        <div className="space-y-4 p-8 bg-zinc-100 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+            <label className="text-2xl font-bold text-zinc-800 dark:text-zinc-300 block">Você possui dívida?</label>
             <div className="flex gap-4">
                 {["Sim", "Não"].map((opt) => (
                     <label key={opt} className="flex items-center gap-2 cursor-pointer">
@@ -422,23 +447,23 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             value={opt}
                             checked={formData.possui_divida === opt}
                             onChange={() => handleRadioChange("possui_divida", opt)}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            className="w-4 h-4 text-zinc-800 focus:ring-zinc-100"
                         />
-                        <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
+                        <span className="text-zinc-800 dark:text-zinc-300">{opt}</span>
                     </label>
                 ))}
             </div>
 
             {formData.possui_divida === "Sim" && (
-                <div className="space-y-4 mt-4 pl-4 border-l-2 border-blue-200 dark:border-blue-900 animate-in slide-in-from-top-2 duration-300">
+                <div className="space-y-4 mt-4 pl-4 border-l-2 border-red-500 dark:border-zinc-900 animate-in slide-in-from-top-2 duration-300">
                     {/* Tipo de Dívida */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Qual é o tipo de dívida?</label>
+                          <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-300">Qual é o tipo de dívida?</label>
                         <select
                             name="tipo_divida"
                             value={formData.tipo_divida}
                             onChange={handleChange}
-                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
                         >
                             <option value="">Selecione...</option>
                             <option value="Não Ajuizada">Não Ajuizada (Cobrança judicial não iniciada)</option>
@@ -449,17 +474,17 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                     </div>
 
                     {/* Lista de Dívidas */}
-                    <div className="space-y-4">
-                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Dívidas:</label>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Dívidas:</label>
                         {debts.map((debt) => (
                             <div key={debt.id} className="flex gap-4 items-start p-4 bg-white dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
                                 <div className="flex-1 space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium text-zinc-500 uppercase">Origem</label>
+                                    <div className="space-y-2 px-4">  
+                                        <label className="text-xs font-bold text-zinc-800 uppercase">Origem</label>
                                         <select
                                             value={debt.origin}
                                             onChange={(e) => handleDebtChange(debt.id, 'origin', e.target.value)}
-                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
                                         >
                                             <option value="">Selecione...</option>
                                             <option value="Municipal">Municipal</option>
@@ -468,8 +493,8 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                             <option value="Ativa">Ativa</option>
                                         </select>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-medium text-zinc-500 uppercase">Valor</label>
+                                    <div className="space-y-2 px-4">
+                                        <label className="text-xs font-bold text-zinc-800 uppercase">Valor</label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
@@ -477,7 +502,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                                 value={debt.value}
                                                 onChange={(e) => handleDebtChange(debt.id, 'value', e.target.value)}
                                                 placeholder="R$ 0,00"
-                                                className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                                className="w-full pl-9 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
                                             />
                                         </div>
                                     </div>
@@ -496,7 +521,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                         <button
                             type="button"
                             onClick={handleAddDebt}
-                            className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline"
+                            className="flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-400 hover:text-zinc-700 hover:underline"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             Adicionar Dívida
@@ -505,14 +530,14 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
 
                     {/* Tempo da Dívida */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Há quanto tempo você tem essa dívida?</label>
+                        <label className="text-sm font-semibold text-zinc-100 dark:text-zinc-300">Há quanto tempo você tem essa dívida?</label>
                         <input
                             type="text"
                             name="tempo_divida"
                             value={formData.tempo_divida}
                             onChange={handleChange}
                             placeholder="Ex: 2 anos"
-                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
                         />
                     </div>
 
@@ -524,7 +549,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                                 name="calculo_parcelamento"
                                 value={formData.calculo_parcelamento}
                                 onChange={handleChange}
-                                className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                                className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
                             >
                                 <option value="">Selecione um plano para registrar...</option>
                                 {parcelas.map((p) => (
@@ -540,7 +565,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Faturamento Mensal */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-4">
             <label htmlFor="faturamento_mensal" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Qual seu faturamento mensal?</label>
             <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -550,7 +575,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                     required
                     value={formData.faturamento_mensal}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none dark:text-white"
+                    className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none appearance-none dark:text-white"
                 >
                     <option value="">Selecione...</option>
                     <option value="Abaixo de R$10.000">Abaixo de R$10.000</option>
@@ -562,7 +587,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Sócios */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-4">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block">Você possui sócios?</label>
             <div className="flex gap-4">
                 {["Sim", "Não"].map((opt) => (
@@ -573,7 +598,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             value={opt}
                             checked={formData.possui_socio === opt}
                             onChange={() => handleRadioChange("possui_socio", opt)}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            className="w-4 h-4 text-zinc-600 focus:ring-zinc-500"
                         />
                         <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
                     </label>
@@ -582,7 +607,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Interesse em Ajuda */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-4">
             <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block">Teria interesse em ajuda profissional?</label>
             <div className="flex gap-4">
                 {["Sim", "Não"].map((opt) => (
@@ -593,7 +618,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
                             value={opt}
                             checked={formData.interesse_ajuda === opt}
                             onChange={() => handleRadioChange("interesse_ajuda", opt)}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            className="w-4 h-4 text-zinc-600 focus:ring-zinc-500"
                         />
                         <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
                     </label>
@@ -602,7 +627,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
         </div>
 
         {/* Observações */}
-        <div className="space-y-2">
+        <div className="space-y-2 px-4">
           <label htmlFor="observacoes" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Observações (Opcional)
           </label>
@@ -615,7 +640,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
               onChange={handleChange}
               rows={4}
               placeholder="Descreva sua situação atual, dúvidas ou problemas..."
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white resize-none"
+              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white resize-none"
             />
           </div>
         </div>
@@ -624,7 +649,7 @@ export default function LeadForm({ phone, observacao }: LeadFormProps) {
           type="submit"
           disabled={status === "submitting"}
           className={cn(
-            "w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200",
+            "w-full flex items-center justify-center gap-2 bg-zinc-600 hover:bg-zinc-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200",
             status === "submitting" && "opacity-70 cursor-not-allowed"
           )}
         >

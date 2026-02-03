@@ -17,7 +17,8 @@ const createClient = () => {
         mockRedis.subscribe = async () => {};
         mockRedis.lpush = async () => 0;
         mockRedis.lrange = async () => [];
-        mockRedis.on = (event, callback) => mockRedis; // Chainable
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        mockRedis.on = (_event, _callback) => mockRedis; // Chainable
         return mockRedis;
     }
     

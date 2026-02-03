@@ -28,7 +28,7 @@ import {
 import dynamic from 'next/dynamic'
 import { format, subDays, differenceInDays, isWithinInterval, parseISO, startOfDay, endOfDay, startOfMonth } from 'date-fns'
 
-const MetaAdsFunnel = dynamic(() => import('@/components/MetaAdsFunnel'), { ssr: false })
+const MetaAdsFunnel = dynamic(() => import('../../../components/MetaAdsFunnel'), { ssr: false })
 
 type LeadDashboardRecord = {
   telefone: string | null
@@ -112,7 +112,10 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     // Helper to count metrics
     const calculateMetrics = (dataset: LeadDashboardRecord[]) => {
       const totalLeads = dataset.length
-      const interested = dataset.filter(d => d.interesse_ajuda === 'Sim').length
+      const interested = dataset.filter(d => {
+        const val = String(d.interesse_ajuda || '').toLowerCase();
+        return val === 'sim' || val === 'true' || !!d.situacao;
+      }).length
 
       return {
         totalLeads,
@@ -656,10 +659,14 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       {(() => {
         const leads = filteredData.length;
         const telefone = filteredData.filter((d: LeadDashboardRecord) => d.telefone && String(d.telefone).trim() !== "").length;
-        const interesse = filteredData.filter((d: LeadDashboardRecord) => String(d.interesse_ajuda || '').toLowerCase() === 'sim').length;
+        const interesse = filteredData.filter((d: LeadDashboardRecord) => {
+          const val = String(d.interesse_ajuda || '').toLowerCase();
+          return val === 'sim' || val === 'true' || !!d.situacao;
+        }).length;
         const qualificacao = filteredData.filter((d: LeadDashboardRecord) => {
           const q = String(d.qualificacao || '').toLowerCase();
-          return q.includes('qualificado') || d.confirmacao_qualificacao === true;
+          const s = String(d.situacao || '').toLowerCase();
+          return q.includes('qualificado') || q === 'mql' || q === 'sql' || s === 'qualificado' || d.confirmacao_qualificacao === true;
         }).length;
         const reuniao_agendada = filteredData.filter((d: LeadDashboardRecord) => d.reuniao_agendada === true).length;
         const vendido = filteredData.filter((d: LeadDashboardRecord) => d.vendido === true).length;

@@ -40,7 +40,15 @@ async function getData() {
       ORDER BY l.atualizado_em DESC 
       LIMIT 500
     `)
-    return res.rows
+    
+    // Serialize dates for Client Component
+    const serialized = res.rows.map(row => ({
+      ...row,
+      data_cadastro: row.data_cadastro instanceof Date ? row.data_cadastro.toISOString() : row.data_cadastro,
+      atualizado_em: row.atualizado_em instanceof Date ? row.atualizado_em.toISOString() : row.atualizado_em
+    }))
+
+    return serialized
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
     return []

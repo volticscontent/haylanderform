@@ -31,13 +31,22 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
   const parsedMeetings = useMemo(() => {
     return initialMeetings.map(meeting => {
       try {
-        // Format stored is "dd/MM/yyyy HH:mm"
-        const parsedDate = parse(meeting.data_reuniao, 'dd/MM/yyyy HH:mm', new Date())
+        // Handle ISO string from Postgres/Server Action
+        let parsedDate = new Date(meeting.data_reuniao)
+        
+        // If invalid, try legacy format (just in case)
+        if (isNaN(parsedDate.getTime())) {
+           parsedDate = parse(meeting.data_reuniao, 'dd/MM/yyyy HH:mm', new Date())
+        }
+
+        if (isNaN(parsedDate.getTime())) return null
+
         return {
           ...meeting,
           parsedDate
         }
-      } catch {
+      } catch (err) {
+        console.error('Error parsing meeting date:', meeting.data_reuniao, err)
         return null
       }
     }).filter((m): m is (Meeting & { parsedDate: Date }) => m !== null)

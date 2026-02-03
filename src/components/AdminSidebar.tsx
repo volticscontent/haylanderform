@@ -28,7 +28,14 @@ const adminLinks: NavItem[] = [
     { name: 'Emissão CND', href: '/admin/serpro/cnd', icon: FileText },
     { name: 'Dívida Ativa', href: '/admin/serpro/divida-ativa', icon: AlertCircle },
     { name: 'Documentação', href: '/admin/docs', icon: Book },
-    { name: 'Configurações', href: '/admin/configuracoes', icon: Settings },
+    { 
+        name: 'Configurações', 
+        icon: Settings,
+        children: [
+            { name: 'Geral', href: '/admin/configuracoes', icon: Settings },
+            { name: 'Serviços', href: '/admin/configuracoes/servico', icon: Settings }
+        ]
+    },
 ]
 
 const docsLinks: NavItem[] = [
