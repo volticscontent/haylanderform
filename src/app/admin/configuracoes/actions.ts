@@ -94,3 +94,30 @@ export async function uploadSystemSettingFile(formData: FormData) {
         return { success: false, error: 'Failed to upload file' };
     }
 }
+
+export async function createSystemSetting(data: { key: string; label: string; type: string; value?: string }) {
+    try {
+        await pool.query(
+            `INSERT INTO system_settings (key, label, type, value, updated_at) 
+             VALUES ($1, $2, $3, $4, NOW())
+             ON CONFLICT (key) DO NOTHING`,
+            [data.key, data.label, data.type, data.value || '']
+        );
+        revalidatePath('/admin/configuracoes');
+        return { success: true };
+    } catch (error) {
+        console.error('Error creating setting:', error);
+        return { success: false, error: 'Failed to create setting' };
+    }
+}
+
+export async function deleteSystemSetting(key: string) {
+    try {
+        await pool.query('DELETE FROM system_settings WHERE key = $1', [key]);
+        revalidatePath('/admin/configuracoes');
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting setting:', error);
+        return { success: false, error: 'Failed to delete setting' };
+    }
+}

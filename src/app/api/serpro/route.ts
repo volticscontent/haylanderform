@@ -1,39 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Client } from 'pg';
 import { consultarServico, SERVICE_CONFIG } from '@/lib/serpro';
-
-async function updateClientData(cnpj: string) {
-  if (!process.env.DATABASE_URL) return;
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  try {
-    await client.connect();
-    const cnpjClean = cnpj.replace(/\D/g, '');
-    
-    // Tenta encontrar por CNPJ formatado ou limpo
-    const check = await client.query(
-      `SELECT l.id 
-       FROM leads l
-       JOIN leads_empresarial le ON l.id = le.lead_id
-       WHERE REPLACE(REPLACE(REPLACE(le.cnpj, '.', ''), '/', ''), '-', '') = $1`,
-      [cnpjClean]
-    );
-
-    if (check.rows.length > 0) {
-      const leadId = check.rows[0].id;
-      // Ensure the record exists in leads_atendimento before updating
-      await client.query(`
-        INSERT INTO leads_atendimento (lead_id, data_ultima_consulta)
-        VALUES ($1, NOW())
-        ON CONFLICT (lead_id) DO UPDATE 
-        SET data_ultima_consulta = NOW(), updated_at = NOW()
-      `, [leadId]);
-    }
-  } catch (e) {
-    console.error('Failed to update client DB:', e);
-  } finally {
-    await client.end();
-  }
-}
+import { saveConsultation } from '@/lib/serpro-db';
 
 export async function POST(request: Request) {
   try {
@@ -56,9 +23,8 @@ export async function POST(request: Request) {
     
     const result = await consultarServico(target, cnpj, options);
 
-    // Update client data in background (don't await to avoid slowing response)
-    updateClientData(cnpj).catch(console.error);
-
+    let finalResult = result;
+    
     if (target === 'CCMEI_DADOS' && result && typeof result === 'object') {
       const r = result as Record<string, unknown>;
       const mensagensRaw = (r.mensagens as unknown) ?? [];
@@ -68,11 +34,15 @@ export async function POST(request: Request) {
       if (hasNaoMei) {
         // Fallback para PGMEI tenta usar ano atual se não fornecido
         const pgmei = await consultarServico('PGMEI', cnpj, options);
-        return NextResponse.json({ primary: result, fallback: pgmei });
+        finalResult = { primary: result, fallback: pgmei };
       }
     }
 
-    return NextResponse.json(result);
+    // Save full history using the robust DB helper
+    // We don't await this to speed up response, but we log errors inside the function
+    saveConsultation(cnpj, target, finalResult, 200);
+
+    return NextResponse.json(finalResult);
   } catch (error: unknown) {
     console.error('SERPRO API Error:', error);
     const message = error instanceof Error ? error.message : 'Erro interno do servidor';

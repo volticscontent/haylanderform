@@ -173,7 +173,7 @@ export function ChatInterface() {
       id: m.key?.id || m.id,
       fromMe: m.key?.fromMe || false,
       content,
-      timestamp: m.messageTimestamp,
+      timestamp: typeof m.messageTimestamp === 'number' ? m.messageTimestamp : (m.messageTimestamp instanceof Date ? Math.floor(m.messageTimestamp.getTime() / 1000) : (Number(m.messageTimestamp) || Math.floor(Date.now() / 1000))),
       type: m.messageType,
       status: m.status,
       mediaUrl,
@@ -227,7 +227,7 @@ export function ChatInterface() {
     // Mas para teste local: 'http://localhost:3001'
     
     // ATENÇÃO: Se o servidor socket não estiver rodando ou bloqueado, isso falha silenciosamente.
-    const socketUrl = 'http://localhost:3003'; 
+    const socketUrl = 'http://localhost:3002'; 
     
     console.log('Connecting to Socket.io:', socketUrl);
     

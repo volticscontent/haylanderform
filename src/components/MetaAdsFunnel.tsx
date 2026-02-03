@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect } from "react";
-// @ts-expect-error: funnel-graph-js has no TS types
+// @ts-ignore
 import FunnelGraph from "funnel-graph-js";
 import "funnel-graph-js/dist/css/main.min.css";
 import "funnel-graph-js/dist/css/theme.min.css";

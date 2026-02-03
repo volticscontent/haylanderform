@@ -129,7 +129,8 @@ export async function getChats() {
             leadId: leadInfo?.id || undefined,
             leadName: leadInfo?.name || undefined,
             leadStatus: leadInfo?.status || undefined,
-            leadDataReuniao: leadInfo?.data_reuniao || undefined
+            // Ensure date is serialized to string to prevent React rendering errors
+            leadDataReuniao: leadInfo?.data_reuniao ? new Date(leadInfo.data_reuniao).toISOString() : undefined
         };
 
         // Always fetch the latest message to ensure accuracy
@@ -267,7 +268,19 @@ export async function getLeadByPhone(phone: string) {
         }
 
         if (result.rows.length > 0) {
-            return { success: true, data: result.rows[0] };
+            const lead = result.rows[0];
+            // Ensure dates are serialized to strings
+            const serializedLead = {
+                ...lead,
+                data_cadastro: lead.data_cadastro ? new Date(lead.data_cadastro).toISOString() : null,
+                atualizado_em: lead.atualizado_em ? new Date(lead.atualizado_em).toISOString() : null,
+                data_controle_24h: lead.data_controle_24h ? new Date(lead.data_controle_24h).toISOString() : null,
+                envio_disparo: lead.envio_disparo ? new Date(lead.envio_disparo).toISOString() : null,
+                data_ultima_consulta: lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toISOString() : null,
+                data_reuniao: lead.data_reuniao ? new Date(lead.data_reuniao).toISOString() : null,
+                procuracao_validade: lead.procuracao_validade ? new Date(lead.procuracao_validade).toISOString() : null,
+            };
+            return { success: true, data: serializedLead };
         }
         
         return { success: false, error: 'Lead não encontrado' };
@@ -294,6 +307,36 @@ export async function registerLead(name: string, phone: string) {
     } catch (error) {
         console.error('Error registering lead:', error);
         return { success: false, error: 'Falha ao cadastrar' };
+    }
+}
+
+export async function getConsultationsByCnpj(cnpj: string) {
+    try {
+        const cleanCnpj = cnpj.replace(/\D/g, '');
+        const query = `
+            SELECT 
+                id,
+                cnpj,
+                tipo_servico,
+                resultado,
+                status,
+                created_at
+            FROM consultas_serpro
+            WHERE cnpj = $1
+            ORDER BY created_at DESC
+        `;
+        
+        const { rows } = await pool.query(query, [cleanCnpj]);
+        
+        const serializedRows = rows.map(row => ({
+            ...row,
+            created_at: row.created_at ? new Date(row.created_at).toISOString() : null
+        }));
+
+        return { success: true, data: serializedRows };
+    } catch (error) {
+        console.error('Error fetching consultations:', error);
+        return { success: false, error: 'Falha ao buscar consultas' };
     }
 }
 

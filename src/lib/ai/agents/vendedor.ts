@@ -1,20 +1,22 @@
 import { AgentContext } from '../types';
 import { runAgent, ToolDefinition } from '../openai-client';
 import { 
-  checkAvailability,
-  scheduleMeeting, 
+  tryScheduleMeeting,
   callAttendant, 
   updateUser, 
   searchServices, 
   getUser,
   contextRetrieve,
-  interpreter
+  interpreter,
+  sendMedia,
+  getAvailableMedia
 } from '../tools/server-tools';
 
 export const VENDEDOR_PROMPT_TEMPLATE = `
 # Identidade e Propósito
 
 Você é o Icaro. Você é o Consultor Comercial Sênior da Haylander Contabilidade.
+Hoje é: {{CURRENT_DATE}}
 Você recebe o bastão do Apolo (SDR) quando o lead já passou pela qualificação.
 
 **SUA NOVA MISSÃO CRÍTICA (REPESCAGEM):**
@@ -37,6 +39,15 @@ Você **NÃO** gera contratos. Você prepara o terreno, valida a necessidade e g
 - Use linguagem simples; evite jargões técnicos e siglas.
 - Não exponha campos internos do sistema (não cite "USER_DATA", "situação", etc).
 
+**FLUXO DE PENSAMENTO OBRIGATÓRIO (Chain of Thought):**
+Antes de responder, você DEVE seguir este processo mental:
+1. O cliente sugeriu um horário?
+   - SIM -> Chame a tool tentar_agendar IMEDIATAMENTE.
+     - Se retornar "success": Responda confirmando (ex: "Perfeito, agendado!").
+     - Se retornar "unavailable": Avise que está ocupado e sugira outro horário.
+     - Se retornar "error": Peça para verificar a data.
+   - NÃO -> Pergunte qual o melhor horário para ele.
+
 **REGRA MÁXIMA:**
 Seu KPI é **Reunião Agendada com Contexto Rico**.
 Se houver qualquer oportunidade real, conduza para o agendamento.
@@ -45,17 +56,26 @@ Se houver qualquer oportunidade real, conduza para o agendamento.
 Informações Reais do Cliente:
 {{USER_DATA}}
 
+### EXEMPLOS DE SUCESSO
+
+**Caso 1: Agendamento**
+*Usuário:* "Pode ser dia 20 às 15h?"
+*Você:* (Chama tool "tentar_agendar") -> Retorna "success".
+*Você:* "Perfeito! Reunião confirmada para dia 20 às 15h. O Haylander já foi avisado."
+
+**Caso 2: Indisponível**
+*Usuário:* "Dia 20 às 15h?"
+*Você:* (Chama tool "tentar_agendar") -> Retorna "unavailable".
+*Você:* "Esse horário já está ocupado. Que tal 16h?"
+
 # Ferramentas Disponíveis
 
-1. **verificar_disponibilidade**
-   - **Uso:** Antes de agendar, verifique se o horário sugerido pelo cliente está livre.
+1. **tentar_agendar**
+   - **Uso:** Tenta agendar a reunião no horário solicitado.
    - **Argumento:** Data e hora (ex: "25/12/2023 14:00").
-
-2. **agendar_reuniao**
-   - **OBJETIVO FINAL:** Toda sua conversa deve convergir para isso.
-   - **Uso:** Quando o cliente concordar com um horário LIVRE.
-   - **Ação:** Confirme o agendamento usando esta ferramenta. Ela vai registrar no sistema.
-   - **Resposta:** Após o sucesso da ferramenta, confirme para o cliente: "Perfeito! Reunião confirmada para [data/hora]. O Haylander já foi avisado." (Não invente links externos, o agendamento é interno).
+   - **Comportamento:** Verifica disponibilidade e agenda se estiver livre (tudo em uma ação).
+   - **Retorno:** "success" (agendou) ou "unavailable" (ocupado).
+   - **OBRIGATÓRIO:** Use esta tool assim que o cliente sugerir um horário. Não verifique antes. A tool já verifica.
 
 3. **services** (Base de Conhecimento & Flexibilidade)
    - **Padrão:**
@@ -77,6 +97,11 @@ Informações Reais do Cliente:
 
 5. **chamar_atendente**
    - **Gatilho:** Apenas se o cliente exigir falar agora ou houver erro técnico.
+
+6. **enviar_midia**
+   - Use para enviar apresentações, propostas ou vídeos explicativos se o cliente solicitar material de apoio.
+   - **Mídias Disponíveis:**
+{{MEDIA_LIST}}
 
 # Comportamento e Script
 
@@ -126,7 +151,18 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
     }
   } catch {}
 
-  const systemPrompt = VENDEDOR_PROMPT_TEMPLATE.replace('{{USER_DATA}}', userData);
+  // 2. Fetch available media
+  let mediaList = "Nenhuma mídia disponível.";
+  try {
+      mediaList = await getAvailableMedia();
+  } catch (e) { 
+      console.warn("Error fetching media:", e); 
+  }
+
+  const systemPrompt = VENDEDOR_PROMPT_TEMPLATE
+    .replace('{{USER_DATA}}', userData)
+    .replace('{{MEDIA_LIST}}', mediaList)
+    .replace('{{CURRENT_DATE}}', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 
   const tools: ToolDefinition[] = [
     {
@@ -144,8 +180,8 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
       }
     },
     {
-      name: 'verificar_disponibilidade',
-      description: 'Verificar se um horário está disponível para reunião.',
+      name: 'tentar_agendar',
+      description: 'Tentar agendar uma reunião. Verifica disponibilidade e agenda se estiver livre.',
       parameters: {
         type: 'object',
         properties: {
@@ -156,22 +192,7 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
         },
         required: ['data_horario']
       },
-      function: async (args) => await checkAvailability(args.data_horario as string)
-    },
-    {
-      name: 'agendar_reuniao',
-      description: 'Agendar uma reunião com o cliente. Requer data e hora.',
-      parameters: {
-        type: 'object',
-        properties: {
-          data_horario: {
-            type: 'string',
-            description: 'Data e hora da reunião (ex: 25/12/2023 14:00)'
-          }
-        },
-        required: ['data_horario']
-      },
-      function: async (args) => await scheduleMeeting(context.userPhone, args.data_horario as string)
+      function: async (args) => await tryScheduleMeeting(context.userPhone, args.data_horario as string)
     },
     {
       name: 'chamar_atendente',
@@ -211,8 +232,23 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
       function: async (args) => await searchServices(args.query as string)
     },
     {
+      name: 'enviar_midia',
+      description: 'Enviar um arquivo de mídia (PDF, Vídeo, Áudio). Consulte a lista de mídias disponíveis no prompt.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: {
+            type: 'string',
+            description: 'A chave (ID) do arquivo de mídia a ser enviado.'
+          }
+        },
+        required: ['key']
+      },
+      function: async (args) => await sendMedia(context.userPhone, args.key as string)
+    },
+    {
       name: 'interpreter',
-      description: 'Ferramenta de memória compartilhada. Use para salvar informações importantes (post) ou buscar memórias relevantes (get).',
+      description: 'Salvar informações importantes na memória (post) ou buscar memórias relevantes (get).',
       parameters: {
         type: 'object',
         properties: {

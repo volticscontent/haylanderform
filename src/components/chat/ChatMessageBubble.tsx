@@ -2,17 +2,27 @@
 
 import React from 'react';
 import { Message } from './types';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Check, CheckCheck } from 'lucide-react';
 import Image from 'next/image';
 
 interface MessageBubbleProps {
   message: Message;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isFirst = true, isLast = true }: MessageBubbleProps) {
   const isMe = message.fromMe;
   const [imgError, setImgError] = React.useState(false);
   
+  // Define border radius based on position in group
+  const borderRadiusClass = isMe
+    ? `${isFirst ? 'rounded-tr-xl' : 'rounded-tr-sm'} ${isLast ? 'rounded-br-xl' : 'rounded-br-sm'} rounded-l-xl`
+    : `${isFirst ? 'rounded-tl-xl' : 'rounded-tl-sm'} ${isLast ? 'rounded-bl-xl' : 'rounded-bl-sm'} rounded-r-xl`;
+
+  // Margin bottom logic
+  const marginBottom = isLast ? 'mb-2' : 'mb-0.5';
+
   const formatText = (text: string) => {
     if (!text) return null;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -110,22 +120,22 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-2`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${marginBottom} group`}>
       <div 
-        className={`max-w-[85%] sm:max-w-[65%] rounded-xl p-3 shadow-sm relative ${
+        className={`max-w-[85%] sm:max-w-[65%] p-2 shadow-sm relative transition-all break-words ${borderRadiusClass} ${
           isMe 
-            ? 'bg-[#ffffff] dark:bg-[#005c4b] text-zinc-800 dark:text-zinc-100 rounded-tr-none' 
-            : 'bg-white dark:bg-[#202c33] text-zinc-800 dark:text-zinc-100 rounded-tl-none'
+            ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-zinc-900 dark:text-zinc-100' 
+            : 'bg-white dark:bg-[#202c33] text-zinc-900 dark:text-zinc-100'
         }`}
       >
         {renderContent()}
-        <div className={`text-[10px] flex items-center justify-end gap-1 mt-1 ${isMe ? 'text-zinc-500 dark:text-emerald-100/70' : 'text-zinc-400'}`}>
-          <span>
+        <div className={`text-[10px] flex items-center justify-end gap-1 mt-1 select-none ${isMe ? 'text-zinc-500 dark:text-emerald-100/70' : 'text-zinc-400'}`}>
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
             {new Date(message.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
           {isMe && (
-            <span className={message.status === 'read' ? 'text-blue-500 dark:text-blue-300' : ''}>
-              {message.status === 'read' ? '✓✓' : message.status === 'delivered' ? '✓✓' : '✓'}
+            <span className={message.status === 'read' ? 'text-blue-500 dark:text-blue-400' : 'text-zinc-400 dark:text-zinc-500'}>
+              {message.status === 'read' ? <CheckCheck size={14} /> : message.status === 'delivered' ? <CheckCheck size={14} /> : <Check size={14} />}
             </span>
           )}
         </div>

@@ -3,6 +3,8 @@ import { redis } from '@/lib/redis';
 import { cosineSimilarity } from '@/lib/utils';
 import { evolutionFindMessages, evolutionSendMediaMessage } from '@/lib/evolution';
 import { generateEmbedding } from '../embedding';
+import { consultarServico } from '@/lib/serpro';
+import { saveConsultation } from '@/lib/serpro-db';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -84,6 +86,55 @@ export async function getUser(phone: string): Promise<string> {
   } finally {
     client.release();
   }
+}
+
+// 14. checkCnpjSerpro
+export async function checkCnpjSerpro(cnpj: string, service: 'CCMEI_DADOS' | 'SIT_FISCAL' = 'CCMEI_DADOS'): Promise<string> {
+    try {
+        console.log(`[checkCnpjSerpro] Consulting ${service} for ${cnpj}...`);
+        const result = await consultarServico(service, cnpj);
+        
+        // Save to DB (async)
+        saveConsultation(cnpj, service, result, 200).catch(err => 
+            console.error('[checkCnpjSerpro] Error saving consultation:', err)
+        );
+
+        return JSON.stringify(result);
+    } catch (error: any) {
+        console.error('checkCnpjSerpro error:', error);
+        return JSON.stringify({ status: 'error', message: error.message || String(error) });
+    }
+}
+
+// 15. getAvailableMedia
+export async function getAvailableMedia(): Promise<string> {
+    const mediaList = [
+        { key: 'apc', description: 'Apresentação Comercial (PDF)', type: 'document' },
+        { key: 'video_institucional', description: 'Vídeo Institucional', type: 'video' }
+    ];
+    return JSON.stringify(mediaList);
+}
+
+// 16. sendMedia
+export async function sendMedia(phone: string, key: string): Promise<string> {
+    if (key === 'apc') {
+        return sendCommercialPresentation(phone, 'apc');
+    } else if (key === 'video_institucional' || key === 'video') {
+        return sendCommercialPresentation(phone, 'video');
+    }
+    return JSON.stringify({ status: "error", message: "Mídia não encontrada." });
+}
+
+// 17. tryScheduleMeeting
+export async function tryScheduleMeeting(phone: string, dateStr: string): Promise<string> {
+    const avail = await checkAvailability(dateStr);
+    const availJson = JSON.parse(avail);
+    
+    if (availJson.available) {
+        return await scheduleMeeting(phone, dateStr);
+    }
+    
+    return JSON.stringify({ status: "unavailable", message: availJson.message || "Horário indisponível." });
 }
 
 // 11. sendForm

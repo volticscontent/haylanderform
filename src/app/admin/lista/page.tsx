@@ -73,7 +73,16 @@ async function getData(page: number = 1, limit: number = 50) {
       LIMIT $1 OFFSET $2
     `, [limit, offset])
     
-    return { data: res.rows, total }
+    // Serialize dates
+    const serialized = res.rows.map(row => ({
+      ...row,
+      data_cadastro: row.data_cadastro instanceof Date ? row.data_cadastro.toISOString() : row.data_cadastro,
+      atualizado_em: row.atualizado_em instanceof Date ? row.atualizado_em.toISOString() : row.atualizado_em,
+      data_controle_24h: row.data_controle_24h instanceof Date ? row.data_controle_24h.toISOString() : row.data_controle_24h,
+      data_ultima_consulta: row.data_ultima_consulta instanceof Date ? row.data_ultima_consulta.toISOString() : row.data_ultima_consulta
+    }))
+
+    return { data: serialized, total }
   } catch (error) {
     console.error('Error fetching list data:', error)
     return { data: [], total: 0 }

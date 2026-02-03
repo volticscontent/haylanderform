@@ -1,8 +1,16 @@
 'use client'
 
-import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle } from 'lucide-react'
+import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle, Globe, ChevronDown, ChevronUp } from 'lucide-react'
 import React, { useState, useEffect, useRef } from 'react'
+import { getConsultationsByCnpj } from '@/app/admin/atendimento/actions'
 
+interface SerproConsultation {
+    id: number;
+    tipo_servico: string;
+    resultado: any;
+    status: number;
+    created_at: string;
+}
 
 // Reusing LeadRecord type structure but adapting optionality as data might be partial
 export type LeadSheetData = {
@@ -218,6 +226,33 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
 }
 
 function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
+    const [consultations, setConsultations] = useState<SerproConsultation[]>([]);
+    const [loadingConsultations, setLoadingConsultations] = useState(false);
+    const [expandedConsultation, setExpandedConsultation] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (lead.cnpj) {
+            setLoadingConsultations(true);
+            getConsultationsByCnpj(lead.cnpj)
+                .then(res => {
+                    if (res.success && res.data) {
+                        setConsultations(res.data as SerproConsultation[]);
+                    }
+                })
+                .finally(() => setLoadingConsultations(false));
+        } else {
+            setConsultations([]);
+        }
+    }, [lead.cnpj]);
+
+    const toggleConsultation = (id: number) => {
+        if (expandedConsultation === id) {
+            setExpandedConsultation(null);
+        } else {
+            setExpandedConsultation(id);
+        }
+    };
+
     return (
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
             
@@ -362,6 +397,56 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                     </div>
                 </div>
             </section>
+
+            {/* 4. Histórico de Consultas Serpro */}
+            <section>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <Globe className="w-4 h-4 text-cyan-500" /> Histórico de Consultas Serpro
+                </h3>
+                
+                {loadingConsultations ? (
+                    <div className="flex items-center justify-center p-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                    </div>
+                ) : consultations.length === 0 ? (
+                    <p className="text-sm text-zinc-500 p-2">Nenhuma consulta registrada para este CNPJ.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {consultations.map((consultation) => (
+                            <div key={consultation.id} className="bg-zinc-50 dark:bg-zinc-800/30 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                                <button 
+                                    onClick={() => toggleConsultation(consultation.id)}
+                                    className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-2 h-2 rounded-full ${consultation.status === 200 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <div>
+                                            <span className="text-sm font-medium text-zinc-900 dark:text-white block">
+                                                {consultation.tipo_servico}
+                                            </span>
+                                            <span className="text-xs text-zinc-500 block">
+                                                {new Date(consultation.created_at).toLocaleString('pt-BR')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {expandedConsultation === consultation.id ? 
+                                        <ChevronUp className="w-4 h-4 text-zinc-500" /> : 
+                                        <ChevronDown className="w-4 h-4 text-zinc-500" />
+                                    }
+                                </button>
+                                
+                                {expandedConsultation === consultation.id && (
+                                    <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
+                                        <pre className="text-xs text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap overflow-x-auto max-h-[300px]">
+                                            {JSON.stringify(consultation.resultado, null, 2)}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </div>
     )
 }
@@ -395,15 +480,20 @@ interface InfoItemProps {
 }
 
 function InfoItem({ icon, label, value, truncate, isMono, italic, className, isCurrency }: InfoItemProps) {
+    // Safety check for Date objects to prevent "Objects are not valid as a React child" error
+    // This happens if the DB returns a Date object and it's passed directly to value
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const safeValue = (value as any) instanceof Date ? (value as any).toLocaleString('pt-BR') : value;
+
     const handleDragStart = (e: React.DragEvent) => {
-        if (!value) {
+        if (!safeValue) {
             e.preventDefault()
             return
         }
         
-        let dragValue = value
-        if (isCurrency && value) {
-             dragValue = Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        let dragValue = safeValue
+        if (isCurrency && safeValue) {
+             dragValue = Number(safeValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
         }
         
         e.dataTransfer.setData('text/plain', String(dragValue))
@@ -414,13 +504,13 @@ function InfoItem({ icon, label, value, truncate, isMono, italic, className, isC
         <div className={`space-y-1 ${className || ''}`}>
             <label className="text-xs text-zinc-500 select-none">{label}</label>
             <div 
-                draggable={!!value}
+                draggable={!!safeValue}
                 onDragStart={handleDragStart}
-                className={`flex items-center gap-2 text-zinc-900 dark:text-zinc-200 ${isMono ? 'font-mono' : ''} ${italic ? 'italic' : ''} ${value ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700' : ''}`}
+                className={`flex items-center gap-2 text-zinc-900 dark:text-zinc-200 ${isMono ? 'font-mono' : ''} ${italic ? 'italic' : ''} ${safeValue ? 'cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700' : ''}`}
             >
                 {icon}
-                <span className={truncate ? 'truncate' : ''} title={truncate ? String(value) : undefined}>
-                    {isCurrency && value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : (value || '-')}
+                <span className={truncate ? 'truncate' : ''} title={truncate ? String(safeValue) : undefined}>
+                    {isCurrency && safeValue ? Number(safeValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : (safeValue || '-')}
                 </span>
             </div>
         </div>

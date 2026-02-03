@@ -1,11 +1,5 @@
 import { NextResponse } from "next/server";
-import { Client } from "pg";
-
-const getClient = () => {
-  return new Client({
-    connectionString: process.env.DATABASE_URL,
-  });
-};
+import pool from "@/lib/db";
 
 // Helper to get full lead data with joins
 const getFullLeadQuery = (whereClause: string) => `
@@ -30,14 +24,12 @@ export async function GET(
   { params }: { params: Promise<{ phone: string }> }
 ) {
   const identifier = (await params).phone;
-  const client = getClient();
   const isEmail = identifier.includes('@');
 
   try {
-    await client.connect();
     const query = getFullLeadQuery(isEmail ? "l.email = $1" : "l.telefone = $1");
     
-    const res = await client.query(query, [identifier]);
+    const res = await pool.query(query, [identifier]);
 
     if (res.rows.length === 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -50,8 +42,6 @@ export async function GET(
       { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
-  } finally {
-    await client.end();
   }
 }
 
@@ -62,7 +52,6 @@ export async function PUT(
   const identifier = (await params).phone;
   const isEmail = identifier.includes('@');
   const body = await request.json();
-  const client = getClient();
 
   // Extract fields
   const {
@@ -89,8 +78,9 @@ export async function PUT(
   const finalInteresse = interesse_ajuda || teria_interesse || null;
   const finalPossuiSocio = possui_socio === "Sim" || possui_socio === true;
 
+  const client = await pool.connect();
+
   try {
-    await client.connect();
     await client.query('BEGIN');
 
     // 1. Get Lead ID
@@ -190,7 +180,9 @@ export async function PUT(
     await client.query('COMMIT');
 
     // Fetch updated data to return
-    const updatedRes = await client.query(getFullLeadQuery('l.id = $1'), [leadId]);
+    // Note: We can reuse the pool here, but we are inside a transaction with 'client',
+    // so we should stick to 'client' or commit first. We committed above.
+    const updatedRes = await pool.query(getFullLeadQuery('l.id = $1'), [leadId]);
     return NextResponse.json(updatedRes.rows[0]);
 
   } catch (error: unknown) {
@@ -198,10 +190,10 @@ export async function PUT(
     console.error("Error updating user:", error);
     const message = error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json(
-      { error: message, details: String(error) },
+      { error: "Internal Server Error", details: message },
       { status: 500 }
     );
   } finally {
-    await client.end();
+    client.release();
   }
 }

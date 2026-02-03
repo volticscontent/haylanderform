@@ -2,12 +2,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Paperclip, Mic, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
   onFileSelect: (file: File) => void;
-  onStartRecording: () => Promise<void>;
   onStopRecording: () => void;
   onCancelRecording: () => void;
   isRecording: boolean;
@@ -18,7 +17,6 @@ interface ChatInputProps {
 export function ChatInput({ 
   onSendMessage, 
   onFileSelect, 
-  onStartRecording, 
   onStopRecording, 
   onCancelRecording,
   isRecording,
@@ -28,7 +26,6 @@ export function ChatInput({
   const [inputText, setInputText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -85,20 +82,25 @@ export function ChatInput({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const file = items[i].getAsFile();
+            if (file) {
+                e.preventDefault();
+                onFileSelect(file);
+                return;
+            }
+        }
+    }
+  };
+
   const handleSubmit = () => {
     if (!inputText.trim() || disabled) return;
     onSendMessage(inputText);
     setInputText('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
-    }
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const formatTime = (seconds: number) => {
@@ -172,7 +174,9 @@ export function ChatInput({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder="Digite uma mensagem..."
+                aria-label="Digite sua mensagem"
                 disabled={disabled}
                 rows={1}
                 className={`w-full px-4 py-3 bg-transparent border-none rounded-2xl outline-none resize-none max-h-32 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 ${isDragging ? 'pointer-events-none' : ''}`}
@@ -183,7 +187,8 @@ export function ChatInput({
             <button 
                 onClick={handleSubmit}
                 disabled={disabled}
-                className="p-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-sm hover:shadow-md transition-all transform active:scale-95 mb-0.5"
+                aria-label="Enviar mensagem"
+                className="p-3 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl shadow-sm hover:shadow-md transition-all transform active:scale-95 mb-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <Send size={22} />
             </button>

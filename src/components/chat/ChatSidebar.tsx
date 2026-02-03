@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Chat } from './types';
+import { formatChatListDate } from './dateUtils';
 import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { SchedulingModal } from './SchedulingModal';
@@ -290,7 +291,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
-                          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate pr-2">
+                          <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate pr-2">
                             {chat.leadName ? (
                                 <div className="flex flex-col">
                                     <span>{chat.leadName}</span>
@@ -301,9 +302,9 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                             ) : (
                                 chat.name
                             )}
-                          </h3>
-                          <span className="text-[10px] text-zinc-400 shrink-0">
-                            {new Date((chat.timestamp || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <span className="text-[10px] text-zinc-400 shrink-0 font-medium">
+                            {formatChatListDate(chat.timestamp || 0)}
                           </span>
                         </div>
                         

@@ -172,7 +172,7 @@ export async function POST(req: Request) {
       // Novo usuário: Criar e mandar para Apolo
       console.log('[Router] Novo usuário detectado. Criando registro...');
       await createUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido' });
-      await updateUser({ telefone: userPhone, situacao: 'aguardando_qualificação' });
+      await updateUser({ telefone: userPhone, situacao: 'nao_respondido' });
       userState = 'lead';
     } else {
       // Usuário existente: Atualizar dados (sync)

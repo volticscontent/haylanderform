@@ -31,15 +31,15 @@ export async function getChatHistory(phone: string): Promise<ChatMessage[]> {
   }
 }
 
-export async function addToHistory(phone: string, role: 'user' | 'assistant' | 'system', content: string | any[]) {
+export async function addToHistory(phone: string, role: 'user' | 'assistant' | 'system', content: string | (string | { type: string; text?: string })[]) {
   // Handle multimodal content (arrays) by extracting text
   let textContent = '';
   if (typeof content === 'string') {
     textContent = content;
   } else if (Array.isArray(content)) {
     // Try to find text component
-    const textPart = content.find(c => c.type === 'text');
-    if (textPart) {
+    const textPart = content.find(c => typeof c === 'object' && c !== null && 'type' in c && c.type === 'text');
+    if (textPart && typeof textPart === 'object' && 'text' in textPart && typeof textPart.text === 'string') {
       textContent = textPart.text;
     } else {
       textContent = '[Arquivo/Imagem enviado]';
