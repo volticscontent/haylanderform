@@ -1,7 +1,7 @@
 'use client'
 
-import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle, Globe, ChevronDown, ChevronUp } from 'lucide-react'
-import React, { useState, useEffect, useRef } from 'react'
+import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle, Globe, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { getConsultationsByCnpj } from '@/app/admin/atendimento/actions'
 
 interface SerproConsultation {
@@ -230,20 +230,32 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
     const [loadingConsultations, setLoadingConsultations] = useState(false);
     const [expandedConsultation, setExpandedConsultation] = useState<number | null>(null);
 
-    useEffect(() => {
+    const fetchConsultations = useCallback(() => {
         if (lead.cnpj) {
             setLoadingConsultations(true);
+            console.log('[LeadSheet] Buscando consultas para:', lead.cnpj);
             getConsultationsByCnpj(lead.cnpj)
                 .then(res => {
+                    console.log('[LeadSheet] Resultado busca:', res);
                     if (res.success && res.data) {
                         setConsultations(res.data as SerproConsultation[]);
+                    } else {
+                        setConsultations([]);
                     }
+                })
+                .catch(err => {
+                    console.error('[LeadSheet] Erro na busca:', err);
+                    setConsultations([]);
                 })
                 .finally(() => setLoadingConsultations(false));
         } else {
             setConsultations([]);
         }
     }, [lead.cnpj]);
+
+    useEffect(() => {
+        fetchConsultations();
+    }, [fetchConsultations]);
 
     const toggleConsultation = (id: number) => {
         if (expandedConsultation === id) {
@@ -400,8 +412,18 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
 
             {/* 4. Histórico de Consultas Serpro */}
             <section>
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                    <Globe className="w-4 h-4 text-cyan-500" /> Histórico de Consultas Serpro
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-cyan-500" /> Histórico de Consultas Serpro
+                    </div>
+                    <button 
+                        onClick={fetchConsultations}
+                        disabled={loadingConsultations}
+                        className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors disabled:opacity-50"
+                        title="Atualizar consultas"
+                    >
+                        <RefreshCw className={`w-3 h-3 ${loadingConsultations ? 'animate-spin' : ''}`} />
+                    </button>
                 </h3>
                 
                 {loadingConsultations ? (
