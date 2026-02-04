@@ -312,7 +312,10 @@ export async function registerLead(name: string, phone: string) {
 
 export async function getConsultationsByCnpj(cnpj: string) {
     try {
+        console.log(`[getConsultationsByCnpj] Buscando consultas para CNPJ bruto: "${cnpj}"`);
         const cleanCnpj = cnpj.replace(/\D/g, '');
+        console.log(`[getConsultationsByCnpj] CNPJ limpo: "${cleanCnpj}"`);
+
         const query = `
             SELECT 
                 id,
@@ -327,6 +330,7 @@ export async function getConsultationsByCnpj(cnpj: string) {
         `;
         
         const { rows } = await pool.query(query, [cleanCnpj]);
+        console.log(`[getConsultationsByCnpj] Encontradas ${rows.length} consultas.`);
         
         const serializedRows = rows.map(row => ({
             ...row,
@@ -335,7 +339,7 @@ export async function getConsultationsByCnpj(cnpj: string) {
 
         return { success: true, data: serializedRows };
     } catch (error) {
-        console.error('Error fetching consultations:', error);
+        console.error('[getConsultationsByCnpj] Error fetching consultations:', error);
         return { success: false, error: 'Falha ao buscar consultas' };
     }
 }
