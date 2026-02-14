@@ -2,7 +2,7 @@
 
 import pool from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { uploadFileToR2 } from "@/lib/r2";
+import { uploadFileToR2, getFileFromR2, deleteFileFromR2 } from "@/lib/r2";
 
 export type SystemSetting = {
     key: string;
@@ -119,5 +119,41 @@ export async function deleteSystemSetting(key: string) {
     } catch (error) {
         console.error('Error deleting setting:', error);
         return { success: false, error: 'Failed to delete setting' };
+    }
+}
+
+export async function getSettingFileContent(key: string) {
+    try {
+        const value = await getSettingValue(key);
+        if (!value) return { success: false, error: 'Setting not found' };
+        
+        const content = await getFileFromR2(value);
+        return { success: true, content };
+    } catch (error) {
+        console.error('Error fetching file content:', error);
+        return { success: false, error: 'Failed to fetch file content' };
+    }
+}
+
+export async function updateSettingFileContent(key: string, content: string, extension: string = 'txt') {
+    try {
+        const buffer = Buffer.from(content, 'utf-8');
+        const fileName = `${key}_${Date.now()}.${extension}`;
+        
+        let contentType = 'text/plain';
+        if (extension === 'json') contentType = 'application/json';
+        if (extension === 'md') contentType = 'text/markdown';
+        if (extension === 'js') contentType = 'application/javascript';
+        if (extension === 'ts') contentType = 'application/typescript';
+        if (extension === 'csv') contentType = 'text/csv';
+        if (extension === 'html') contentType = 'text/html';
+
+        const url = await uploadFileToR2(buffer, fileName, contentType);
+        await updateSystemSetting(key, url);
+        
+        return { success: true, url };
+    } catch (error) {
+        console.error('Error updating file content:', error);
+        return { success: false, error: 'Failed to update file content' };
     }
 }

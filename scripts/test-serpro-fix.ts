@@ -6,15 +6,15 @@ async function test() {
   
   // 1. Check Env Vars
   console.log('Checking Environment Variables...');
-  const cndSystem = process.env.INTEGRA_SITFIS_ID_SISTEMA;
-  const cndService = process.env.INTEGRA_SITFIS_RELATORIO_ID_SERVICO;
-  const dividaSystem = process.env.INTEGRA_PGMEI_ID_SISTEMA;
-  const dividaService = process.env.INTEGRA_PGMEI_ID_SERVICO;
+  const cndSystem = process.env.INTEGRA_CND_ID_SISTEMA;
+  const cndService = process.env.INTEGRA_CND_ID_SERVICO;
+  const dividaSystem = process.env.INTEGRA_DIVIDA_ATIVA_ID_SISTEMA;
+  const dividaService = process.env.INTEGRA_DIVIDA_ATIVA_ID_SERVICO;
   
-  console.log(`CND System (SITFIS): ${cndSystem}`);
-  console.log(`CND Service (RELATORIO): ${cndService}`);
-  console.log(`Divida Ativa System (PGMEI): ${dividaSystem}`);
-  console.log(`Divida Ativa Service (PGMEI): ${dividaService}`);
+  console.log(`CND System: ${cndSystem}`);
+  console.log(`CND Service: ${cndService}`);
+  console.log(`Divida Ativa System: ${dividaSystem}`);
+  console.log(`Divida Ativa Service: ${dividaService}`);
 
   const certB64 = process.env.CERTIFICADO_BASE64;
   if (certB64) {
@@ -35,9 +35,9 @@ async function test() {
     // Don't return, try to continue to see specific service errors if any
   }
 
-  // 3. Test CND (using SITFIS)
+  // 3. Test CND
   try {
-    console.log('\nTesting CND (SITFIS)...');
+    console.log('\nTesting CND...');
     const cnpj = process.env.CONTRATANTE_CNPJ || '51564549000140';
     console.log(`Querying CNPJ: ${cnpj}`);
     const result = await consultarServico('CND', cnpj);

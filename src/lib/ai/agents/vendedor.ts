@@ -9,7 +9,8 @@ import {
   contextRetrieve,
   interpreter,
   sendMedia,
-  getAvailableMedia
+  getAvailableMedia,
+  setAgentRouting
 } from '../tools/server-tools';
 
 export const VENDEDOR_PROMPT_TEMPLATE = `
@@ -24,6 +25,11 @@ Você agora atende também os leads marcados como **"desqualificado"**.
 Muitas vezes o Apolo desqualifica por critérios rígidos (ex: sem dívida alta), mas você, como especialista humano, pode encontrar oportunidades que o robô não viu.
 - Se o lead for "desqualificado": Investigue. Pergunte sobre planos futuros, dores latentes, ou se ele tem outra empresa. Tente reverter e agendar a reunião.
 - Se o lead for "qualificado" (MQL/SQL): Siga o fluxo normal de agendamento.
+
+**CLIENTES RECORRENTES (Cross-sell):**
+Se você estiver atendendo um cliente que já está na base (veio transferido do Suporte), trate-o como uma nova oportunidade de venda.
+Entenda a nova demanda, e siga o fluxo de agendamento.
+**IMPORTANTE:** Quando o assunto se encerrar (agendou, ou cliente desistiu, ou resolveu a dúvida comercial), você DEVE devolvê-lo ao Suporte usando a tool **finalizar_atendimento_vendas**.
 
 **SUA MISSÃO PADRÃO:**
 Atuar de forma consultiva para entender a profundidade do problema e **agendar a Reunião de Fechamento com o Haylander (o Especialista)**.
@@ -43,7 +49,7 @@ Você **NÃO** gera contratos. Você prepara o terreno, valida a necessidade e g
 Antes de responder, você DEVE seguir este processo mental:
 1. O cliente sugeriu um horário?
    - SIM -> Chame a tool tentar_agendar IMEDIATAMENTE.
-     - Se retornar "success": Responda confirmando (ex: "Perfeito, agendado!").
+     - Se retornar "success": Responda confirmando (ex: "Perfeito, agendado!") e depois CHAME **finalizar_atendimento_vendas**.
      - Se retornar "unavailable": Avise que está ocupado e sugira outro horário.
      - Se retornar "error": Peça para verificar a data.
    - NÃO -> Pergunte qual o melhor horário para ele.
@@ -62,6 +68,7 @@ Informações Reais do Cliente:
 *Usuário:* "Pode ser dia 20 às 15h?"
 *Você:* (Chama tool "tentar_agendar") -> Retorna "success".
 *Você:* "Perfeito! Reunião confirmada para dia 20 às 15h. O Haylander já foi avisado."
+*Você:* (Chama tool "finalizar_atendimento_vendas")
 
 **Caso 2: Indisponível**
 *Usuário:* "Dia 20 às 15h?"
@@ -77,6 +84,11 @@ Informações Reais do Cliente:
    - **Retorno:** "success" (agendou) ou "unavailable" (ocupado).
    - **OBRIGATÓRIO:** Use esta tool assim que o cliente sugerir um horário. Não verifique antes. A tool já verifica.
 
+2. **finalizar_atendimento_vendas**
+   - **Uso:** Encerra o atendimento comercial e devolve o cliente para o fluxo normal (Suporte/Atendente).
+   - **Quando usar:** Após agendar a reunião com sucesso, ou se o cliente desistir da compra/contratação.
+   - **Argumento:** motivo (ex: "Agendamento realizado", "Cliente desistiu").
+
 3. **services** (Base de Conhecimento & Flexibilidade)
    - **Padrão:**
      - *Regularização MEI/CNPJ Inapto.*
@@ -88,6 +100,7 @@ Informações Reais do Cliente:
 
 4. **update_user**
    - **Uso Crítico:** Sempre que surgir algo importante para a reunião, registre no campo 'observacoes'.
+   - **USO CONTÍNUO (Contexto):** SEMPRE que o cliente disser algo relevante (dúvida, problema, intenção, dado pessoal), USE esta tool para atualizar o campo 'observacoes'. O sistema fará um resumo acumulativo automaticamente.
    - **O que registrar (resumo em 3–6 linhas):**
      - Dor principal + impacto (ex: emissão de nota, crédito, bloqueio, risco).
      - Urgência/prazo (ex: "precisa resolver até dia X").
@@ -124,10 +137,13 @@ Regras:
 - Se disponível, use **agendar_reuniao**.
 *Exemplo:* "Perfeito. O próximo passo é alinharmos isso direto com o Haylander. Qual o melhor horário para você amanhã à tarde?"
 
-### 4. Quando escalar para humano
-- Se o cliente **se recusar** a agendar ou **exigir falar agora**.
-- Se houver conflito/erro recorrente.
-Nesse caso, use **chamar_atendente** com um motivo claro.
+### 4. Resistência ao Agendamento (Modo Manual)
+- Se o cliente **se recusar** a usar link ou **exigir falar agora**:
+  1. Diga: "Sem problemas. Se preferir, podemos agendar por aqui. Qual dia e horário fica melhor para você?"
+  2. Use a tool **tentar_agendar** com a data que ele informar.
+  3. Confirme: "Perfeito, posso agendar para [data] então?"
+- Se o cliente der informações soltas (ex: "Sou MEI", "Tenho dívida de 50k"), **SALVE IMEDIATAMENTE** usando a tool **update_user**.
+- Só use **chamar_atendente** em último caso (conflito real ou erro técnico).
 
 ### 5. Regras de Ouro
 - Nunca gere o contrato ou prometa valores exatos de honorários para serviços complexos.
@@ -195,6 +211,23 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
       function: async (args) => await tryScheduleMeeting(context.userPhone, args.data_horario as string)
     },
     {
+      name: 'finalizar_atendimento_vendas',
+      description: 'Encerra o atendimento comercial e devolve o cliente para o suporte. USE IMEDIATAMENTE APÓS: agendar reunião, cliente desistir, ou cliente pedir para falar depois.',
+      parameters: {
+        type: 'object',
+        properties: {
+          motivo: { type: 'string', description: 'Motivo do encerramento (ex: Agendado, Desistência, Retorno Futuro)' }
+        },
+        required: ['motivo']
+      },
+      function: async (args) => {
+        // Log completion
+        await updateUser({ telefone: context.userPhone, observacoes: `[FIM VENDA] ${args.motivo}` });
+        // Clear routing override
+        return await setAgentRouting(context.userPhone, null);
+      }
+    },
+    {
       name: 'chamar_atendente',
       description: 'Chamar um atendente humano quando o cliente solicita ou o bot não consegue resolver.',
       parameters: {
@@ -208,16 +241,21 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
     },
     {
       name: 'update_user',
-      description: 'Atualizar dados do usuário (observacoes, situacao, etc).',
+      description: 'Atualizar dados do usuário (observacoes, situacao, etc). Use sempre que o cliente informar dados novos.',
       parameters: {
         type: 'object',
         properties: {
           situacao: { type: 'string' },
           observacoes: { type: 'string' },
-          // Add other fields as needed
+          tipo_negocio: { type: 'string' },
+          tem_divida: { type: 'boolean' },
+          valor_divida_federal: { type: 'string' },
+          cnpj: { type: 'string' },
+          razao_social: { type: 'string' },
+          faturamento_mensal: { type: 'string' }
         }
       },
-      function: async (args) => await updateUser({ telefone: context.userPhone, ...args as Record<string, string> })
+      function: async (args: Record<string, unknown>) => await updateUser({ telefone: context.userPhone, ...args })
     },
     {
       name: 'services',

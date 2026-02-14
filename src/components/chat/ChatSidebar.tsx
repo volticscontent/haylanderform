@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { Chat } from './types';
 import { formatChatListDate } from './dateUtils';
-import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar } from 'lucide-react';
+import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar, AlertCircle } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { SchedulingModal } from './SchedulingModal';
 
@@ -27,6 +27,17 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState<number>(0);
+
+  useEffect(() => {
+    // Use setTimeout to avoid synchronous setState warning
+    const timer = setTimeout(() => setCurrentTimestamp(Date.now()), 0);
+    const interval = setInterval(() => setCurrentTimestamp(Date.now()), 60000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
 
   const filteredChats = useMemo(() => {
     let filtered = chats;
@@ -45,7 +56,9 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
       const lowerTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(c => 
         c.name.toLowerCase().includes(lowerTerm) || 
-        c.id.includes(lowerTerm)
+        c.id.includes(lowerTerm) ||
+        (c.leadName && c.leadName.toLowerCase().includes(lowerTerm)) ||
+        (c.leadStatus && c.leadStatus.toLowerCase().includes(lowerTerm))
       );
     }
 
@@ -331,10 +344,24 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                                     {chat.leadStatus === 'qualificado' && chat.leadDataReuniao ? 'Call' : (chat.leadStatus === 'cliente' ? 'Ver Cliente' : 'Ver Lead')}
                                 </button>
                                 {chat.leadDataReuniao && (
-                                  <span className="flex items-center gap-1 text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-md dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800 font-medium">
+                                  <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border font-medium ${
+                                    currentTimestamp && new Date(chat.leadDataReuniao).getTime() < currentTimestamp
+                                        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                                        : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800'
+                                  }`}>
                                       <Calendar size={12} />
                                       {new Date(chat.leadDataReuniao).toLocaleDateString()}
                                   </span>
+                                )}
+                                {chat.leadNeedsAttendant && (
+                                    <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border font-medium ${
+                                        chat.leadAttendantRequestedAt && currentTimestamp && new Date(chat.leadAttendantRequestedAt).getTime() < currentTimestamp - 3600000 
+                                        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                                        : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
+                                    }`}>
+                                        <AlertCircle size={12} />
+                                        Ajuda
+                                    </span>
                                 )}
                              </div>
                         )}

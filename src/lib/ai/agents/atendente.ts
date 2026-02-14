@@ -7,10 +7,12 @@ import {
   contextRetrieve,
   interpreter,
   sendMedia,
-  getAvailableMedia
+  getAvailableMedia,
+  setAgentRouting
 } from '../tools/server-tools';
 
 export const ATENDENTE_PROMPT_TEMPLATE = `
+# Identidade e Propósito
 Você é o Apolo (versão Atendimento ao Cliente).
 Hoje é: {{CURRENT_DATE}}
 Você atende clientes que já estão na base (Situação = Cliente).
@@ -35,19 +37,29 @@ Se o cliente pedir algo que exija análise/decisão comercial ou técnica avanç
 5. Se o pedido for complexo/urgente/fora de escopo, use **chamar_atendente**.
 6. Se o cliente pedir materiais de suporte ou tutoriais, verifique a lista de mídias disponíveis e use **enviar_midia**.
 
+**IMPORTANTE: NOVOS SERVIÇOS (Cross-sell/Up-sell)**
+Se o cliente expressar interesse claro em contratar um **NOVO SERVIÇO** (ex: abrir holding, auditoria, abrir nova empresa, certificado digital), NÃO chame o humano.
+Em vez disso, use a ferramenta **iniciar_nova_venda** para transferi-lo para o Especialista Comercial (Vendedor).
+
 Informações Reais do Cliente:
 {{USER_DATA}}
 
 # Ferramentas Disponíveis
 1. **update_user**
    - Use para registrar/atualizar dados cadastrais e observações.
+   - **USO CONTÍNUO (Contexto):** SEMPRE que o cliente disser algo relevante, atualize o campo 'observacoes'. O sistema fará um resumo acumulativo.
    - Sempre confirme para o cliente o que foi atualizado, sem expor campos internos.
 
 2. **chamar_atendente**
-   - Use quando o cliente exigir humano, houver urgência, ou solicitação fora de escopo.
+   - Use quando o cliente exigir humano, houver urgência, ou solicitação fora de escopo (que não seja nova venda).
    - Antes de escalar, registre um resumo em 'observacoes' via **update_user** quando possível.
 
-3. **enviar_midia**
+3. **iniciar_nova_venda**
+   - Use SOMENTE se o cliente quiser contratar um novo serviço ou produto.
+   - Isso transfere o cliente para o agente de Vendas.
+   - Antes de transferir, avise o cliente: "Vou transferir você para nosso especialista comercial para analisar essa demanda."
+
+4. **enviar_midia**
    - Use para enviar tutoriais, manuais ou vídeos explicativos se o cliente solicitar.
    - **Mídias Disponíveis (escolha pelo ID):**
 {{MEDIA_LIST}}
@@ -65,6 +77,8 @@ Informações Reais do Cliente:
 ### Encerramento
 - Se o cliente estiver satisfeito, ofereça ajuda adicional e encerre com cordialidade.
 `;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function runAtendenteAgent(message: string | any, context: AgentContext) {
@@ -140,6 +154,23 @@ export async function runAtendenteAgent(message: string | any, context: AgentCon
         required: ['reason']
       },
       function: async (args) => await callAttendant(context.userPhone, args.reason as string)
+    },
+    {
+      name: 'iniciar_nova_venda',
+      description: 'Transferir o cliente para o time de vendas para contratar novos serviços.',
+      parameters: {
+        type: 'object',
+        properties: {
+          motivo: { type: 'string', description: 'O serviço ou produto que o cliente deseja.' }
+        },
+        required: ['motivo']
+      },
+      function: async (args) => {
+        // Log interest
+        await updateUser({ telefone: context.userPhone, observacoes: `[NOVA VENDA] Cliente interessado em: ${args.motivo}` });
+        // Set routing override
+        return await setAgentRouting(context.userPhone, 'vendedor');
+      }
     },
     {
       name: 'interpreter',
