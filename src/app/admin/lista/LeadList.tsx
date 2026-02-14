@@ -41,6 +41,8 @@ type LeadRecord = {
   data_ultima_consulta: string | null
   procuracao: boolean | null
   data_reuniao: string | null
+  needs_attendant: boolean | null
+  attendant_requested_at: string | null
 }
 
 function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
@@ -502,16 +504,32 @@ export default function LeadList({
     }
   }, [bulkColumn, updateColumn])
 
-  const uniqueValues = useMemo(() => {
-    if (!bulkColumn || !data) return [] as string[]
-    const set = new Set<string>()
-    data.forEach((row: LeadRecord) => {
-      const v = row[bulkColumn]
-      const s = v === null || typeof v === 'undefined' ? '' : String(v)
-      if (s.length) set.add(s)
-    })
-    return Array.from(set).sort();
-  }, [data, bulkColumn]);
+  const [uniqueValues, setUniqueValues] = useState<string[]>([])
+  const [uniqueValuesLoading, setUniqueValuesLoading] = useState(false)
+
+  useEffect(() => {
+    if (!bulkColumn) {
+      setUniqueValues([])
+      return
+    }
+
+    const fetchUniqueValues = async () => {
+      setUniqueValuesLoading(true)
+      try {
+        const res = await fetch(`/api/leads/unique-values?column=${bulkColumn}`)
+        if (res.ok) {
+          const data = await res.json()
+          setUniqueValues(data.values || [])
+        }
+      } catch (error) {
+        console.error('Error fetching unique values:', error)
+      } finally {
+        setUniqueValuesLoading(false)
+      }
+    }
+
+    fetchUniqueValues()
+  }, [bulkColumn])
 
 
 
@@ -556,9 +574,29 @@ export default function LeadList({
           ? (!row.envio_disparo || row.envio_disparo === 'Pendente')
           : row.envio_disparo === statusFilter
 
-      return matchesSearch && matchesStatus
+      // Bulk Filter Logic
+      let matchesBulk = true
+      if (bulkOpen && bulkColumn) {
+        const val = row[bulkColumn]
+        // Normaliza valor para string para comparação
+        const strVal = val === null || typeof val === 'undefined' ? '' : String(val)
+        
+        if (bulkOperator === 'is_empty') {
+            matchesBulk = strVal === ''
+        } else if (bulkOperator === 'is_not_empty') {
+            matchesBulk = strVal !== ''
+        } else if (bulkValues.length > 0) {
+             if (bulkOperator === 'in') {
+                 matchesBulk = bulkValues.includes(strVal)
+             } else if (bulkOperator === 'not_in') {
+                 matchesBulk = !bulkValues.includes(strVal)
+             }
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesBulk
     })
-  }, [data, searchTerm, statusFilter])
+  }, [data, searchTerm, statusFilter, bulkOpen, bulkColumn, bulkOperator, bulkValues])
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col h-[calc(100vh-140px)] relative">
@@ -598,7 +636,7 @@ export default function LeadList({
              <option value="a3">Pendente (Dia 3 - a3)</option>
              <option value="error">Erros</option>
            </select>
-           <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-500 transition-colors">
+           <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-black dark:text-white border border-zinc-300 rounded-md hover:bg-zinc-500 transition-colors">
              <Download className="w-4 h-4" />
              <span className="hidden sm:inline">Exportar</span>
            </button>
@@ -682,7 +720,11 @@ export default function LeadList({
                   <div className="mt-3">
                     <label className="text-sm font-medium text-zinc-700 dark:text-zinc-200">Valores únicos</label>
                     <div className="mt-2 max-h-40 overflow-auto border border-zinc-200 dark:border-zinc-800 rounded-md p-2 bg-white dark:bg-zinc-900">
-                      {uniqueValues.length === 0 ? (
+                      {uniqueValuesLoading ? (
+                        <div className="flex items-center justify-center p-4">
+                           <Clock className="w-5 h-5 animate-spin text-zinc-400" />
+                        </div>
+                      ) : uniqueValues.length === 0 ? (
                         <p className="text-sm text-zinc-500">Nenhum valor disponível para a coluna.</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1008,7 +1050,19 @@ export default function LeadList({
                           {row.nome_completo ? row.nome_completo.substring(0, 2).toUpperCase() : '??'}
                         </div>
                         <div>
-                          <div className="font-medium text-zinc-900 dark:text-zinc-200">{row.nome_completo || 'Sem nome'}</div>
+                          <div className="font-medium text-zinc-900 dark:text-zinc-200 flex items-center gap-2">
+                            {row.nome_completo || 'Sem nome'}
+                            {row.needs_attendant && (
+                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                row.attendant_requested_at && new Date(row.attendant_requested_at).getTime() < Date.now() - 3600000 
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                              }`} title={row.attendant_requested_at ? `Solicitado em: ${new Date(row.attendant_requested_at).toLocaleString()}` : 'Solicitação de atendente'}>
+                                <AlertCircle size={10} />
+                                Ajuda
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-zinc-500 font-mono">{row.cnpj || 'CNPJ não informado'}</div>
                         </div>
                       </div>

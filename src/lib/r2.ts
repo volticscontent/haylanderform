@@ -1,5 +1,5 @@
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -19,6 +19,56 @@ const r2 = new S3Client({
     secretAccessKey: R2_SECRET_ACCESS_KEY || '',
   },
 });
+
+export async function getFileFromR2(urlOrKey: string): Promise<string> {
+  if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
+
+  // Extract key from URL if needed
+  let key = urlOrKey;
+  if (urlOrKey.startsWith('http')) {
+      const parts = urlOrKey.split('/');
+      key = parts[parts.length - 1];
+  }
+
+  const command = new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+  });
+
+  try {
+      const response = await r2.send(command);
+      if (!response.Body) throw new Error('Empty body');
+      return await response.Body.transformToString();
+  } catch (error) {
+      console.error('Error reading from R2:', error);
+      throw error;
+  }
+}
+
+export async function deleteFileFromR2(urlOrKey: string): Promise<void> {
+  if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
+
+  let key = urlOrKey;
+  if (urlOrKey.startsWith('http')) {
+      const parts = urlOrKey.split('/');
+      key = parts[parts.length - 1];
+  }
+  // Also handle encoded URLs (spaces as %20)
+  key = decodeURIComponent(key);
+
+  const command = new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+  });
+
+  try {
+      await r2.send(command);
+      console.log(`Deleted file from R2: ${key}`);
+  } catch (error) {
+      console.error('Error deleting from R2:', error);
+      // We don't throw here to avoid blocking the main flow if deletion fails (e.g. file not found)
+  }
+}
 
 export async function uploadFileToR2(
   fileBuffer: Buffer | Uint8Array,

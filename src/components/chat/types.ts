@@ -10,6 +10,8 @@ export interface Chat {
   leadName?: string;
   leadStatus?: string;
   leadDataReuniao?: string;
+  leadNeedsAttendant?: boolean;
+  leadAttendantRequestedAt?: string;
 }
 
 export interface Message {

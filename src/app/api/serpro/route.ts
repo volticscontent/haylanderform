@@ -5,13 +5,14 @@ import { saveConsultation } from '@/lib/serpro-db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { cnpj, service, ano, mes, numeroRecibo, codigoReceita } = body as { 
+    const { cnpj, service, ano, mes, numeroRecibo, codigoReceita, categoria } = body as { 
       cnpj?: string; 
       service?: keyof typeof SERVICE_CONFIG; 
       ano?: string;
       mes?: string;
       numeroRecibo?: string;
       codigoReceita?: string;
+      categoria?: string;
     };
 
     if (!cnpj) {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     const target = service || 'CCMEI_DADOS';
-    const options = { ano, mes, numeroRecibo, codigoReceita };
+    const options = { ano, mes, numeroRecibo, codigoReceita, categoria };
     
     const result = await consultarServico(target, cnpj, options);
 
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
 
     // Save full history using the robust DB helper
     // We don't await this to speed up response, but we log errors inside the function
-    saveConsultation(cnpj, target, finalResult, 200);
+    saveConsultation(cnpj, target, finalResult, 200, 'admin');
 
     return NextResponse.json(finalResult);
   } catch (error: unknown) {

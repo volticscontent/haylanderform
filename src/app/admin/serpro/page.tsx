@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { DataViewer } from '@/components/serpro/DataViewer';
+import LastConsultedClients from '@/components/serpro/LastConsultedClients';
+import { SERVICE_CONFIG } from '@/lib/serpro-config';
 
 interface SerproResponse {
   mensagens?: Array<{ codigo?: string; texto?: string }>;
@@ -16,10 +18,12 @@ export default function SerproPage() {
   const [mes, setMes] = useState('');
   const [numeroRecibo, setNumeroRecibo] = useState('');
   const [codigoReceita, setCodigoReceita] = useState('');
+  const [categoria, setCategoria] = useState('GERAL_MENSAL'); // Para DCTFWEB
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SerproResponse | null>(null);
   const [error, setError] = useState('');
-  const [service, setService] = useState<'CCMEI_DADOS' | 'PGMEI' | 'SIMEI' | 'SIT_FISCAL' | 'DIVIDA_ATIVA' | 'CND' | 'PARCELAMENTO' | 'DASN_SIMEI' | 'PROCESSOS'>('CCMEI_DADOS');
+  const [historyTab, setHistoryTab] = useState<'admin' | 'bot'>('admin');
+  const [service, setService] = useState<keyof typeof SERVICE_CONFIG>('CCMEI_DADOS');
 
   const handleConsultar = async () => {
     if (!cnpj) return;
@@ -38,7 +42,8 @@ export default function SerproPage() {
           ano, 
           mes: mes || undefined, 
           numeroRecibo: numeroRecibo || undefined, 
-          codigoReceita: codigoReceita || undefined 
+          codigoReceita: codigoReceita || undefined,
+          categoria: service === 'DCTFWEB' ? categoria : undefined
         }),
       });
 
@@ -84,22 +89,28 @@ export default function SerproPage() {
             </label>
             <select
               value={service}
-              onChange={(e) => setService(e.target.value as 'CCMEI_DADOS' | 'PGMEI' | 'SIMEI' | 'SIT_FISCAL' | 'DIVIDA_ATIVA' | 'CND' | 'PARCELAMENTO' | 'DASN_SIMEI' | 'PROCESSOS')}
+              onChange={(e) => setService(e.target.value as keyof typeof SERVICE_CONFIG)}
               className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             >
-              <option value="CCMEI_DADOS">CCMEI - Dados</option>
-              <option value="PGMEI">PGMEI</option>
-              <option value="SIMEI">SIMEI</option>
-              <option value="SIT_FISCAL">Situação Fiscal</option>
-              <option value="DIVIDA_ATIVA">Dívida Ativa</option>
-              <option value="CND">Certidão Negativa (CND)</option>
-              <option value="PARCELAMENTO">Parcelamentos</option>
-              <option value="DASN_SIMEI">DASN SIMEI</option>
-              <option value="PROCESSOS">Processos Administrativos</option>
+              {Object.entries(SERVICE_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>
+                  {config.descricao ? `${key} - ${config.descricao}` : key}
+                </option>
+              ))}
             </select>
           </div>
 
-          {(service === 'PGMEI' || service === 'SIMEI' || service === 'DIVIDA_ATIVA' || service === 'DASN_SIMEI') && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              {SERVICE_CONFIG[service]?.descricao || 'Serviço Selecionado'}
+            </h3>
+            <div className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
+              <p><span className="font-medium">Finalidade:</span> {SERVICE_CONFIG[service]?.finalidade}</p>
+              <p><span className="font-medium">Como usar:</span> {SERVICE_CONFIG[service]?.uso}</p>
+            </div>
+          </div>
+
+          {(service === 'PGMEI' || service === 'SIMEI' || service === 'DIVIDA_ATIVA' || service === 'DASN_SIMEI' || service === 'PGDASD' || service === 'DCTFWEB') && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
@@ -127,6 +138,24 @@ export default function SerproPage() {
                   className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 />
               </div>
+            </div>
+          )}
+
+          {service === 'DCTFWEB' && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Categoria
+              </label>
+              <select
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              >
+                <option value="GERAL_MENSAL">Geral Mensal</option>
+                <option value="GERAL_TRIMESTRAL">Geral Trimestral</option>
+                <option value="13_SALARIO">13º Salário</option>
+                <option value="ESPETACULO_DESPORTIVO">Espetáculo Desportivo</option>
+              </select>
             </div>
           )}
 
@@ -185,6 +214,35 @@ export default function SerproPage() {
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
           {error}
+        </div>
+      )}
+
+      {/* Exibe o histórico de clientes consultados se não houver resultado de consulta ativa */}
+      {!result && (
+        <div className="space-y-4">
+            <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800">
+               <button 
+                 onClick={() => setHistoryTab('admin')}
+                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    historyTab === 'admin' 
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+                      : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                 }`}
+               >
+                 Minhas Consultas (Admin)
+               </button>
+               <button 
+                 onClick={() => setHistoryTab('bot')}
+                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    historyTab === 'bot' 
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
+                      : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                 }`}
+               >
+                 Consultas do Bot
+               </button>
+            </div>
+            <LastConsultedClients source={historyTab} />
         </div>
       )}
 

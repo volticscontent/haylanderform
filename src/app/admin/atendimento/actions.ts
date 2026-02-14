@@ -10,6 +10,8 @@ interface Lead {
     nome_completo: string | null;
     situacao: string | null;
     data_reuniao: string | null;
+    needs_attendant: boolean | null;
+    attendant_requested_at: string | null;
 }
 
 interface Chat {
@@ -71,6 +73,8 @@ export async function getChats() {
             l.id, 
             l.telefone, 
             l.nome_completo, 
+            l.needs_attendant,
+            l.attendant_requested_at,
             lq.situacao,
             lv.data_reuniao
           FROM leads l
@@ -85,7 +89,9 @@ export async function getChats() {
                     id: lead.id,
                     name: lead.nome_completo,
                     status: lead.situacao,
-                    data_reuniao: lead.data_reuniao
+                    data_reuniao: lead.data_reuniao,
+                    needs_attendant: lead.needs_attendant,
+                    attendant_requested_at: lead.attendant_requested_at
                 };
                 
                 const variations = generatePhoneVariations(lead.telefone);
@@ -130,7 +136,9 @@ export async function getChats() {
             leadName: leadInfo?.name || undefined,
             leadStatus: leadInfo?.status || undefined,
             // Ensure date is serialized to string to prevent React rendering errors
-            leadDataReuniao: leadInfo?.data_reuniao ? new Date(leadInfo.data_reuniao).toISOString() : undefined
+            leadDataReuniao: leadInfo?.data_reuniao ? new Date(leadInfo.data_reuniao).toISOString() : undefined,
+            leadNeedsAttendant: leadInfo?.needs_attendant || false,
+            leadAttendantRequestedAt: leadInfo?.attendant_requested_at ? new Date(leadInfo.attendant_requested_at).toISOString() : undefined
         };
 
         // Always fetch the latest message to ensure accuracy
@@ -170,6 +178,8 @@ export async function getChats() {
                 leadName: lead.nome_completo,
                 leadStatus: lead.situacao,
                 leadDataReuniao: lead.data_reuniao,
+                leadNeedsAttendant: lead.needs_attendant || false,
+                leadAttendantRequestedAt: lead.attendant_requested_at ? new Date(lead.attendant_requested_at).toISOString() : undefined,
                 isVirtual: true
             };
         });
@@ -183,9 +193,11 @@ export async function getChats() {
 
 export async function getLeadByPhone(phone: string) {
     try {
+        console.log(`[getLeadByPhone] Searching for phone: ${phone}`);
         const cleanPhone = phone.replace(/\D/g, '');
+        console.log(`[getLeadByPhone] Clean phone: ${cleanPhone}`);
         
-        const query = `
+        const baseQuery = `
             SELECT 
                 l.id,
                 l.telefone, 
@@ -207,6 +219,7 @@ export async function getLeadByPhone(phone: string) {
                 le.cidade,
                 le.estado,
                 le.cep,
+                le.dados_serpro,
 
                 -- leads_atendimento
                 la.observacoes,
@@ -247,11 +260,11 @@ export async function getLeadByPhone(phone: string) {
             LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
             LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
             LEFT JOIN leads_atendimento la ON l.id = la.lead_id
-            WHERE l.telefone = $1
         `;
 
         // Try exact match first
-        let result = await pool.query(query, [cleanPhone]);
+        let result = await pool.query(`${baseQuery} WHERE l.telefone = $1`, [cleanPhone]);
+        console.log(`[getLeadByPhone] Exact match result: ${result.rows.length}`);
         
         if (result.rows.length === 0) {
             // Try variations
@@ -260,22 +273,41 @@ export async function getLeadByPhone(phone: string) {
                 // Build OR clause for variations
                 const placeholders = variations.map((_, i) => `$${i + 1}`).join(', ');
                 
-                // Need to rebuild query for IN clause
-                const variationQuery = query.replace('WHERE l.telefone = $1', `WHERE l.telefone IN (${placeholders}) LIMIT 1`);
-                
-                result = await pool.query(variationQuery, variations);
+                // Use IN clause for variations
+                result = await pool.query(`${baseQuery} WHERE l.telefone IN (${placeholders}) LIMIT 1`, variations);
             }
         }
 
         if (result.rows.length > 0) {
             const lead = result.rows[0];
+            const dadosSerpro = lead.dados_serpro || {};
+
+            // Helper to check nested properties safely
+            const getSerproValue = (key: string) => {
+                return dadosSerpro[key] || null;
+            };
+
             // Ensure dates are serialized to strings
             const serializedLead = {
                 ...lead,
+                // Map potentially missing fields from dados_serpro
+                tem_protestos: lead.tem_protestos || (getSerproValue('protestos') ? 'Sim' : null),
+                tem_execucao_fiscal: lead.tem_execucao_fiscal || (getSerproValue('execucao_fiscal') ? 'Sim' : null),
+                tem_divida_ativa: lead.tem_divida_ativa || (getSerproValue('divida_ativa') ? 'Sim' : null),
+                tem_parcelamento: lead.tem_parcelamento || (getSerproValue('parcelamento') ? 'Sim' : null),
+                
+                // Extra Serpro fields
+                porte_empresa: lead.porte_empresa || getSerproValue('porte_empresa') || null,
+                score_serasa: lead.score_serasa || getSerproValue('score_serasa') || null,
+                idades_socios: lead.idades_socios || getSerproValue('idades_socios') || null,
+                motivo_divida: lead.motivo_divida || getSerproValue('motivo_divida') || null,
+                tem_cartorios: lead.tem_cartorios || (getSerproValue('cartorios') ? 'Sim' : null),
+                parcelamento_ativo: lead.parcelamento_ativo || (getSerproValue('parcelamento_ativo') ? 'Sim' : null),
+                
                 data_cadastro: lead.data_cadastro ? new Date(lead.data_cadastro).toISOString() : null,
                 atualizado_em: lead.atualizado_em ? new Date(lead.atualizado_em).toISOString() : null,
                 data_controle_24h: lead.data_controle_24h ? new Date(lead.data_controle_24h).toISOString() : null,
-                envio_disparo: lead.envio_disparo ? new Date(lead.envio_disparo).toISOString() : null,
+                envio_disparo: lead.envio_disparo,
                 data_ultima_consulta: lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toISOString() : null,
                 data_reuniao: lead.data_reuniao ? new Date(lead.data_reuniao).toISOString() : null,
                 procuracao_validade: lead.procuracao_validade ? new Date(lead.procuracao_validade).toISOString() : null,

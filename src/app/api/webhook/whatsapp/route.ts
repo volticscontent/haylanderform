@@ -3,7 +3,7 @@ import { runApoloAgent } from '@/lib/ai/agents/apolo';
 import { runVendedorAgent } from '@/lib/ai/agents/vendedor';
 import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
 import { AgentContext } from '@/lib/ai/types';
-import { getUser, updateUser, createUser } from '@/lib/ai/tools/server-tools';
+import { getUser, updateUser, createUser, getAgentRouting, triggerInactivityTimer } from '@/lib/ai/tools/server-tools';
 import { addToHistory, getChatHistory } from '@/lib/chat-history';
 import redis from '@/lib/redis';
 
@@ -143,6 +143,10 @@ export async function POST(req: Request) {
     // 0. Salvar mensagem do usuário no histórico
     await addToHistory(userPhone, 'user', message);
 
+    // Cancelar Timer de Inatividade anterior (se o usuário respondeu, ele está ativo)
+    // Isso evita que ele receba a mensagem de "ainda está aí?" fora de hora
+    triggerInactivityTimer(userPhone, 'system', 'stop');
+
     // Publish INCOMING message to Redis for Real-time
     const incomingSocketMsg = {
         chatId: sender,
@@ -203,6 +207,13 @@ export async function POST(req: Request) {
       }
     }
 
+    // 1.5 Verificar Override de Roteamento (Cross-sell / Up-sell)
+    const routingOverride = await getAgentRouting(userPhone);
+    if (routingOverride === 'vendedor') {
+        console.log(`[Router] Override ativo: Redirecionando ${userPhone} para Vendas (Cross-sell).`);
+        userState = 'qualified'; // Força roteamento para Vendedor
+    }
+
     // Contexto compartilhado
     const history = await getChatHistory(userPhone);
     const context: AgentContext = {
@@ -245,6 +256,15 @@ export async function POST(req: Request) {
             ...sentMessage
         };
         await notifySocketServer('chat-updates', outgoingSocketMsg);
+
+        // 4. Trigger n8n Inactivity Timer
+        let agentName = 'apolo';
+        if (userState === 'qualified') agentName = 'icaro';
+        if (userState === 'customer') agentName = 'atendente';
+        
+        // Fire and forget (no await to not slow down response if not critical, but here it's fine)
+        // Inicia um novo timer de 30 minutos
+        triggerInactivityTimer(userPhone, agentName, 'start');
     }
 
     return NextResponse.json({ status: 'success' });

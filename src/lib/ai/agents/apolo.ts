@@ -82,6 +82,18 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
   Se o cliente pedir apresentação, portfólio ou "como funciona":
   USE A TOOL 'enviar_midia' escolhendo o material adequado da lista abaixo.
 
+- **Cenário E: Resistência ou Recusa (Modo Manual)**
+  Se o cliente disser que **não quer preencher formulário**, achar complicado, ou pedir para falar com alguém direto:
+  1. Não insista mais de 2 vezes no formulário.
+  2. Diga: "Entendo perfeitamente. Se preferir, posso pegar seus dados por aqui mesmo."
+  3. **Pergunte os dados essenciais** (um por um ou em blocos):
+     - "Você possui CNPJ ou é para pessoa física?"
+     - "Qual o tipo de dívida ou problema que deseja resolver?"
+     - "Qual seu faturamento médio mensal?"
+  4. A cada resposta, USE A TOOL 'update_User1' para salvar os dados (ex: \`tipo_negocio\`, \`tem_divida\`, \`faturamento_mensal\`).
+  5. Ao final, confirme: "Perfeito, tem mais algo?"
+  6. Se o cliente confirmar que acabou, encerre ou direcione conforme a qualificação.
+
 ### EXEMPLOS DE RACIOCÍNIO (Chain of Thought)
 
 **Caso 1: Lead Ruim (Desqualificação)**
@@ -110,6 +122,7 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
    - **Argumento:** 'observacao' (ex: "Regularização", "Abertura de MEI").
    - **IMPORTANTE:** A ferramenta retorna um LINK. Você DEVE exibir esse link na resposta.
    - **ERRO COMUM:** Dizer "Estou enviando o link" e não chamar a tool. Você TEM que chamar a tool.
+   - **PRÉ-REQUISITO:** ANTES de chamar esta tool, certifique-se de ter SALVADO todos os dados importantes que o cliente já forneceu (nome, email, etc) usando update_User1. O link gerado será pré-preenchido com esses dados salvos.
 
 3. **enviar_midia**
    - Use para enviar apresentações, vídeos ou áudios explicativos.
@@ -118,7 +131,9 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
 {{MEDIA_LIST}}
 
 4. **update_User1**
-   - **CRÍTICO:** Assim que detectar que o cliente preencheu o formulário (quando os dados novos aparecerem em {{USER_DATA}} numa próxima interação), USE esta tool para qualificar ele.
+   - **USO CONTÍNUO (Contexto):** SEMPRE que o cliente disser algo relevante (dúvida, problema, intenção, dado pessoal), USE esta tool para atualizar o campo 'observacoes'. O sistema fará um resumo acumulativo automaticamente. NÃO deixe de registrar o contexto.
+   - **COLETA DE DADOS:** Se o cliente informar dados soltos (ex: "Meu nome é João", "Faturo 15k", "Tenho dívida de 50k"), **SALVE IMEDIATAMENTE** chamando 'update_User1' com esses campos (nome_completo, faturamento_mensal, tem_divida, etc.). Isso garante que o formulário venha pré-preenchido.
+   - **CRÍTICO (Qualificação):** Assim que detectar que o cliente preencheu o formulário (quando os dados novos aparecerem em {{USER_DATA}} numa próxima interação), USE esta tool para qualificar ele.
    - **Regras de Qualificação (ANÁLISE OBRIGATÓRIA - ORDEM DE PRECEDÊNCIA):**
     - **1. Desqualificado (Lead Fraco) - VERIFIQUE PRIMEIRO:** 
       - Se (Faturamento É "Até 5k") E (Tem Dívida É "Não") ? -> ENTÃO É DESQUALIFICADO.
@@ -264,7 +279,7 @@ export async function runApoloAgent(message: string | any, context: AgentContext
           motivo_qualificacao: { type: 'string', description: 'Motivo da decisão de qualificação.' }
         }
       },
-      function: async (args) => await updateUser1({
+      function: async (args: Record<string, unknown>) => await updateUser1({
         telefone: context.userPhone,
         ...args
       })

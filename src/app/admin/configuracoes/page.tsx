@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { getSystemSettings, updateSystemSetting, uploadSystemSettingFile, updateSettingBots, createSystemSetting, deleteSystemSetting, type SystemSetting } from './actions';
-import { Upload, File as FileIcon, Loader2, CheckCircle2, Plus, Trash2, X } from 'lucide-react';
+import { getSystemSettings, updateSystemSetting, uploadSystemSettingFile, updateSettingBots, createSystemSetting, deleteSystemSetting, getSettingFileContent, updateSettingFileContent, type SystemSetting } from './actions';
+import { Upload, File as FileIcon, Loader2, CheckCircle2, Plus, Trash2, X, Edit2, Save } from 'lucide-react';
 
 const AVAILABLE_BOTS = [
     { id: 'apolo', label: 'Apolo (SDR)' },
@@ -15,6 +15,8 @@ export default function ConfiguracoesPage() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editorOpen, setEditorOpen] = useState(false);
+    const [currentEditingFile, setCurrentEditingFile] = useState<{key: string, label: string} | null>(null);
 
     const loadSettings = useCallback(async () => {
         const res = await getSystemSettings();
@@ -146,6 +148,10 @@ export default function ConfiguracoesPage() {
                             onUpdate={loadSettings}
                             onBotChange={handleBotChange}
                             onDelete={() => handleDelete(setting.key)}
+                            onEdit={() => {
+                                setCurrentEditingFile({ key: setting.key, label: setting.label });
+                                setEditorOpen(true);
+                            }}
                         />
                     ))}
                 </div>
@@ -204,11 +210,20 @@ export default function ConfiguracoesPage() {
                     setMessage({ type: 'success', text: 'Configuração criada com sucesso!' });
                 }} 
             />
+
+            {editorOpen && currentEditingFile && (
+                <FileEditorModal 
+                    isOpen={editorOpen}
+                    onClose={() => setEditorOpen(false)}
+                    fileKey={currentEditingFile.key}
+                    fileLabel={currentEditingFile.label}
+                />
+            )}
         </div>
     );
 }
 
-function MediaCard({ setting, onUpdate, onBotChange, onDelete }: { setting: SystemSetting, onUpdate: () => void, onBotChange: (k: string, b: string, c: boolean) => void, onDelete: () => void }) {
+function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setting: SystemSetting, onUpdate: () => void, onBotChange: (k: string, b: string, c: boolean) => void, onDelete: () => void, onEdit: () => void }) {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -233,12 +248,23 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete }: { setting: Syst
     const isImage = setting.value?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
     const isVideo = setting.value?.match(/\.(mp4|webm|mov)$/i);
     const isAudio = setting.value?.match(/\.(mp3|ogg|wav)$/i);
+    const isPdf = setting.value?.match(/\.pdf$/i);
+    const isTextFile = !isImage && !isVideo && !isAudio && !isPdf && setting.value;
 
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col group">
             <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
                 <span className="font-medium text-sm text-zinc-700 dark:text-zinc-200">{setting.label}</span>
                 <div className="flex items-center gap-1">
+                    {isTextFile && (
+                        <button 
+                            onClick={onEdit}
+                            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500"
+                            title="Editar conteúdo"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </button>
+                    )}
                     <button 
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
@@ -291,7 +317,15 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete }: { setting: Syst
                 )}
             </div>
 
-            <div className="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
+                {setting.value && (
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                        <FileIcon className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate" title={setting.value.split('/').pop()}>
+                            {setting.value.split('/').pop()}
+                        </span>
+                    </div>
+                )}
                 <BotSelector setting={setting} onBotChange={onBotChange} />
             </div>
         </div>
@@ -333,12 +367,138 @@ function BotSelector({ setting, onBotChange }: { setting: SystemSetting, onBotCh
     );
 }
 
+function FileEditorModal({ isOpen, onClose, fileKey, fileLabel }: { isOpen: boolean, onClose: () => void, fileKey: string, fileLabel: string }) {
+    const [content, setContent] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen && fileKey) {
+            getSettingFileContent(fileKey).then(res => {
+                if (res.success && res.content) {
+                    setContent(res.content);
+                    setError(null);
+                } else {
+                    setError('Não foi possível carregar o conteúdo do arquivo. Verifique se ele existe e se é um arquivo de texto válido.');
+                }
+                setLoading(false);
+            });
+        }
+    }, [isOpen, fileKey]);
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError(null);
+        // Tentar detectar extensão original ou usar txt
+        let ext = 'txt';
+        if (fileLabel.toLowerCase().includes('json')) ext = 'json';
+        if (fileLabel.toLowerCase().includes('md')) ext = 'md';
+        if (fileLabel.toLowerCase().includes('prompt')) ext = 'md';
+
+        try {
+            // Basic validation for JSON
+            if (ext === 'json') {
+                JSON.parse(content);
+            }
+        } catch {
+            setError('O conteúdo não é um JSON válido. Corrija antes de salvar.');
+            setSaving(false);
+            return;
+        }
+
+        const res = await updateSettingFileContent(fileKey, content, ext);
+        if (res.success) {
+            onClose();
+        } else {
+            setError('Erro ao salvar alterações no arquivo. Tente novamente.');
+        }
+        setSaving(false);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-4xl p-6 space-y-4 h-[80vh] flex flex-col">
+                <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                            <Edit2 className="w-4 h-4 text-blue-500" />
+                            Editando: {fileLabel}
+                        </h2>
+                        <p className="text-xs text-zinc-500">Faça alterações no conteúdo do arquivo diretamente.</p>
+                    </div>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="p-3 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 text-sm rounded-lg flex items-center gap-2">
+                        <X className="w-4 h-4" />
+                        {error}
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-2 text-zinc-500">
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                        <span className="text-sm">Carregando conteúdo...</span>
+                    </div>
+                ) : (
+                    <div className="flex-1 relative group">
+                         <textarea 
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            className="absolute inset-0 w-full h-full p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all leading-relaxed"
+                            spellCheck={false}
+                        />
+                    </div>
+                )}
+
+                <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs text-zinc-400">
+                        {content.length} caracteres
+                    </span>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={onClose}
+                            className="px-4 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 rounded-lg transition-colors text-sm font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={handleSave}
+                            disabled={saving || loading}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Salvando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    Salvar Alterações
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
     const [loading, setLoading] = useState(false);
     const [type, setType] = useState('text');
     const [key, setKey] = useState('');
     const [label, setLabel] = useState('');
     const [value, setValue] = useState('');
+    const [file, setFile] = useState<File | null>(null);
 
     if (!isOpen) return null;
 
@@ -346,9 +506,19 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
         e.preventDefault();
         setLoading(true);
 
-        const res = await createSystemSetting({ key, label, type, value });
+        const res = await createSystemSetting({ key, label, type, value: type === 'media' ? '' : value });
         
         if (res.success) {
+            if (type === 'media' && file) {
+                const formData = new FormData();
+                formData.append('key', key);
+                formData.append('file', file);
+                const uploadRes = await uploadSystemSettingFile(formData);
+                if (!uploadRes.success) {
+                    alert('Configuração criada, mas erro ao fazer upload do arquivo.');
+                }
+            }
+
             onSuccess();
             onClose();
             // Reset form
@@ -356,6 +526,7 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
             setLabel('');
             setValue('');
             setType('text');
+            setFile(null);
         } else {
             alert('Erro ao criar configuração');
         }
@@ -395,8 +566,16 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                             onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
                             placeholder="ex: video_institucional"
                             className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm font-mono"
+                            list="default-keys"
                         />
-                        <p className="text-xs text-zinc-500 mt-1">Identificador único usado pelo bot.</p>
+                        <datalist id="default-keys">
+                            <option value="apresentacao_comercial" />
+                            <option value="video_ecac" />
+                            <option value="prompt_vendedor" />
+                            <option value="prompt_apolo" />
+                            <option value="prompt_atendente" />
+                        </datalist>
+                        <p className="text-xs text-zinc-500 mt-1">Identificador único usado pelo bot. Sugestões aparecem ao digitar.</p>
                     </div>
 
                     <div>

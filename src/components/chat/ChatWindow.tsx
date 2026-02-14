@@ -6,7 +6,7 @@ import { Chat, Message } from './types';
 import { MessageBubble } from './ChatMessageBubble';
 import { ChatInput } from './ChatInput';
 import { MediaPreviewModal } from './MediaPreviewModal';
-import { ChevronDown, ArrowLeft, MoreVertical, FileText, UserPlus } from 'lucide-react';
+import { ChevronDown, ArrowLeft, MoreVertical, FileText, UserPlus, AlertCircle } from 'lucide-react';
 import { formatMessageDate, shouldGroupMessages } from './dateUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -49,6 +49,17 @@ export function ChatWindow({
   const recordingTime = 0;
   const [mediaPreview, setMediaPreview] = useState<{file: File, type: 'image' | 'video' | 'audio' | 'document'} | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState<number>(0);
+
+  useEffect(() => {
+    // Use setTimeout to avoid synchronous setState warning
+    const timer = setTimeout(() => setCurrentTimestamp(Date.now()), 0);
+    const interval = setInterval(() => setCurrentTimestamp(Date.now()), 60000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -199,11 +210,23 @@ export function ChatWindow({
               {chat.leadName || chat.name}
             </h2>
             {chat.isRegistered && chat.leadStatus && (
-                <span className="text-[5px] line-clamp-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-0.5 rounded border border-indigo-200 dark:border-indigo-800 font-medium">
-                    {chat.leadStatus === 'qualificado' && chat.leadDataReuniao 
-                        ? 'CALL' 
-                        : chat.leadStatus.replace(/_/g, ' ').toUpperCase()}
-                </span>
+                <div className="flex flex-col items-start gap-1">
+                    <span className="text-[10px] bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-1 rounded border border-indigo-200 dark:border-indigo-800 font-medium">
+                        {chat.leadStatus === 'qualificado' && chat.leadDataReuniao 
+                            ? 'CALL' 
+                            : chat.leadStatus.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                    {chat.leadNeedsAttendant && (
+                        <span className={`flex items-center gap-1 text-[10px] px-1 rounded border font-bold uppercase tracking-wider ${
+                            chat.leadAttendantRequestedAt && currentTimestamp && new Date(chat.leadAttendantRequestedAt).getTime() < currentTimestamp - 3600000 
+                            ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800'
+                            : 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800'
+                        }`} title={chat.leadAttendantRequestedAt ? `Solicitado em: ${new Date(chat.leadAttendantRequestedAt).toLocaleString()}` : 'Solicitação de atendente'}>
+                            <AlertCircle size={10} />
+                            AJUDA
+                        </span>
+                    )}
+                </div>
             )}
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">

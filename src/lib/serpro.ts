@@ -49,57 +49,10 @@ const INTEGRA_BASE_URLS = {
   Solicitar: 'https://gateway.apiserpro.serpro.gov.br/integra-contador/v1/Solicitar',
 };
 
-// Service Configs
-export const SERVICE_CONFIG = {
-  CCMEI_DADOS: {
-    env_sistema: 'INTEGRA_CCMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_CCMEI_DADOS_ID_SERVICO',
-    tipo: 'Consultar',
-  },
-  PGMEI: {
-    env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGMEI_ID_SERVICO',
-    tipo: 'Consultar',
-  },
-  SIMEI: {
-    env_sistema: 'INTEGRA_SIMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_SIMEI_ID_SERVICO',
-    tipo: 'Consultar',
-  },
-  SIT_FISCAL: {
-    env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
-    env_servico: 'INTEGRA_SITFIS_RELATORIO_ID_SERVICO',
-    tipo: 'Emitir',
-    versao: '2.0',
-  },
-  DIVIDA_ATIVA: {
-    env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGMEI_ID_SERVICO',
-    tipo: 'Consultar',
-    versao: '1.0',
-  },
-  CND: {
-    env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
-    env_servico: 'INTEGRA_SITFIS_RELATORIO_ID_SERVICO',
-    tipo: 'Emitir',
-    versao: '2.0',
-  },
-  PARCELAMENTO: {
-    env_sistema: 'INTEGRA_PARCELAMENTO_ID_SISTEMA',
-    env_servico: 'INTEGRA_PARCELAMENTO_ID_SERVICO',
-    tipo: 'Consultar',
-  },
-  DASN_SIMEI: {
-    env_sistema: 'INTEGRA_DASN_SIMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_DASN_SIMEI_ID_SERVICO',
-    tipo: 'Consultar',
-  },
-  PROCESSOS: {
-    env_sistema: 'INTEGRA_PROCESSOS_ID_SISTEMA',
-    env_servico: 'INTEGRA_PROCESSOS_ID_SERVICO',
-    tipo: 'Consultar',
-  }
-};
+import { SERVICE_CONFIG, ServiceConfigItem } from './serpro-config';
+
+// Re-export SERVICE_CONFIG for backward compatibility
+export { SERVICE_CONFIG };
 
 const onlyDigits = (v: string) => v.replace(/\D/g, '');
 
@@ -112,71 +65,78 @@ interface SerproTokens {
 /**
  * Helper to make HTTPS requests with client certificates
  */
-async function request(
+export async function request(
   urlStr: string,
   options: https.RequestOptions,
   body?: string
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const reqOptions: https.RequestOptions = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname + url.search,
-      method: options.method || 'GET',
-      headers: options.headers,
-      // Inject client certificates
-      // Use PFX if available (preferred if PEM is missing)
-      ...(SERPRO_PFX_BUFFER 
-        ? { 
-            pfx: SERPRO_PFX_BUFFER,
-            passphrase: SERPRO_CERT_PASS 
-          } 
-        : {
-            cert: SERPRO_CERT_PEM,
-            key: SERPRO_CERT_KEY,
-          }
-      ),
-      timeout: 30000, // 30s timeout
-    };
+    try {
+      const url = new URL(urlStr);
+      const reqOptions: https.RequestOptions = {
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: url.pathname + url.search,
+        method: options.method || 'GET',
+        headers: options.headers,
+        // Inject client certificates
+        // Use PFX if available (preferred if PEM is missing)
+        // Note: If PFX uses legacy encryption (RC2/3DES), Node 17+ requires NODE_OPTIONS=--openssl-legacy-provider
+        ...(SERPRO_PFX_BUFFER 
+          ? { 
+              pfx: SERPRO_PFX_BUFFER,
+              passphrase: SERPRO_CERT_PASS 
+            } 
+          : {
+              cert: SERPRO_CERT_PEM,
+              key: SERPRO_CERT_KEY,
+            }
+        ),
+        timeout: 30000, // 30s timeout
+      };
 
-    const req = https.request(reqOptions, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => {
-        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            resolve(data);
-          }
-        } else {
-          // Tenta extrair mensagem de erro detalhada do Serpro
-          let errorMessage = `HTTP ${res.statusCode}`;
-          try {
-            const errObj = JSON.parse(data);
-            if (errObj.mensagens && Array.isArray(errObj.mensagens)) {
-              const msgs = errObj.mensagens.map((m: { codigo: string; texto: string }) => `[${m.codigo}] ${m.texto}`).join(' | ');
-              errorMessage += `: ${msgs}`;
-            } else if (errObj.error) {
-              errorMessage += `: ${errObj.error}`;
-            } else {
+      const req = https.request(reqOptions, (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              resolve(JSON.parse(data));
+            } catch {
+              resolve(data);
+            }
+          } else {
+            // Tenta extrair mensagem de erro detalhada do Serpro
+            let errorMessage = `HTTP ${res.statusCode}`;
+            try {
+              const errObj = JSON.parse(data);
+              if (errObj.mensagens && Array.isArray(errObj.mensagens)) {
+                const msgs = errObj.mensagens.map((m: { codigo: string; texto: string }) => `[${m.codigo}] ${m.texto}`).join(' | ');
+                errorMessage += `: ${msgs}`;
+              } else if (errObj.error) {
+                errorMessage += `: ${errObj.error}`;
+              } else {
+                errorMessage += `: ${data.substring(0, 1000)}`;
+              }
+            } catch {
               errorMessage += `: ${data.substring(0, 1000)}`;
             }
-          } catch {
-            errorMessage += `: ${data.substring(0, 1000)}`;
+            reject(new Error(errorMessage));
           }
-          reject(new Error(errorMessage));
-        }
+        });
       });
-    });
 
-    req.on('error', (e) => reject(e));
+      req.on('error', (e) => {
+          reject(e);
+      });
 
-    if (body) {
-      req.write(body);
+      if (body) {
+        req.write(body);
+      }
+      req.end();
+    } catch (e) {
+      reject(e);
     }
-    req.end();
   });
 }
 
@@ -229,14 +189,15 @@ export interface SerproOptions {
   mes?: string;
   numeroRecibo?: string;
   codigoReceita?: string;
+  categoria?: string; // Para DCTFWEB
 }
 
 export async function consultarServico(nomeServico: keyof typeof SERVICE_CONFIG, cnpj: string, options: SerproOptions = {}) {
   const config = SERVICE_CONFIG[nomeServico];
   if (!config) throw new Error(`Serviço ${nomeServico} não configurado`);
 
-  const idSistema = process.env[config.env_sistema];
-  const idServico = process.env[config.env_servico];
+  const idSistema = process.env[config.env_sistema] || (config as ServiceConfigItem).default_sistema;
+  const idServico = process.env[config.env_servico] || (config as ServiceConfigItem).default_servico;
 
   if (!idSistema || !idServico) {
     const missing = [];
@@ -255,28 +216,47 @@ export async function consultarServico(nomeServico: keyof typeof SERVICE_CONFIG,
   const dadosServico: Record<string, unknown> = { cnpj: cnpjNumero };
   
   // Tratamento de parâmetros específicos por serviço
-  if (nomeServico === 'PGMEI' || nomeServico === 'SIMEI' || nomeServico === 'DIVIDA_ATIVA') {
+  if (['PGMEI', 'SIMEI', 'DIVIDA_ATIVA', 'PGDASD', 'DCTFWEB', 'CAIXA_POSTAL'].includes(nomeServico)) {
     // Tratamento de ANO
     if (options.ano) {
-      if (nomeServico === 'PGMEI' || nomeServico === 'DIVIDA_ATIVA') {
+      if (['PGMEI', 'DIVIDA_ATIVA', 'PGDASD'].includes(nomeServico)) {
         dadosServico.anoCalendario = options.ano;
+      } else if (nomeServico === 'DCTFWEB') {
+        dadosServico.anoPA = options.ano;
       } else {
         dadosServico.ano = options.ano;
       }
-    } else if (nomeServico === 'PGMEI' || nomeServico === 'DIVIDA_ATIVA') {
-      // Default ano atual para PGMEI e DIVIDA_ATIVA
+    } else if (['PGMEI', 'DIVIDA_ATIVA', 'PGDASD'].includes(nomeServico)) {
+      // Default ano atual para PGMEI, DIVIDA_ATIVA e PGDASD
       dadosServico.anoCalendario = new Date().getFullYear().toString();
     }
 
     // Tratamento de MÊS (Período de Apuração para PGMEI/DAS)
-    if (options.mes && nomeServico === 'PGMEI') {
-      // Se tiver mês, assume que é para gerar DAS ou consultar apuração específica
-      // O formato geralmente espera o período completo (PA) ou mês separado.
-      // Vamos enviar como 'periodoApuracao' concatenado se tiver ano, ou campo 'mes' se a API especificar.
-      // Por padrão do Integra, muitas vezes é 'periodoApuracao': 'MMAAAA'
-      const anoParaMes = options.ano || new Date().getFullYear().toString();
-      const mesFormatado = options.mes.padStart(2, '0');
-      dadosServico.periodoApuracao = `${mesFormatado}${anoParaMes}`;
+    if (options.mes) {
+      if (nomeServico === 'PGMEI') {
+        // Se tiver mês, assume que é para gerar DAS ou consultar apuração específica
+        const anoParaMes = options.ano || new Date().getFullYear().toString();
+        const mesFormatado = options.mes.padStart(2, '0');
+        dadosServico.periodoApuracao = `${mesFormatado}${anoParaMes}`;
+      } else if (nomeServico === 'DCTFWEB') {
+        dadosServico.mesPA = options.mes.padStart(2, '0');
+      }
+    }
+    
+    // DCTFWEB specifics
+    if (nomeServico === 'DCTFWEB') {
+        dadosServico.categoria = options.categoria || 'GERAL_MENSAL';
+        if (!dadosServico.anoPA) dadosServico.anoPA = new Date().getFullYear().toString();
+        // Remove cnpj generic field if strict, but usually ignored if extra. 
+        // Note: DCTFWeb snippet didn't show 'cnpj' inside 'dados', only in 'contribuinte'. 
+        // But many others do. Safe to keep unless error.
+        // Actually, DCTFWeb snippet 'dados' content was: {"categoria": "...", "anoPA": "...", "mesPA": "..."}
+        // It does NOT have 'cnpj' inside 'dados'.
+        delete dadosServico.cnpj; 
+    }
+
+    if (nomeServico === 'CAIXA_POSTAL') {
+      delete dadosServico.cnpj;
     }
   }
 
@@ -292,6 +272,17 @@ export async function consultarServico(nomeServico: keyof typeof SERVICE_CONFIG,
   const contratanteCnpjRaw = process.env.CONTRATANTE_CNPJ || '51564549000140';
   const contratanteCnpj = onlyDigits(contratanteCnpjRaw);
 
+  // Special case: Services that require empty 'dados' string or no specific fields
+  if (['PARCELAMENTO_SN_CONSULTAR', 'PARCELAMENTO_MEI_CONSULTAR'].includes(nomeServico)) {
+     // Esses serviços esperam que 'dados' seja uma string vazia ou objeto vazio stringificado, 
+     // mas sem o campo 'cnpj' que adicionamos por padrão.
+     // O erro diz: "Esta funcionalidade não requer nenhuma informação no campo dados"
+     // Então vamos limpar o objeto dadosServico.
+     for (const key in dadosServico) {
+       delete dadosServico[key];
+     }
+  }
+
   const payload = {
     contratante: { numero: contratanteCnpj, tipo: 2 },
     autorPedidoDados: { numero: contratanteCnpj, tipo: 2 },
@@ -299,8 +290,10 @@ export async function consultarServico(nomeServico: keyof typeof SERVICE_CONFIG,
     pedidoDados: {
       idSistema,
       idServico,
-      versaoSistema: (config as any).versao || '1.0',
-      dados: JSON.stringify(dadosServico),
+      versaoSistema: (config as ServiceConfigItem).versao || '1.0',
+      dados: (['PARCELAMENTO_SN_CONSULTAR', 'PARCELAMENTO_MEI_CONSULTAR'].includes(nomeServico)) 
+             ? "" 
+             : JSON.stringify(dadosServico),
     },
   };
 

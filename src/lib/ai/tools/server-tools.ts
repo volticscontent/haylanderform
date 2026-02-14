@@ -88,6 +88,13 @@ export async function getUser(phone: string): Promise<string> {
   }
 }
 
+// 11. triggerInactivityTimer
+export async function triggerInactivityTimer(phone: string, agent: string, action: 'start' | 'stop' = 'start'): Promise<void> {
+    // N8N removed. Logic disabled for now or can be replaced by internal Cron.
+    // console.log(`[Timer] Inactivity timer (${action}) requested for ${phone} (Disabled/N8N removed)`);
+    return;
+}
+
 // 14. checkCnpjSerpro
 export async function checkCnpjSerpro(cnpj: string, service: 'CCMEI_DADOS' | 'SIT_FISCAL' = 'CCMEI_DADOS'): Promise<string> {
     try {
@@ -100,9 +107,10 @@ export async function checkCnpjSerpro(cnpj: string, service: 'CCMEI_DADOS' | 'SI
         );
 
         return JSON.stringify(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('checkCnpjSerpro error:', error);
-        return JSON.stringify({ status: 'error', message: error.message || String(error) });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return JSON.stringify({ status: 'error', message: errorMessage });
     }
 }
 
@@ -125,7 +133,34 @@ export async function sendMedia(phone: string, key: string): Promise<string> {
     return JSON.stringify({ status: "error", message: "Mídia não encontrada." });
 }
 
-// 17. tryScheduleMeeting
+export async function setAgentRouting(phone: string, agent: string | null): Promise<string> {
+  const redisKey = `routing_override:${phone}`;
+  try {
+    if (agent) {
+      // Set override for 24 hours
+      await redis.set(redisKey, agent, 'EX', 86400); 
+      return JSON.stringify({ status: "success", message: `Routing override set to ${agent}` });
+    } else {
+      // Clear override
+      await redis.del(redisKey);
+      return JSON.stringify({ status: "success", message: "Routing override cleared" });
+    }
+  } catch (error) {
+    console.error('setAgentRouting error:', error);
+    return JSON.stringify({ status: "error", message: String(error) });
+  }
+}
+
+export async function getAgentRouting(phone: string): Promise<string | null> {
+  const redisKey = `routing_override:${phone}`;
+  try {
+    return await redis.get(redisKey);
+  } catch (error) {
+    console.error('getAgentRouting error:', error);
+    return null;
+  }
+}
+
 export async function tryScheduleMeeting(phone: string, dateStr: string): Promise<string> {
     const avail = await checkAvailability(dateStr);
     const availJson = JSON.parse(avail);

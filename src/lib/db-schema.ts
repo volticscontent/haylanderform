@@ -33,6 +33,16 @@ export interface LeadsEmpresarialTable {
   updated_at: Date | null;
 }
 
+export interface ConsultasSerproTable {
+  id: number;
+  cnpj: string;
+  tipo_servico: string;
+  resultado: Record<string, unknown> | null;
+  status: number | null;
+  source: string | null;
+  created_at: Date | null;
+}
+
 export interface LeadsQualificacaoTable {
   id: number;
   lead_id: number;

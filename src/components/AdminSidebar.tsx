@@ -24,9 +24,7 @@ const adminLinks: NavItem[] = [
     { name: 'Chat', href: '/admin/atendimento', icon: MessageCircle },
     { name: 'Lista', href: '/admin/lista', icon: Users },
     { name: 'Disparo', href: '/admin/disparo', icon: Send },
-    { name: 'Consulta CNPJ', href: '/admin/serpro', icon: Globe },
-    { name: 'Emissão CND', href: '/admin/serpro/cnd', icon: FileText },
-    { name: 'Dívida Ativa', href: '/admin/serpro/divida-ativa', icon: AlertCircle },
+    { name: 'Serpro', href: '/admin/serpro', icon: Globe },
     { name: 'Documentação', href: '/admin/docs', icon: Book },
     { 
         name: 'Configurações', 

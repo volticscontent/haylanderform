@@ -4,10 +4,12 @@ import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Cale
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { getConsultationsByCnpj } from '@/app/admin/atendimento/actions'
 
+import { DataViewer } from '@/components/serpro/DataViewer'
+
 interface SerproConsultation {
     id: number;
     tipo_servico: string;
-    resultado: any;
+    resultado: unknown;
     status: number;
     created_at: string;
 }
@@ -58,6 +60,8 @@ export type LeadSheetData = {
   vendido: boolean | null
   data_reuniao: string | null
   confirmacao_qualificacao: boolean | null
+  needs_attendant: boolean | null
+  attendant_requested_at: string | null
 }
 
 interface LeadSheetProps {
@@ -139,6 +143,11 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
                     <h2 className="text-base font-bold text-zinc-900 dark:text-white truncate max-w-[200px]">{lead?.nome_completo || 'Sem nome'}</h2>
                     <div className="flex items-center gap-2 text-xs text-zinc-500">
                       <span className="font-mono">{lead?.cnpj || 'CNPJ N/A'}</span>
+                      {lead?.needs_attendant && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 animate-pulse">
+                          ATENDENTE
+                        </span>
+                      )}
                     </div>
                   </div>
                </div>
@@ -161,7 +170,7 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
                      <button onClick={onClose} className="text-xs text-indigo-600 hover:underline">Fechar</button>
                  </div>
              ) : (
-                <LeadSheetContent lead={lead} />
+                <LeadSheetContent key={lead.id} lead={lead} />
              )}
         </div>
       )
@@ -200,6 +209,11 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{lead.nome_completo || 'Sem nome'}</h2>
                <div className="flex items-center gap-2 text-sm text-zinc-500">
                  <span className="font-mono">{lead.cnpj || 'CNPJ N/A'}</span>
+                 {lead.needs_attendant && (
+                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 animate-pulse">
+                     SOLICITOU ATENDENTE
+                   </span>
+                 )}
                  {lead.situacao && (
                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-300/50 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                      {lead.situacao}
@@ -217,7 +231,7 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
         </div>
 
         {/* Scrollable Content */}
-        <LeadSheetContent lead={lead} />
+        <LeadSheetContent key={lead.id} lead={lead} />
         </>
         )}
       </div>
@@ -227,12 +241,12 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
 
 function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
     const [consultations, setConsultations] = useState<SerproConsultation[]>([]);
-    const [loadingConsultations, setLoadingConsultations] = useState(false);
+    const [loadingConsultations, setLoadingConsultations] = useState(!!lead.cnpj);
     const [expandedConsultation, setExpandedConsultation] = useState<number | null>(null);
 
     const fetchConsultations = useCallback(() => {
         if (lead.cnpj) {
-            setLoadingConsultations(true);
+            // Loading is handled by initial state, so we don't set it here to avoid sync setState in effect
             console.log('[LeadSheet] Buscando consultas para:', lead.cnpj);
             getConsultationsByCnpj(lead.cnpj)
                 .then(res => {
@@ -248,8 +262,6 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                     setConsultations([]);
                 })
                 .finally(() => setLoadingConsultations(false));
-        } else {
-            setConsultations([]);
         }
     }, [lead.cnpj]);
 
@@ -458,10 +470,17 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                                 </button>
                                 
                                 {expandedConsultation === consultation.id && (
-                                    <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
-                                        <pre className="text-xs text-zinc-700 dark:text-zinc-300 font-mono whitespace-pre-wrap overflow-x-auto max-h-[300px]">
-                                            {JSON.stringify(consultation.resultado, null, 2)}
-                                        </pre>
+                                    <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 overflow-x-auto">
+                                        <DataViewer data={consultation.resultado} />
+                                        
+                                        <details className="mt-4">
+                                            <summary className="cursor-pointer text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                                                Ver JSON Bruto
+                                            </summary>
+                                            <pre className="mt-2 text-xs text-zinc-600 dark:text-zinc-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] bg-white dark:bg-zinc-950 p-2 rounded border border-zinc-200 dark:border-zinc-800">
+                                                {JSON.stringify(consultation.resultado, null, 2)}
+                                            </pre>
+                                        </details>
                                     </div>
                                 )}
                             </div>

@@ -24,6 +24,47 @@ export const downloadPdf = (base64: string, fileName: string) => {
   document.body.removeChild(link);
 };
 
+import { Download } from 'lucide-react';
+
+// Função auxiliar para  exportar CSV
+const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
+  if (!data || data.length === 0) return;
+
+  // Pega as chaves do primeiro objeto para o cabeçalho
+  const headers = Object.keys(data[0]);
+  
+  // Cria o conteúdo do CSV
+  const csvContent = [
+    headers.join(','), // Cabeçalho
+    ...data.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        // Trata valores para CSV (escapa aspas, converte objetos para string, etc)
+        if (value === null || value === undefined) return '';
+        const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        // Se tiver vírgula ou aspas, envolve em aspas e escapa aspas internas
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      }).join(',')
+    )
+  ].join('\n');
+
+  // Cria o blob e faz o download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${fileName || 'exportacao'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
 // Componente recursivo para exibir dados
 export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: string; level?: number }) => {
   if (data === null || data === undefined) return null;
@@ -85,7 +126,17 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
       const keys = Object.keys(data[0]);
       return (
         <div className="mt-2 overflow-x-auto">
-          {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 mb-2 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
+          <div className="flex justify-between items-center mb-2">
+            {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
+            <button
+              onClick={() => exportToCSV(data, title || 'dados_tabela')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30 transition-colors"
+              title="Exportar tabela para CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportar CSV
+            </button>
+          </div>
           <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
             <thead className="bg-zinc-50 dark:bg-zinc-800">
               <tr>
