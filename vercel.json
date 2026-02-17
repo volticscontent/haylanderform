@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/disparos/process",
+      "path": "/api/context/cron",
       "schedule": "* * * * *"
     }
   ]

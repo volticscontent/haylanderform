@@ -5,6 +5,7 @@ import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
 import { AgentContext } from '@/lib/ai/types';
 import { getUser, updateUser, createUser, getAgentRouting, triggerInactivityTimer } from '@/lib/ai/tools/server-tools';
 import { addToHistory, getChatHistory } from '@/lib/chat-history';
+import { evolutionSendTextMessage } from '@/lib/evolution';
 import redis from '@/lib/redis';
 
 // Helper to notify Socket Server (Redis Pub/Sub -> HTTP Fallback)
@@ -143,9 +144,15 @@ export async function POST(req: Request) {
     // 0. Salvar mensagem do usuário no histórico
     await addToHistory(userPhone, 'user', message);
 
-    // Cancelar Timer de Inatividade anterior (se o usuário respondeu, ele está ativo)
-    // Isso evita que ele receba a mensagem de "ainda está aí?" fora de hora
-    triggerInactivityTimer(userPhone, 'system', 'stop');
+    // Adicionar à fila de sincronização de contexto (Redis Sorted Set)
+    // O Cron Job processará apenas usuários inativos há 10 minutos
+    try {
+        await redis.zadd('context_sync_queue', Date.now(), userPhone);
+        // Reset 5-minute nudge flag
+        await redis.del(`context_nudge_sent:${userPhone}`);
+    } catch (redisErr) {
+        console.error('[Webhook] Erro ao adicionar à fila de contexto:', redisErr);
+    }
 
     // Publish INCOMING message to Redis for Real-time
     const incomingSocketMsg = {
@@ -247,7 +254,7 @@ export async function POST(req: Request) {
       await addToHistory(userPhone, 'assistant', responseText);
     }
 
-    const sentMessage = await sendWhatsAppMessage(sender, responseText);
+    const sentMessage = await evolutionSendTextMessage(sender, responseText);
 
     if (sentMessage) {
         // Publish OUTGOING message to Redis
@@ -258,84 +265,13 @@ export async function POST(req: Request) {
         await notifySocketServer('chat-updates', outgoingSocketMsg);
 
         // 4. Trigger n8n Inactivity Timer
-        let agentName = 'apolo';
-        if (userState === 'qualified') agentName = 'icaro';
-        if (userState === 'customer') agentName = 'atendente';
-        
-        // Fire and forget (no await to not slow down response if not critical, but here it's fine)
-        // Inicia um novo timer de 30 minutos
-        triggerInactivityTimer(userPhone, agentName, 'start');
+        // Removed old triggerInactivityTimer call as it is replaced by Redis + Cron logic
+        // triggerInactivityTimer(userPhone, agentName, 'start');
     }
 
     return NextResponse.json({ status: 'success' });
   } catch (error: unknown) {
     console.error('Erro no Webhook:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
-
-async function sendWhatsAppMessage(to: string, text: string) {
-  if (!text) return null;
-
-  // Prioritize Evolution Config if available
-  if (EVOLUTION_API_URL && EVOLUTION_INSTANCE_NAME && EVOLUTION_API_KEY) {
-    try {
-      const cleanUrl = EVOLUTION_API_URL.replace(/\/$/, '');
-      const url = `${cleanUrl}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-      
-      console.log(`[Evolution] Enviando mensagem para ${url}`);
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': EVOLUTION_API_KEY
-        },
-        body: JSON.stringify({
-          number: to.replace('@s.whatsapp.net', ''),
-          text: text
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Evolution] Erro na resposta da API: ${response.status} - ${errorText}`);
-        return null;
-      } else {
-        const data = await response.json();
-        console.log('[Evolution] Mensagem enviada com sucesso:', JSON.stringify(data));
-        return data;
-      }
-    } catch (error) {
-      console.error('Erro ao enviar mensagem via Evolution:', error);
-      return null;
-    }
-  }
-
-  // Fallback to generic WHATSAPP_API_URL
-  if (!WHATSAPP_API_URL) {
-    console.log('--- MENSAGEM DE RESPOSTA (MOCK) ---');
-    console.log(`Para: ${to}`);
-    console.log(`Texto: ${text}`);
-    console.log('----------------------------');
-    return { key: { id: 'mock-' + Date.now() }, message: { conversation: text } };
-  }
-
-  try {
-    const res = await fetch(`${WHATSAPP_API_URL}/message/sendText`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': WHATSAPP_API_KEY || ''
-      },
-      body: JSON.stringify({
-        number: to.replace('@s.whatsapp.net', ''),
-        text: text
-      })
-    });
-    return await res.json();
-  } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    return null;
   }
 }
