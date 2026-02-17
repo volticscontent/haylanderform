@@ -99,6 +99,7 @@ export async function evolutionGetBase64FromMediaMessage(message: unknown) {
 }
 
 export async function evolutionSendTextMessage(jid: string, text: string) {
+  if (!text) return null;
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendText/${encodeURIComponent(evolutionConfig.instance)}`
   const res = await withTimeout(fetch(url, {
     method: 'POST',

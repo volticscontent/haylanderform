@@ -1,0 +1,195 @@
+{
+  "name": "Haylander - Disparo WhatsApp (Batch)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "disparos/send",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (Receive Batch)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "targets",
+        "options": {
+          "include": "allOtherFields"
+        }
+      },
+      "id": "split-targets",
+      "name": "Split Targets",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.evolution_api_url}}/message/sendText/{{$json.instance_name}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{$json.evolution_api_key}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "number",
+              "value": "={{$json.phone}}"
+            },
+            {
+              "name": "text",
+              "value": "={{$json.message}}"
+            },
+            {
+              "name": "delay",
+              "value": 1200
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "send-whatsapp",
+      "name": "Send WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        500,
+        300
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    ...$input.item.json,\n    status: $input.item.json.statusCode === 200 || $input.item.json.statusCode === 201 ? 'sent' : 'failed',\n    error: $input.item.json.error\n  }\n};"
+      },
+      "id": "format-result",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.all().map(item => ({\n  phone: item.json.phone,\n  status: item.json.status,\n  error: item.json.error\n}));\n\nconst first = $input.first().json;\n\nreturn {\n  json: {\n    disparo_id: first.disparo_id,\n    results: results,\n    callback_url: first.callback_url\n  }\n};"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$json.callback_url}}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "disparo_id",
+              "value": "={{$json.disparo_id}}"
+            },
+            {
+              "name": "results",
+              "value": "={{$json.results}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "callback-webhook",
+      "name": "Callback to Next.js",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1100,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (Receive Batch)": {
+      "main": [
+        [
+          {
+            "node": "Split Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Targets": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Result": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Callback to Next.js",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
