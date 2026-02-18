@@ -1,5 +1,5 @@
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -19,6 +19,37 @@ const r2 = new S3Client({
     secretAccessKey: R2_SECRET_ACCESS_KEY || '',
   },
 });
+
+export async function listFilesFromR2(prefix?: string): Promise<{ key: string, url: string, size: number, lastModified: Date }[]> {
+    if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
+
+    const command = new ListObjectsV2Command({
+        Bucket: R2_BUCKET_NAME,
+        Prefix: prefix
+    });
+
+    try {
+        const response = await r2.send(command);
+        if (!response.Contents) return [];
+
+        return response.Contents.map(item => {
+            const fileName = item.Key || '';
+            const publicUrl = R2_PUBLIC_URL 
+                ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${fileName}`
+                : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${fileName}`;
+            
+            return {
+                key: fileName,
+                url: publicUrl,
+                size: item.Size || 0,
+                lastModified: item.LastModified || new Date()
+            };
+        });
+    } catch (error) {
+        console.error('Error listing files from R2:', error);
+        return [];
+    }
+}
 
 export async function getFileFromR2(urlOrKey: string): Promise<string> {
   if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');

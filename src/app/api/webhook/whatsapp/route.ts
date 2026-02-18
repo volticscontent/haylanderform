@@ -3,7 +3,7 @@ import { runApoloAgent } from '@/lib/ai/agents/apolo';
 import { runVendedorAgent } from '@/lib/ai/agents/vendedor';
 import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
 import { AgentContext } from '@/lib/ai/types';
-import { getUser, updateUser, createUser, getAgentRouting, triggerInactivityTimer } from '@/lib/ai/tools/server-tools';
+import { getUser, updateUser, createUser, getAgentRouting } from '@/lib/ai/tools/server-tools';
 import { addToHistory, getChatHistory } from '@/lib/chat-history';
 import { evolutionSendTextMessage } from '@/lib/evolution';
 import redis from '@/lib/redis';
@@ -119,6 +119,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ignored_from_me' });
     }
 
+    if (!message || !sender) {
+      console.log('[Webhook] Mensagem ou remetente inválidos/ausentes.');
+      return NextResponse.json({ status: 'ignored_invalid' });
+    }
+
     const restrictForTest =
       process.env.WHATSAPP_TEST_RESTRICT_REMOTE_JID === 'true' ||
       (process.env.EVOLUTION_INSTANCE_NAME || '').toLowerCase().includes('teste');
@@ -132,14 +137,30 @@ export async function POST(req: Request) {
       }
     }
 
-    if (!message || !sender) {
-      console.log('[Webhook] Mensagem ou remetente inválidos/ausentes.');
-      return NextResponse.json({ status: 'ignored_invalid' });
-    }
-
     const userPhone = sender.replace('@s.whatsapp.net', '');
     const logMsg = typeof message === 'string' ? message : '[Conteúdo Multimodal/Imagem]';
     console.log(`[Webhook] Mensagem de ${userPhone}: ${logMsg}`);
+
+    // 0. Notify n8n about User Activity (Follow-up)
+    if (process.env.N8N_WHATSAPP_EVENTS_URL) {
+        try {
+            console.log(`[Webhook] Notificando N8N (Follow-up): ${process.env.N8N_WHATSAPP_EVENTS_URL}`);
+            await fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: userPhone,
+                    name: pushName || 'Cliente',
+                    message: typeof message === 'string' ? message : JSON.stringify(message),
+                    event: 'user_message',
+                    timestamp: new Date().toISOString()
+                })
+            });
+            console.log('[Webhook] N8N Success (Follow-up)');
+        } catch (err) {
+            console.error('[Webhook] Failed to notify n8n of user message:', err);
+        }
+    }
 
     // 0. Salvar mensagem do usuário no histórico
     await addToHistory(userPhone, 'user', message);
@@ -263,10 +284,6 @@ export async function POST(req: Request) {
             ...sentMessage
         };
         await notifySocketServer('chat-updates', outgoingSocketMsg);
-
-        // 4. Trigger n8n Inactivity Timer
-        // Removed old triggerInactivityTimer call as it is replaced by Redis + Cron logic
-        // triggerInactivityTimer(userPhone, agentName, 'start');
     }
 
     return NextResponse.json({ status: 'success' });

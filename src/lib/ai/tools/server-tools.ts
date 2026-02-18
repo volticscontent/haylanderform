@@ -88,13 +88,6 @@ export async function getUser(phone: string): Promise<string> {
   }
 }
 
-// 11. triggerInactivityTimer
-export async function triggerInactivityTimer(phone: string, agent: string, action: 'start' | 'stop' = 'start'): Promise<void> {
-    // N8N removed. Logic disabled for now or can be replaced by internal Cron.
-    // console.log(`[Timer] Inactivity timer (${action}) requested for ${phone} (Disabled/N8N removed)`);
-    return;
-}
-
 // 14. checkCnpjSerpro
 export async function checkCnpjSerpro(cnpj: string, service: 'CCMEI_DADOS' | 'SIT_FISCAL' = 'CCMEI_DADOS'): Promise<string> {
     try {
@@ -124,13 +117,62 @@ export async function getAvailableMedia(): Promise<string> {
 }
 
 // 16. sendMedia
-export async function sendMedia(phone: string, key: string): Promise<string> {
-    if (key === 'apc') {
+export async function sendMedia(phone: string, keyOrUrl: string): Promise<string> {
+    // 1. Legacy/Hardcoded keys
+    if (keyOrUrl === 'apc') {
         return sendCommercialPresentation(phone, 'apc');
-    } else if (key === 'video_institucional' || key === 'video') {
+    } else if (keyOrUrl === 'video_institucional' || keyOrUrl === 'video') {
         return sendCommercialPresentation(phone, 'video');
     }
-    return JSON.stringify({ status: "error", message: "Mídia não encontrada." });
+
+    // 2. Generic Handling (R2 Assets)
+    let mediaUrl = keyOrUrl;
+    let fileName = keyOrUrl.split('/').pop() || 'arquivo';
+
+    // If it's a key (not a URL), try to construct the URL using R2_PUBLIC_URL
+    if (!keyOrUrl.startsWith('http')) {
+         const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+         if (R2_PUBLIC_URL) {
+             mediaUrl = `${R2_PUBLIC_URL.replace(/\/$/, '')}/${keyOrUrl}`;
+         } else {
+             return JSON.stringify({ status: "error", message: "URL base do R2 não configurada e chave fornecida não é URL completa." });
+         }
+    }
+
+    // Determine type
+    const ext = mediaUrl.split('.').pop()?.toLowerCase();
+    let mediaType = 'document'; // default
+    let mimetype = 'application/octet-stream';
+
+    if (['mp4', 'mov', 'avi'].includes(ext || '')) {
+        mediaType = 'video';
+        mimetype = 'video/mp4';
+    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) {
+        mediaType = 'image';
+        mimetype = 'image/jpeg';
+    } else if (['mp3', 'ogg', 'wav'].includes(ext || '')) {
+        mediaType = 'audio';
+        mimetype = 'audio/mpeg';
+    } else if (ext === 'pdf') {
+        mediaType = 'document';
+        mimetype = 'application/pdf';
+    }
+
+    try {
+        const jid = toWhatsAppJid(phone);
+        await evolutionSendMediaMessage(
+            jid,
+            mediaUrl,
+            mediaType,
+            fileName, // caption/title
+            fileName, // filename
+            mimetype
+        );
+        return JSON.stringify({ status: "sent", message: `Arquivo ${fileName} enviado com sucesso.` });
+    } catch (error) {
+        console.error(`Error sending generic media ${keyOrUrl}:`, error);
+        return JSON.stringify({ status: "error", message: `Erro ao enviar arquivo: ${String(error)}` });
+    }
 }
 
 export async function setAgentRouting(phone: string, agent: string | null): Promise<string> {
@@ -174,7 +216,14 @@ export async function tryScheduleMeeting(phone: string, dateStr: string): Promis
 
 // 11. sendForm
 export async function sendForm(phone: string, observacao: string): Promise<string> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://haylanderform.vercel.app';
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://haylanderform.vercel.app';
+
+  // Fix: Ignore temporary tunnel URLs (loca.lt, ngrok) and force production URL for the form
+  if (baseUrl.includes('loca.lt') || baseUrl.includes('ngrok-free.app')) {
+      baseUrl = 'https://haylanderform.vercel.app';
+  }
+
+  baseUrl = baseUrl.replace(/\/$/, '');
   const link = `${baseUrl}/${phone}`;
   
   // Save the interest/observation
@@ -182,7 +231,7 @@ export async function sendForm(phone: string, observacao: string): Promise<strin
   
   return JSON.stringify({ 
       link, 
-      message: `Formulário gerado para ${observacao}. Link: ${link}` 
+      message: `Formulário gerado com sucesso. O link é: ${link}. Envie este link EXATO para o cliente.` 
   });
 }
 
