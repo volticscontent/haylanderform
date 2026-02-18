@@ -11,7 +11,7 @@ import {
   setAgentRouting
 } from '../tools/server-tools';
 
-import { getDynamicContext } from '../../knowledge-base';
+import { getDynamicContext } from '../knowledge-base';
 
 export const ATENDENTE_PROMPT_TEMPLATE = `
 # Identidade e Propósito

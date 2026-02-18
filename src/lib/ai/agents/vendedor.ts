@@ -13,7 +13,7 @@ import {
   setAgentRouting
 } from '../tools/server-tools';
 
-import { getDynamicContext } from '../../knowledge-base';
+import { getDynamicContext } from '../knowledge-base';
 
 export const VENDEDOR_PROMPT_TEMPLATE = `
 # Identidade e Propósito
