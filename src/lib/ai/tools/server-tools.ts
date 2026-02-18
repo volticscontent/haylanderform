@@ -252,7 +252,11 @@ export const updateUser1 = updateUser;
 export async function createUser(data: Record<string, unknown>): Promise<string> {
   const client = await pool.connect();
   try {
-    const { nome_completo, telefone, email } = data;
+    const { nome_completo, telefone } = data;
+    const email = data.email || null; // Ensure email is null if undefined
+
+    console.log(`[createUser] Creating user: ${telefone}, Name: ${nome_completo}, Email: ${email}`);
+
     const res = await client.query(
       `INSERT INTO leads (nome_completo, telefone, email, data_cadastro) VALUES ($1, $2, $3, NOW()) RETURNING id`,
       [nome_completo, telefone, email]
