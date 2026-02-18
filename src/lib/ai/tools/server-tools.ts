@@ -163,7 +163,7 @@ export async function sendMedia(phone: string, keyOrUrl: string): Promise<string
         await evolutionSendMediaMessage(
             jid,
             mediaUrl,
-            mediaType,
+            mediaType as "image" | "video" | "audio" | "document",
             fileName, // caption/title
             fileName, // filename
             mimetype
