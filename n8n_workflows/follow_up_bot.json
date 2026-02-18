@@ -1,0 +1,213 @@
+{
+  "name": "Haylander Follow-up Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp-events",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook (WhatsApp Events)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ 'last_activity:' + $json.body.phone }}",
+        "value": "={{ $json.body.timestamp }}",
+        "options": {
+          "ttl": 3600
+        }
+      },
+      "id": "redis-update-time",
+      "name": "Redis: Update Last Activity",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event }}",
+              "operation": "equal",
+              "value2": "bot_message"
+            }
+          ]
+        }
+      },
+      "id": "if-bot-message",
+      "name": "If Bot Message",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "minutes"
+      },
+      "id": "wait-5-min",
+      "name": "Wait 5 Minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ 'last_activity:' + $json.body.phone }}"
+      },
+      "id": "redis-check-time",
+      "name": "Check Last Activity",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "dateTime": [
+            {
+              "value1": "={{ $json.value }}",
+              "operation": "before",
+              "value2": "={{ $now.minus({ minutes: 5 }).toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "if-still-inactive",
+      "name": "If Still Inactive > 5m",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://haylanderform.vercel.app/api/fallback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer e38515e9-3860-4e28-9c19-f75836555b02"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.body.phone }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-fallback",
+      "name": "Call /api/fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (WhatsApp Events)": {
+      "main": [
+        [
+          {
+            "node": "Redis: Update Last Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis: Update Last Activity": {
+      "main": [
+        [
+          {
+            "node": "If Bot Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Bot Message": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 Minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Check Last Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Last Activity": {
+      "main": [
+        [
+          {
+            "node": "If Still Inactive > 5m",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Still Inactive > 5m": {
+      "main": [
+        [
+          {
+            "node": "Call /api/fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

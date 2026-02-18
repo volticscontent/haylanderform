@@ -113,6 +113,21 @@ export async function evolutionSendTextMessage(jid: string, text: string) {
   }), evolutionConfig.timeoutMs)
 
   if (!res.ok) throw new Error(`SendTextMessage failed: ${res.status}`)
+
+  // Notify N8N about Bot Message
+  if (process.env.N8N_WHATSAPP_EVENTS_URL) {
+      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              phone: jid,
+              message: text,
+              event: 'bot_message',
+              timestamp: new Date().toISOString()
+          })
+      }).catch(err => console.error('Failed to notify N8N of bot message:', err));
+  }
+
   return res.json()
 }
 
@@ -139,6 +154,21 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
     const errorText = await res.text().catch(() => 'No error details');
     throw new Error(`SendMediaMessage failed: ${res.status} - ${errorText}`)
   }
+
+  // Notify N8N about Bot Message (Media)
+  if (process.env.N8N_WHATSAPP_EVENTS_URL) {
+      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              phone: jid,
+              message: `[Media: ${type}] ${caption || ''}`,
+              event: 'bot_message',
+              timestamp: new Date().toISOString()
+          })
+      }).catch(err => console.error('Failed to notify N8N of bot media message:', err));
+  }
+
   return res.json()
 }
 
@@ -157,5 +187,20 @@ export async function evolutionSendWhatsAppAudio(jid: string, audio: string) {
   }), evolutionConfig.timeoutMs)
 
   if (!res.ok) throw new Error(`SendWhatsAppAudio failed: ${res.status}`)
+
+  // Notify N8N about Bot Message (Audio)
+  if (process.env.N8N_WHATSAPP_EVENTS_URL) {
+      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              phone: jid,
+              message: '[Audio]',
+              event: 'bot_message',
+              timestamp: new Date().toISOString()
+          })
+      }).catch(err => console.error('Failed to notify N8N of bot audio message:', err));
+  }
+
   return res.json()
 }

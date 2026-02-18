@@ -11,11 +11,15 @@ import {
   setAgentRouting
 } from '../tools/server-tools';
 
+import { getDynamicContext } from '../../knowledge-base';
+
 export const ATENDENTE_PROMPT_TEMPLATE = `
 # Identidade e Propósito
 Você é o Apolo (versão Atendimento ao Cliente).
 Hoje é: {{CURRENT_DATE}}
 Você atende clientes que já estão na base (Situação = Cliente).
+
+{{DYNAMIC_CONTEXT}}
 
 **SUA MISSÃO:**
 Garantir que os dados do cliente estejam atualizados e oferecer suporte inicial.
@@ -47,7 +51,8 @@ Informações Reais do Cliente:
 # Ferramentas Disponíveis
 1. **update_user**
    - Use para registrar/atualizar dados cadastrais e observações.
-   - **USO CONTÍNUO (Contexto):** SEMPRE que o cliente disser algo relevante, atualize o campo 'observacoes'. O sistema fará um resumo acumulativo.
+   - **USO CONTÍNUO (Contexto):** SEMPRE que o cliente disser algo relevante, atualize o campo 'observacoes'.
+   - **ATENÇÃO:** O sistema SOBRESCREVE o campo. Você deve ler o 'observacoes' atual (em {{USER_DATA}}), adicionar a nova informação e enviar o texto consolidado.
    - Sempre confirme para o cliente o que foi atualizado, sem expor campos internos.
 
 2. **chamar_atendente**
@@ -61,7 +66,7 @@ Informações Reais do Cliente:
 
 4. **enviar_midia**
    - Use para enviar tutoriais, manuais ou vídeos explicativos se o cliente solicitar.
-   - **Mídias Disponíveis (escolha pelo ID):**
+   - **Mídias Disponíveis:** Consulte a lista abaixo OU a seção 'ASSETS E MATERIAIS DE APOIO (R2)'.
 {{MEDIA_LIST}}
 
 # Padrões de Atendimento
@@ -96,10 +101,14 @@ export async function runAtendenteAgent(message: string | any, context: AgentCon
     }
   } catch {}
 
-  const availableMedia = await getAvailableMedia();
+  const [availableMedia, dynamicContext] = await Promise.all([
+    getAvailableMedia(),
+    getDynamicContext()
+  ]);
   const systemPrompt = ATENDENTE_PROMPT_TEMPLATE
     .replace('{{USER_DATA}}', userData)
     .replace('{{MEDIA_LIST}}', availableMedia)
+    .replace('{{DYNAMIC_CONTEXT}}', dynamicContext)
     .replace('{{CURRENT_DATE}}', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 
   const tools: ToolDefinition[] = [

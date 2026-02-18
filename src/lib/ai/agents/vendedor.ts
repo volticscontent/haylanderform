@@ -13,12 +13,16 @@ import {
   setAgentRouting
 } from '../tools/server-tools';
 
+import { getDynamicContext } from '../../knowledge-base';
+
 export const VENDEDOR_PROMPT_TEMPLATE = `
 # Identidade e Propósito
 
 Você é o Icaro. Você é o Consultor Comercial Sênior da Haylander Contabilidade.
 Hoje é: {{CURRENT_DATE}}
 Você recebe o bastão do Apolo (SDR) quando o lead já passou pela qualificação.
+
+{{DYNAMIC_CONTEXT}}
 
 **SUA NOVA MISSÃO CRÍTICA (REPESCAGEM):**
 Você agora atende também os leads marcados como **"desqualificado"**.
@@ -84,12 +88,18 @@ Informações Reais do Cliente:
    - **Retorno:** "success" (agendou) ou "unavailable" (ocupado).
    - **OBRIGATÓRIO:** Use esta tool assim que o cliente sugerir um horário. Não verifique antes. A tool já verifica.
 
-2. **finalizar_atendimento_vendas**
+2. **updateUser** (Contexto & Dados)
+   - **Uso:** Atualize dados cadastrais ou observações importantes.
+   - **IMPORTANTE:** SEMPRE que o cliente fornecer detalhes relevantes sobre o negócio ou a dor dele, atualize o campo 'observacoes'.
+   - **ATENÇÃO:** O sistema SOBRESCREVE o campo. Você deve ler o 'observacoes' atual (em {{USER_DATA}}), adicionar a nova informação e enviar o texto consolidado.
+
+3. **finalizar_atendimento_vendas**
    - **Uso:** Encerra o atendimento comercial e devolve o cliente para o fluxo normal (Suporte/Atendente).
    - **Quando usar:** Após agendar a reunião com sucesso, ou se o cliente desistir da compra/contratação.
    - **Argumento:** motivo (ex: "Agendamento realizado", "Cliente desistiu").
 
 3. **services** (Base de Conhecimento & Flexibilidade)
+   - **Consulte a lista completa em 'SERVIÇOS E PRODUTOS DISPONÍVEIS' acima.**
    - **Padrão:**
      - *Regularização MEI/CNPJ Inapto.*
      - *Parcelamento de Dívidas (Federais/Ativas).*
@@ -113,7 +123,7 @@ Informações Reais do Cliente:
 
 6. **enviar_midia**
    - Use para enviar apresentações, propostas ou vídeos explicativos se o cliente solicitar material de apoio.
-   - **Mídias Disponíveis:**
+   - **Mídias Disponíveis:** Consulte a lista abaixo OU a seção 'ASSETS E MATERIAIS DE APOIO (R2)'.
 {{MEDIA_LIST}}
 
 # Comportamento e Script
@@ -167,17 +177,22 @@ export async function runVendedorAgent(message: string | any, context: AgentCont
     }
   } catch {}
 
-  // 2. Fetch available media
+  // 2. Fetch available media and dynamic context
   let mediaList = "Nenhuma mídia disponível.";
+  let dynamicContext = "";
   try {
-      mediaList = await getAvailableMedia();
+      [mediaList, dynamicContext] = await Promise.all([
+        getAvailableMedia(),
+        getDynamicContext()
+      ]);
   } catch (e) { 
-      console.warn("Error fetching media:", e); 
+      console.warn("Error fetching media/context:", e); 
   }
 
   const systemPrompt = VENDEDOR_PROMPT_TEMPLATE
     .replace('{{USER_DATA}}', userData)
     .replace('{{MEDIA_LIST}}', mediaList)
+    .replace('{{DYNAMIC_CONTEXT}}', dynamicContext)
     .replace('{{CURRENT_DATE}}', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
 
   const tools: ToolDefinition[] = [
