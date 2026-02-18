@@ -141,7 +141,7 @@ export async function sendMedia(phone: string, keyOrUrl: string): Promise<string
 
     // Determine type
     const ext = mediaUrl.split('.').pop()?.toLowerCase();
-    let mediaType = 'document'; // default
+    let mediaType: 'image' | 'video' | 'audio' | 'document' = 'document'; // default
     let mimetype = 'application/octet-stream';
 
     if (['mp4', 'mov', 'avi'].includes(ext || '')) {
@@ -163,7 +163,7 @@ export async function sendMedia(phone: string, keyOrUrl: string): Promise<string
         await evolutionSendMediaMessage(
             jid,
             mediaUrl,
-            mediaType as "image" | "video" | "audio" | "document",
+            mediaType,
             fileName, // caption/title
             fileName, // filename
             mimetype
