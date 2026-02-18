@@ -52,6 +52,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log('[Webhook] Body recebido:', JSON.stringify(body, null, 2));
 
+    // Ignorar eventos que não sejam de mensagem
+    if (body.event !== 'messages.upsert') {
+      console.log(`[Webhook] Ignorando evento não-mensagem: ${body.event}`);
+      return NextResponse.json({ status: 'ignored_event_type' });
+    }
+
     const msgData = body.data?.message;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let message: string | any[] = '';
@@ -110,9 +116,22 @@ export async function POST(req: Request) {
         message = '[Localização recebida]';
     }
 
-    const sender = body.data?.key?.remoteJid;
+    // Identify the user phone
+    // Priority 1: 'senderpn' or 'senderPhone' (Explicit user phone number, reported by user)
+    // Priority 2: 'remoteJid' (Standard, but might be an LID)
+    const sender = body.senderpn || 
+                   body.data?.senderpn || 
+                   body.senderPhone || 
+                   body.data?.senderPhone || 
+                   body.data?.key?.remoteJid;
+
     const fromMe = body.data?.key?.fromMe;
     const pushName = body.data?.pushName;
+
+    // Diagnostic logging for LID or missing phone
+    if (sender && sender.includes('@lid')) {
+        console.log('[Webhook] Received LID. Dumping body keys to find real phone:', Object.keys(body), 'Data keys:', body.data ? Object.keys(body.data) : 'No data');
+    }
 
     if (fromMe) {
       console.log('[Webhook] Ignorando mensagem enviada por mim.');
@@ -146,23 +165,19 @@ export async function POST(req: Request) {
 
     // 0. Notify n8n about User Activity (Follow-up)
     if (process.env.N8N_WHATSAPP_EVENTS_URL) {
-        try {
-            console.log(`[Webhook] Notificando N8N (Follow-up): ${process.env.N8N_WHATSAPP_EVENTS_URL}`);
-            await fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: userPhone,
-                    name: pushName || 'Cliente',
-                    message: typeof message === 'string' ? message : JSON.stringify(message),
-                    event: 'user_message',
-                    timestamp: new Date().toISOString()
-                })
-            });
-            console.log('[Webhook] N8N Success (Follow-up)');
-        } catch (err) {
-            console.error('[Webhook] Failed to notify n8n of user message:', err);
-        }
+        // Fire and forget - Don't await to avoid blocking response
+        console.log(`[Webhook] Notificando N8N (Follow-up): ${process.env.N8N_WHATSAPP_EVENTS_URL}`);
+        fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: userPhone,
+                name: pushName || 'Cliente',
+                message: typeof message === 'string' ? message : JSON.stringify(message),
+                event: 'user_message',
+                timestamp: new Date().toISOString()
+            })
+        }).catch(err => console.error('[Webhook] Failed to notify n8n of user message:', err));
     }
 
     // 0. Salvar mensagem do usuário no histórico
@@ -170,20 +185,20 @@ export async function POST(req: Request) {
 
     // Adicionar à fila de sincronização de contexto (Redis Sorted Set)
     // O Cron Job processará apenas usuários inativos há 10 minutos
-    try {
-        await redis.zadd('context_sync_queue', Date.now(), userPhone);
-        // Reset 5-minute nudge flag
-        await redis.del(`context_nudge_sent:${userPhone}`);
-    } catch (redisErr) {
-        console.error('[Webhook] Erro ao adicionar à fila de contexto:', redisErr);
-    }
+    redis.zadd('context_sync_queue', Date.now(), userPhone).catch(err => 
+        console.error('[Webhook] Erro ao adicionar à fila de contexto:', err)
+    );
+    // Reset 5-minute nudge flag
+    redis.del(`context_nudge_sent:${userPhone}`).catch(() => {});
 
     // Publish INCOMING message to Redis for Real-time
     const incomingSocketMsg = {
         chatId: sender,
         ...body.data
     };
-    await notifySocketServer('chat-updates', incomingSocketMsg);
+    notifySocketServer('chat-updates', incomingSocketMsg).catch(err => 
+        console.error('[Webhook] Socket notification failed:', err)
+    );
 
     // 1. Determinar o Estado do Usuário (Routing Logic)
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
@@ -205,9 +220,22 @@ export async function POST(req: Request) {
 
     if (!user) {
       // Novo usuário: Criar e mandar para Apolo
-      console.log('[Router] Novo usuário detectado. Criando registro...');
-      await createUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido' });
-      await updateUser({ telefone: userPhone, situacao: 'nao_respondido' });
+      console.log(`[Router] Novo usuário detectado (${userPhone}). Criando registro...`);
+      try {
+          const createResult = await createUser({ telefone: userPhone, nome_completo: pushName || 'Desconhecido' });
+          console.log(`[Router] Resultado criação usuário: ${createResult}`);
+          
+          // Verifica se houve erro na criação, mas prossegue como lead
+          const parsedResult = JSON.parse(createResult);
+          if (parsedResult.status === 'error') {
+              console.error(`[Router] Falha ao criar usuário no banco: ${parsedResult.message}`);
+              // Continua mesmo com erro, para não deixar o usuário sem resposta
+          } else {
+              await updateUser({ telefone: userPhone, situacao: 'nao_respondido' });
+          }
+      } catch (createError) {
+          console.error(`[Router] Exceção crítica ao criar usuário:`, createError);
+      }
       userState = 'lead';
     } else {
       // Usuário existente: Atualizar dados (sync)
@@ -278,20 +306,31 @@ export async function POST(req: Request) {
       await addToHistory(userPhone, 'assistant', responseText);
     }
 
-    const sentMessage = await evolutionSendTextMessage(sender, responseText);
+    try {
+      const sentMessage = await evolutionSendTextMessage(sender, responseText);
 
-    if (sentMessage) {
-        // Publish OUTGOING message to Redis
-        const outgoingSocketMsg = {
-            chatId: sender,
-            ...sentMessage
-        };
-        await notifySocketServer('chat-updates', outgoingSocketMsg);
+      if (sentMessage) {
+          // Publish OUTGOING message to Redis
+          const outgoingSocketMsg = {
+              chatId: sender,
+              ...sentMessage
+          };
+          await notifySocketServer('chat-updates', outgoingSocketMsg);
+      }
+    } catch (sendError) {
+      console.error(`[Webhook] Falha ao enviar mensagem para ${sender}:`, sendError);
+      // Não retorna 500 para não travar o webhook do WhatsApp (que ficaria tentando reenviar)
     }
 
     return NextResponse.json({ status: 'success' });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Erro no Webhook:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { 
+        error: 'Internal Server Error', 
+        details: error instanceof Error ? error.message : String(error) 
+      }, 
+      { status: 500 }
+    );
   }
 }

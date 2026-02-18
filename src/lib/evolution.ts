@@ -112,7 +112,10 @@ export async function evolutionSendTextMessage(jid: string, text: string) {
     })
   }), evolutionConfig.timeoutMs)
 
-  if (!res.ok) throw new Error(`SendTextMessage failed: ${res.status}`)
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'No error details');
+    throw new Error(`SendTextMessage failed: ${res.status} - ${errorText}`)
+  }
 
   // Notify N8N about Bot Message
   if (process.env.N8N_WHATSAPP_EVENTS_URL) {
