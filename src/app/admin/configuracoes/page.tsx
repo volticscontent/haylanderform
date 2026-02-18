@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { getSystemSettings, updateSystemSetting, uploadSystemSettingFile, updateSettingBots, createSystemSetting, deleteSystemSetting, getSettingFileContent, updateSettingFileContent, type SystemSetting } from './actions';
+import { getSystemSettings, updateSystemSetting, updateSettingBots, createSystemSetting, deleteSystemSetting, getSettingFileContent, updateSettingFileContent, getUploadUrl, type SystemSetting } from './actions';
 import { Upload, File as FileIcon, Loader2, CheckCircle2, Plus, Trash2, X, Edit2, Save } from 'lucide-react';
 
 const AVAILABLE_BOTS = [
@@ -232,17 +232,41 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
         if (!file) return;
 
         setUploading(true);
-        const formData = new FormData();
-        formData.append('key', setting.key);
-        formData.append('file', file);
+        try {
+            // 1. Get Presigned URL
+            const urlRes = await getUploadUrl(setting.key, file.name, file.type);
+            
+            if (!urlRes.success || !urlRes.uploadUrl || !urlRes.publicUrl) {
+                throw new Error('Falha ao obter URL de upload');
+            }
 
-        const res = await uploadSystemSettingFile(formData);
-        if (res.success) {
-            onUpdate();
-        } else {
-            alert('Erro no upload');
+            // 2. Upload directly to R2
+            const uploadRes = await fetch(urlRes.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            if (!uploadRes.ok) {
+                throw new Error('Falha no upload para o servidor de arquivos');
+            }
+
+            // 3. Update database with public URL
+            const updateRes = await updateSystemSetting(setting.key, urlRes.publicUrl);
+            
+            if (updateRes.success) {
+                onUpdate();
+            } else {
+                throw new Error('Falha ao salvar URL no banco de dados');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao fazer upload do arquivo. Tente novamente.');
+        } finally {
+            setUploading(false);
         }
-        setUploading(false);
     };
 
     const isImage = setting.value?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
