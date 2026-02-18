@@ -12,7 +12,7 @@ import {
   interpreter
 } from '../tools/server-tools';
 
-import { getDynamicContext } from '../../knowledge-base';
+import { getDynamicContext } from '../knowledge-base';
 
 export const APOLO_PROMPT_TEMPLATE = `
 # Identidade e Propósito
