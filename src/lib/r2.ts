@@ -1,5 +1,6 @@
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
@@ -118,15 +119,35 @@ export async function uploadFileToR2(
   try {
     await r2.send(command);
     // Construct public URL
-    // If R2_PUBLIC_URL is set, use it. Otherwise, we might need a custom domain or the r2.dev domain if enabled.
-    // The user provided credentials implied usage of a public R2 dev URL in the previous code.
     const publicUrl = R2_PUBLIC_URL 
         ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${fileName}`
-        : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${fileName}`; // Fallback (usually private)
+        : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${fileName}`;
     
     return publicUrl;
   } catch (error) {
     console.error('Error uploading to R2:', error);
     throw error;
   }
+}
+
+export async function getPresignedUploadUrl(fileName: string, contentType: string): Promise<{ uploadUrl: string, publicUrl: string }> {
+    if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
+
+    const command = new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: fileName,
+        ContentType: contentType,
+    });
+
+    try {
+        const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
+        const publicUrl = R2_PUBLIC_URL 
+            ? `${R2_PUBLIC_URL.replace(/\/$/, '')}/${fileName}`
+            : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${fileName}`;
+        
+        return { uploadUrl, publicUrl };
+    } catch (error) {
+        console.error('Error generating presigned URL:', error);
+        throw error;
+    }
 }

@@ -2,7 +2,7 @@
 
 import pool from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { uploadFileToR2, getFileFromR2, deleteFileFromR2 } from "@/lib/r2";
+import { uploadFileToR2, getFileFromR2, deleteFileFromR2, getPresignedUploadUrl } from "@/lib/r2";
 
 export type SystemSetting = {
     key: string;
@@ -67,6 +67,19 @@ export async function updateSettingBots(key: string, bots: string[]) {
     } catch (error) {
         console.error('Error updating setting bots:', error);
         return { success: false, error: 'Failed to update setting bots' };
+    }
+}
+
+export async function getUploadUrl(key: string, fileName: string, contentType: string) {
+    try {
+        const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const r2FileName = `${key}_${Date.now()}_${safeName}`;
+        
+        const { uploadUrl, publicUrl } = await getPresignedUploadUrl(r2FileName, contentType);
+        return { success: true, uploadUrl, publicUrl };
+    } catch (error) {
+        console.error('Error getting upload URL:', error);
+        return { success: false, error: 'Failed to get upload URL' };
     }
 }
 
