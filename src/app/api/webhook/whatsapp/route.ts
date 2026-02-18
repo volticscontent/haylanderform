@@ -124,6 +124,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ignored_invalid' });
     }
 
+    /*
     const restrictForTest =
       process.env.WHATSAPP_TEST_RESTRICT_REMOTE_JID === 'true' ||
       (process.env.EVOLUTION_INSTANCE_NAME || '').toLowerCase().includes('teste');
@@ -132,10 +133,12 @@ export async function POST(req: Request) {
       const allowedSuffix = process.env.WHATSAPP_TEST_ALLOWED_JID_SUFFIX || '3182354127';
       const senderDigits = sender.replace('@s.whatsapp.net', '').replace(/\D/g, '');
       if (!senderDigits.endsWith(allowedSuffix)) {
-        console.log(`[Webhook] Ignorando remetente não permitido em modo teste: ${sender}`);
+        console.log(`[Webhook] Ignorando remetente não permitido em modo teste: ${sender} (Esperado final: ${allowedSuffix})`);
         return NextResponse.json({ status: 'ignored_not_allowed' });
       }
+      console.log(`[Webhook] Modo Teste Ativo: Remetente ${sender} permitido.`);
     }
+    */
 
     const userPhone = sender.replace('@s.whatsapp.net', '');
     const logMsg = typeof message === 'string' ? message : '[Conteúdo Multimodal/Imagem]';

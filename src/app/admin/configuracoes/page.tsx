@@ -534,12 +534,36 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
         
         if (res.success) {
             if (type === 'media' && file) {
-                const formData = new FormData();
-                formData.append('key', key);
-                formData.append('file', file);
-                const uploadRes = await uploadSystemSettingFile(formData);
-                if (!uploadRes.success) {
-                    alert('Configuração criada, mas erro ao fazer upload do arquivo.');
+                try {
+                    // 1. Get Presigned URL
+                    const urlRes = await getUploadUrl(key, file.name, file.type);
+                    
+                    if (!urlRes.success || !urlRes.uploadUrl || !urlRes.publicUrl) {
+                        throw new Error('Falha ao obter URL de upload');
+                    }
+
+                    // 2. Upload directly to R2
+                    const uploadRes = await fetch(urlRes.uploadUrl, {
+                        method: 'PUT',
+                        body: file,
+                        headers: {
+                            'Content-Type': file.type
+                        }
+                    });
+
+                    if (!uploadRes.ok) {
+                        throw new Error('Falha no upload para o servidor de arquivos');
+                    }
+
+                    // 3. Update database with public URL
+                    const updateRes = await updateSystemSetting(key, urlRes.publicUrl);
+                    
+                    if (!updateRes.success) {
+                        throw new Error('Falha ao salvar URL no banco de dados');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('Configuração criada, mas erro ao fazer upload do arquivo via URL assinada.');
                 }
             }
 
@@ -632,6 +656,17 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm"
                                 />
                             )}
+                        </div>
+                    )}
+
+                    {type === 'media' && (
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Arquivo</label>
+                            <input 
+                                type="file" 
+                                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400"
+                            />
                         </div>
                     )}
 
