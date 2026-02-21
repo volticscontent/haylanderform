@@ -14,14 +14,14 @@ export async function getServicesContext(): Promise<string> {
         SELECT * FROM services 
         ORDER BY name ASC
       `);
-      
+
       if (res.rowCount === 0) return "Nenhum serviço cadastrado no momento.";
 
       const servicesList = res.rows.map(s => {
         const nome = s.name || s.nome || 'Sem Nome';
         const valor = s.value || s.valor || 0;
         const descricao = s.description || s.descricao || 'Sem descrição';
-        
+
         return `- **${nome}**: R$ ${Number(valor).toFixed(2)}\n  Descrição: ${descricao}`;
       }).join('\n');
 
@@ -41,12 +41,12 @@ export async function getServicesContext(): Promise<string> {
 export async function getAssetsContext(): Promise<string> {
   try {
     const files = await listFilesFromR2();
-    
+
     if (files.length === 0) return "Nenhum arquivo de mídia ou asset disponível no momento.";
 
-    // Filtrar arquivos que parecem ser assets úteis (pdf, mp4, jpg, png, docx)
+    // Filtrar arquivos que parecem ser assets úteis e estão numa pasta pública ou segura
     const validExtensions = ['.pdf', '.mp4', '.jpg', '.jpeg', '.png', '.docx', '.pptx'];
-    const relevantFiles = files.filter(f => validExtensions.some(ext => f.key.toLowerCase().endsWith(ext)));
+    const relevantFiles = files.filter(f => validExtensions.some(ext => f.key.toLowerCase().endsWith(ext)) && !f.key.toLowerCase().includes('private') && !f.key.toLowerCase().includes('interno'));
 
     const assetsList = relevantFiles.map(f => {
       // Tenta inferir um nome legível do arquivo
