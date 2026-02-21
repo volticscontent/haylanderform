@@ -49,6 +49,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const apiKeyHeader = req.headers.get('apikey') || req.headers.get('authorization')?.replace('Bearer ', '');
+    if (process.env.EVOLUTION_API_KEY && apiKeyHeader !== process.env.EVOLUTION_API_KEY) {
+      console.warn('[Webhook] Unauthorized access attempt.');
+      return NextResponse.json({ status: 'unauthorized', error: 'Invalid API Key' }, { status: 401 });
+    }
+
     const body = await req.json();
     console.log('[Webhook] Body recebido:', JSON.stringify(body, null, 2));
 
