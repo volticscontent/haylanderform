@@ -65,7 +65,6 @@ export default function MEIForm() {
     "nome_mae",
     "telefone",
     "email",
-    "senha_gov",
     "cep",
     "endereco",
     "numero",
@@ -249,7 +248,7 @@ export default function MEIForm() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Senha Gov.br</label>
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Senha Gov.br (Opcional)</label>
           <div className="mt-2 flex items-center gap-2">
             <IdCard className="w-4 h-4 text-zinc-500" />
             <input type="text" name="senha_gov" value={formData.senha_gov} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg bg-transparent" placeholder="Senha do Gov.br" />
