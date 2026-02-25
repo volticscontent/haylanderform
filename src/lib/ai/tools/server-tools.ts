@@ -235,6 +235,23 @@ export async function sendForm(phone: string, observacao: string): Promise<strin
   });
 }
 
+// 11.5. sendMeetingForm
+export async function sendMeetingForm(phone: string): Promise<string> {
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://haylanderform.vercel.app';
+
+  if (baseUrl.includes('loca.lt') || baseUrl.includes('ngrok-free.app')) {
+    baseUrl = 'https://haylanderform.vercel.app';
+  }
+
+  baseUrl = baseUrl.replace(/\/$/, '');
+  const link = `${baseUrl}/reuniao/${phone}`;
+
+  return JSON.stringify({
+    link,
+    message: `Link de agendamento gerado com sucesso: ${link}. Envie ao cliente para que ele escolha o melhor horário.`
+  });
+}
+
 // 12. sendEnumeratedList
 export async function sendEnumeratedList(): Promise<string> {
   const list = `1. Regularização
