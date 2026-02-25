@@ -1,7 +1,7 @@
 import pool from '../../db';
 import { redis } from '@/lib/redis';
-import { cosineSimilarity } from '@/lib/utils';
-import { evolutionFindMessages, evolutionSendMediaMessage } from '@/lib/evolution';
+import { cosineSimilarity, toWhatsAppJid } from '@/lib/utils';
+import { evolutionFindMessages, evolutionSendMediaMessage, evolutionSendTextMessage } from '@/lib/evolution';
 import { generateEmbedding } from '../embedding';
 import { consultarServico } from '@/lib/serpro';
 import { saveConsultation } from '@/lib/serpro-db';
@@ -10,12 +10,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function toWhatsAppJid(phoneOrJid: string): string {
-  if (phoneOrJid.includes('@')) return phoneOrJid;
-  const digits = phoneOrJid.replace(/\D/g, '');
-  if (!digits) return phoneOrJid;
-  return `${digits}@s.whatsapp.net`;
-}
+
 
 function extractMessageText(raw: unknown): string | null {
   if (!isObject(raw)) return null;
@@ -88,6 +83,158 @@ export async function getUser(phone: string): Promise<string> {
   }
 }
 
+/**
+ * Sistema de Tracking para Regularização Fiscal
+ * Registra a entrega de recursos aos clientes
+ */
+export async function trackResourceDelivery(
+  leadId: number, 
+  resourceType: 'video-tutorial' | 'link-ecac' | 'formulario' | 'documentacao' | 'workflow-start', 
+  resourceKey: string,
+  metadata?: Record<string, unknown>
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      INSERT INTO resource_tracking (lead_id, resource_type, resource_key, delivered_at, status, metadata)
+      VALUES ($1, $2, $3, NOW(), 'delivered', $4)
+    `, [leadId, resourceType, resourceKey, JSON.stringify(metadata || {})]);
+    
+    console.log(`[Tracking] Resource delivered: ${resourceType} - ${resourceKey} for lead ${leadId}`);
+  } catch (error) {
+    console.error('trackResourceDelivery error:', error);
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Verifica se um recurso já foi entregue ao cliente
+ */
+export async function hasResourceBeenDelivered(
+  leadId: number, 
+  resourceType: 'video-tutorial' | 'link-ecac' | 'formulario' | 'documentacao', 
+  resourceKey: string
+): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT COUNT(*) as count
+      FROM resource_tracking
+      WHERE lead_id = $1 AND resource_type = $2 AND resource_key = $3
+      AND delivered_at > NOW() - INTERVAL '30 days'
+    `, [leadId, resourceType, resourceKey]);
+    
+    return parseInt(result.rows[0].count) > 0;
+  } catch (error) {
+    console.error('hasResourceBeenDelivered error:', error);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Marca procuração como concluída
+ */
+export async function markProcuracaoCompleted(leadId: number): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      UPDATE resource_tracking 
+      SET status = 'completed', accessed_at = NOW()
+      WHERE lead_id = $1 AND resource_type = 'video-tutorial' AND resource_key = 'video-tutorial-procuracao-ecac'
+    `, [leadId]);
+    
+    console.log(`[Tracking] Procuração marcada como concluída para lead ${leadId}`);
+  } catch (error) {
+    console.error('markProcuracaoCompleted error:', error);
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Verifica se o cliente já concluiu a procuração
+ */
+export async function checkProcuracaoStatus(leadId: number): Promise<boolean> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      SELECT status
+      FROM resource_tracking
+      WHERE lead_id = $1 AND resource_type = 'video-tutorial' AND resource_key = 'video-tutorial-procuracao-ecac'
+      ORDER BY delivered_at DESC
+      LIMIT 1
+    `, [leadId]);
+    
+    return result.rows.length > 0 && result.rows[0].status === 'completed';
+  } catch (error) {
+    console.error('checkProcuracaoStatus error:', error);
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Sistema de Mensagens Segmentadas para Regularização
+ * Resolve o problema de SSR na Vercel com múltiplas renderizações
+ */
+
+export interface MessageSegment {
+  id: string;
+  content: string;
+  type: 'text' | 'media' | 'link';
+  delay?: number; // delay in milliseconds before sending
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Processa mensagens segmentadas com delay entre elas
+ * Resolve o problema de SSR na Vercel
+ */
+export async function processMessageSegments(
+  phone: string,
+  segments: MessageSegment[], 
+  sendFunction: (phone: string, segment: MessageSegment) => Promise<void>
+): Promise<void> {
+  for (const segment of segments) {
+    if (segment.delay) {
+      await new Promise(resolve => setTimeout(resolve, segment.delay));
+    }
+    await sendFunction(phone, segment);
+  }
+}
+
+/**
+ * Envia uma mensagem segmentada individual
+ */
+export async function sendMessageSegment(phone: string, segment: MessageSegment): Promise<void> {
+  try {
+    switch (segment.type) {
+      case 'text':
+        await evolutionSendTextMessage(toWhatsAppJid(phone), segment.content);
+        break;
+      case 'link':
+        await evolutionSendTextMessage(toWhatsAppJid(phone), segment.content);
+        if (segment.metadata?.url) {
+          await evolutionSendTextMessage(toWhatsAppJid(phone), String(segment.metadata.url));
+        }
+        break;
+      case 'media':
+        if (segment.metadata?.mediaKey) {
+          await sendMedia(phone, String(segment.metadata.mediaKey));
+        }
+        break;
+    }
+    
+    console.log(`[MessageSegment] Sent: ${segment.id} to ${phone}`);
+  } catch (error) {
+    console.error(`[MessageSegment] Error sending ${segment.id} to ${phone}:`, error);
+  }
+}
+
 // 14. checkCnpjSerpro
 export async function checkCnpjSerpro(cnpj: string, service: 'CCMEI_DADOS' | 'SIT_FISCAL' = 'CCMEI_DADOS'): Promise<string> {
   try {
@@ -127,7 +274,7 @@ export async function sendMedia(phone: string, keyOrUrl: string): Promise<string
 
   // 2. Generic Handling (R2 Assets)
   let mediaUrl = keyOrUrl;
-  let fileName = keyOrUrl.split('/').pop() || 'arquivo';
+  const fileName = keyOrUrl.split('/').pop() || 'arquivo';
 
   // If it's a key (not a URL), try to construct the URL using R2_PUBLIC_URL
   if (!keyOrUrl.startsWith('http')) {

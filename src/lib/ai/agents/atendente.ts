@@ -1,4 +1,4 @@
-import { AgentContext } from '../types';
+import { AgentContext, AgentMessage } from '../types';
 import { runAgent, ToolDefinition } from '../openai-client';
 import {
   updateUser,
@@ -98,10 +98,7 @@ Informações Reais do Cliente:
 - Lembre-se sempre de fracionar suas falas com o delimitador '|||' quando for falar mais de uma frase ou ação.
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runAtendenteAgent(message: string | any, context: AgentContext) {
+export async function runAtendenteAgent(message: AgentMessage, context: AgentContext) {
   // 1. Fetch latest user data
   const userDataJson = await getUser(context.userPhone);
   let userData = "Não encontrado";

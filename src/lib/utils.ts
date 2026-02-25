@@ -19,3 +19,10 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
     if (magnitudeA === 0 || magnitudeB === 0) return 0;
     return dotProduct / (magnitudeA * magnitudeB);
 }
+
+export function toWhatsAppJid(phoneOrJid: string): string {
+  if (phoneOrJid.includes('@')) return phoneOrJid;
+  const digits = phoneOrJid.replace(/\D/g, '');
+  if (!digits) return phoneOrJid;
+  return `${digits}@s.whatsapp.net`;
+}

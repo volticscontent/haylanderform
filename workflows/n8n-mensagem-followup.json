@@ -1,0 +1,339 @@
+{
+  "name": "Fluxo Unificado - Gerenciador de Mensagens e Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "system-message",
+        "options": {}
+      },
+      "id": "webhook-system",
+      "name": "Webhook - Sistema (Envia Msg)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "client-message",
+        "options": {}
+      },
+      "id": "webhook-client",
+      "name": "Webhook - Cliente (Reseta Timer)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 100]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ 'followup:' + $json.body.phone }}"
+      },
+      "id": "redis-cancel-timer",
+      "name": "Redis - Cancelar Timer",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [300, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define ID único para este ciclo de follow-up\nconst followupId = $execution.id;\nconst phone = $json.body.phone;\nconst messages = $json.body.messages || [];\nconst context = $json.body.context || 'geral';\nconst followupMessage = $json.body.followupMessage || 'Olá! Ainda está por aí? Posso ajudar com mais alguma coisa?';\n\n// Prepara mensagens para split\nreturn messages.map((msg, index) => ({\n  json: {\n    phone,\n    followupId,\n    message: msg,\n    isLast: index === messages.length - 1,\n    context,\n    followupMessage\n  }\n}));"
+      },
+      "id": "prepare-messages",
+      "name": "Preparar Mensagens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ 'followup:' + $json.phone }}",
+        "value": "={{ $json.followupId }}",
+        "options": {
+          "ttl": 300
+        }
+      },
+      "id": "redis-set-timer",
+      "name": "Redis - Definir Timer",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "batch": {
+          "batchSize": 1,
+          "waitTime": "={{ $json.message.delay || 1000 }}"
+        },
+        "options": {}
+      },
+      "id": "split-messages",
+      "name": "Split e Delay",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.API_URL || 'https://haylanderform.vercel.app').trim().replace(/\\/$/, '') }}/api/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"phone\": $json.phone,\n  \"content\": $json.message.content,\n  \"type\": $json.message.type || 'text',\n  \"options\": $json.message.options || {}\n} }}",
+        "options": {}
+      },
+      "id": "send-to-api",
+      "name": "Enviar para API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isLast }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-last-message",
+      "name": "É a última mensagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "id": "wait-followup",
+      "name": "Aguardar 2 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ 'followup:' + $json.phone }}"
+      },
+      "id": "redis-check-timer",
+      "name": "Redis - Verificar Timer",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.value }}",
+              "value2": "={{ $('prepare-messages').item.json.followupId }}"
+            }
+          ]
+        }
+      },
+      "id": "check-followup-valid",
+      "name": "Timer ainda válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1700, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.API_URL || 'https://haylanderform.vercel.app').trim().replace(/\\/$/, '') }}/api/messages/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"phone\": $('prepare-messages').item.json.phone,\n  \"content\": $('prepare-messages').item.json.followupMessage,\n  \"type\": 'text'\n} }}",
+        "options": {}
+      },
+      "id": "send-followup",
+      "name": "Enviar Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1900, 200]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ 'followup:' + $('prepare-messages').item.json.phone }}"
+      },
+      "id": "redis-clear-timer",
+      "name": "Redis - Limpar Timer",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2100, 200]
+    }
+  ],
+  "connections": {
+    "webhook-system": {
+      "main": [
+        [
+          {
+            "node": "prepare-messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook-client": {
+      "main": [
+        [
+          {
+            "node": "redis-cancel-timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-messages": {
+      "main": [
+        [
+          {
+            "node": "redis-set-timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "redis-set-timer": {
+      "main": [
+        [
+          {
+            "node": "split-messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split-messages": {
+      "main": [
+        [
+          {
+            "node": "send-to-api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-to-api": {
+      "main": [
+        [
+          {
+            "node": "check-last-message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-last-message": {
+      "main": [
+        [
+          {
+            "node": "wait-followup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "split-messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait-followup": {
+      "main": [
+        [
+          {
+            "node": "redis-check-timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "redis-check-timer": {
+      "main": [
+        [
+          {
+            "node": "check-followup-valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-followup-valid": {
+      "main": [
+        [
+          {
+            "node": "send-followup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-followup": {
+      "main": [
+        [
+          {
+            "node": "redis-clear-timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2.0.0",
+  "tags": [
+    {
+      "id": "whatsapp-automation",
+      "name": "Automação WhatsApp"
+    },
+    {
+      "id": "haylander",
+      "name": "Haylander Contabilidade"
+    }
+  ]
+}
