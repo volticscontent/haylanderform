@@ -26,7 +26,7 @@ const N8N_API_KEY = process.env.N8N_API_KEY; // Se necessário header de auth
  */
 export async function sendToN8nHandler(payload: N8nMessagePayload): Promise<boolean> {
   try {
-    const url = `${N8N_WEBHOOK_URL}/disparos/send/system-message`;
+    const url = `${N8N_WEBHOOK_URL}/system-message`;
     
     console.log(`[n8n-client] Enviando ${payload.messages.length} mensagens para ${payload.phone} via n8n...`);
 
