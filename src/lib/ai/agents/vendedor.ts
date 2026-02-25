@@ -1,4 +1,4 @@
-import { AgentContext } from '../types';
+import { AgentContext, AgentMessage } from '../types';
 import { runAgent, ToolDefinition } from '../openai-client';
 import {
   tryScheduleMeeting,
@@ -169,8 +169,7 @@ Aja com fluidez e convide:
 - Pelo menos um "|||" na resposta para criar "duas mensagens" é obrigatório na maioria das suas interações para dar fluidez.
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runVendedorAgent(message: string | any, context: AgentContext) {
+export async function runVendedorAgent(message: AgentMessage, context: AgentContext) {
   // 1. Fetch latest user data for prompt injection
   const userDataJson = await getUser(context.userPhone);
   let userData = "Não encontrado";

@@ -1,4 +1,4 @@
-import { AgentContext } from '../types';
+import { AgentContext, AgentMessage } from '../types';
 import { runAgent, ToolDefinition } from '../openai-client';
 import {
   sendForm,
@@ -9,10 +9,20 @@ import {
   updateUser,
   callAttendant,
   contextRetrieve,
-  interpreter
+  interpreter,
+  sendMessageSegment
 } from '../tools/server-tools';
 
 import { getDynamicContext } from '../knowledge-base';
+import { 
+  trackResourceDelivery, 
+  checkProcuracaoStatus,
+  markProcuracaoCompleted,
+  processMessageSegments,
+  createRegularizacaoMessageSegments,
+  createAutonomoMessageSegments,
+  createAssistidoMessageSegments
+} from '../regularizacao-system';
 
 export const APOLO_PROMPT_TEMPLATE = `
 # Identidade e Propósito
@@ -64,7 +74,7 @@ Cumprimente o cliente pelo nome ({{USER_NAME}}) de forma amigável.
 
 ### 2. Diagnóstico e Seleção de Menu
 Se o cliente responder com um NÚMERO ou escolher uma opção do menu:
-- **1 ou "Regularização":** Use 'enviar_formulario' com observacao="Regularização".
+- **1 ou "Regularização":** Vá para o **Fluxo de Regularização Aprimorado** (ver seção 4).
 - **2 ou "Abertura de MEI":** Use 'enviar_formulario' com observacao="Abertura de MEI".
 - **3 ou "Falar com atendente":** Use 'chamar_atendente'.
 - **4 ou "Serviços":** Use 'enviar_midia' (se pedir PDF) ou explique brevemente.
@@ -77,11 +87,12 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
 - **Cenário A: Regularização / Dívidas (FLUXO PRINCIPAL)**
   Se o cliente mencionar dívidas, pendências, boleto atrasado ou regularização:
   1. **NÃO ENVIE O FORMULÁRIO AINDA.**
-  2. Explique que o 1º passo é consultar as dívidas, e para isso, a forma mais rápida e segura é criar uma procuração no e-CAC (isso evita pedir a senha GOV).
-  3. Envie o vídeo tutorial ensinando a fazer a procuração no e-CAC (Use a tool 'enviar_midia' com a chave correspondente ao vídeo da procuração).
-  4. Pergunte se o usuário conseguiu realizar o processo.
-  5. **Se concluiu:** USE A TOOL 'enviar_formulario' com observacao="Regularização". Diga para NÃO preencher a senha GOV no formulário.
-  6. **Se não conseguiu/travou:** Diga que um atendente ajudará e USE A TOOL 'chamar_atendente'.
+  2. **USE A TOOL 'iniciar_fluxo_regularizacao'** para iniciar o fluxo aprimorado com mensagens segmentadas.
+  3. O sistema enviará automaticamente as explicações sobre PGMEI, Dívida Ativa e procuração e-CAC.
+  4. **Aguarde a resposta do cliente** sobre a escolha entre autônomo ou assistido.
+  5. **Se escolher autônomo:** USE 'enviar_processo_autonomo' (envia link e-CAC + vídeo tutorial com tracking).
+  6. **Se escolher assistido:** USE 'enviar_processo_assistido' (envia mensagens + transferência para atendente).
+  7. **Quando cliente confirmar conclusão:** USE 'marcar_procuracao_concluida' e depois 'enviar_formulario'.
 
 - **Cenário A.1: MEI Excluído ou Desenquadrado (Pré-Fechamento)**
   Se o cliente informar que o MEI foi excluído, desenquadrado ou "virou microempresa":
@@ -97,6 +108,33 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
   1. Explique claramente que para este serviço específico (Abertura ou Baixa), **será necessário o acesso GOV (CPF e Senha)** para execução nos portais governamentais.
   2. USE A TOOL 'enviar_formulario' com observacao="Abertura/Baixa de MEI".
   3. (Lembre-se: Chame a tool para pegar o link real e aguarde o retorno. Nunca use placeholders).
+
+### 4. Fluxo de Regularização Aprimorado (NOVO SISTEMA)
+Quando o cliente escolher "Regularização" (opção 1 do menu) ou mencionar dívidas/regularização:
+
+**PASSO 1: Educação e Explicação**
+Envie mensagens segmentadas (separadas por |||) explicando:
+1. "Para realizar a regularização fiscal completa, precisamos consultar suas dívidas no PGMEI (Programa de Regularização do Microempreendedor Individual) e na Dívida Ativa da União."
+2. "Para este processo, é obrigatório ter uma procuração cadastrada no e-CAC (Centro Virtual de Atendimento ao Contribuinte). Isso garante segurança e agilidade."
+3. "Você tem duas opções: fazer o processo de forma autônoma com nosso passo a passo, ou ser auxiliado por um de nossos especialistas."
+
+**PASSO 2: Oferecer Opções**
+Pergunte: "Qual você prefere: fazer agora sozinho ou com auxílio de um atendente?"
+
+**PASSO 3A: Se escolher AUTÔNOMO**
+1. Envie o link oficial do e-CAC: https://cav.receita.fazenda.gov.br/autenticacao/login
+2. Envie o vídeo tutorial explicativo (use 'enviar_midia' com a chave correta)
+3. Implemente tracking: registre que esses recursos foram entregues
+4. Pergunte: "Conseguiu criar a procuração? Quando terminar, me avise que envio o formulário!"
+
+**PASSO 3B: Se escolher ASSISTIDO**
+1. Confirme: "Ótima escolha! Um especialista irá te guiar durante todo o processo."
+2. Use 'chamar_atendente' para transferir para atendimento humano
+
+**PASSO 4: Tracking e Acompanhamento**
+- Registre todos os recursos entregues (links, vídeos, documentos)
+- Monitore se o cliente acessou/concluiu os passos
+- Quando confirmar conclusão, prossiga com o formulário
 
 - **Cenário C: Menu de Opções**
   Use a ferramenta 'enviar_lista_enumerada' quando:
@@ -189,8 +227,7 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
 - Pelo menos um '|||' na resposta para criar "duas mensagens" é obrigatório na maioria das suas interações.
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runApoloAgent(message: string | any, context: AgentContext) {
+export async function runApoloAgent(message: AgentMessage, context: AgentContext) {
   // 1. Fetch latest user data
   let userDataJson = "{}";
   try {
@@ -345,6 +382,140 @@ export async function runApoloAgent(message: string | any, context: AgentContext
         required: ['action', 'text']
       },
       function: async (args) => await interpreter(context.userPhone, args.action as 'post' | 'get', args.text as string, args.category as 'qualificacao' | 'vendas' | 'atendimento')
+    },
+    {
+      name: 'iniciar_fluxo_regularizacao',
+      description: 'Inicia o fluxo de regularização fiscal aprimorado com mensagens segmentadas.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      function: async () => {
+        try {
+          const segments = createRegularizacaoMessageSegments();
+          await processMessageSegments(context.userPhone, segments, (segment) => sendMessageSegment(context.userPhone, segment));
+          return JSON.stringify({ status: "success", message: "Fluxo de regularização iniciado com mensagens segmentadas" });
+        } catch (error) {
+          console.error('Error in iniciar_fluxo_regularizacao:', error);
+          return JSON.stringify({ status: "error", message: String(error) });
+        }
+      }
+    },
+    {
+      name: 'enviar_processo_autonomo',
+      description: 'Envia o processo autônomo de regularização (link e-CAC + vídeo tutorial).',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      function: async () => {
+        try {
+          // Get lead ID for tracking
+          const userData = await getUser(context.userPhone);
+          let leadId = null;
+          if (userData) {
+            const parsed = JSON.parse(userData);
+            if (parsed.status !== 'error' && parsed.status !== 'not_found') {
+              leadId = parsed.id;
+            }
+          }
+
+          const segments = createAutonomoMessageSegments();
+          await processMessageSegments(context.userPhone, segments, (segment) => sendMessageSegment(context.userPhone, segment));
+
+          // Track resources delivered
+          if (leadId) {
+            await trackResourceDelivery(leadId, 'link-ecac', 'https://cav.receita.fazenda.gov.br/autenticacao/login');
+            await trackResourceDelivery(leadId, 'video-tutorial', 'video-tutorial-procuracao-ecac');
+          }
+
+          return JSON.stringify({ status: "success", message: "Processo autônomo enviado com tracking" });
+        } catch (error) {
+          console.error('Error in enviar_processo_autonomo:', error);
+          return JSON.stringify({ status: "error", message: String(error) });
+        }
+      }
+    },
+    {
+      name: 'enviar_processo_assistido',
+      description: 'Envia o processo assistido de regularização (transferência para atendente).',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      function: async () => {
+        try {
+          const segments = createAssistidoMessageSegments();
+          await processMessageSegments(context.userPhone, segments, (segment) => sendMessageSegment(context.userPhone, segment));
+          
+          // Transfer to human attendant after messages
+          return await callAttendant(context.userPhone, 'Solicitação de processo assistido de regularização');
+        } catch (error) {
+          console.error('Error in enviar_processo_assistido:', error);
+          return JSON.stringify({ status: "error", message: String(error) });
+        }
+      }
+    },
+    {
+      name: 'verificar_procuracao_status',
+      description: 'Verifica se o cliente já concluiu a procuração no e-CAC.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      function: async () => {
+        try {
+          const userData = await getUser(context.userPhone);
+          if (!userData) {
+            return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
+          }
+          
+          const parsed = JSON.parse(userData);
+          if (parsed.status === 'error' || parsed.status === 'not_found') {
+            return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
+          }
+
+          const completed = await checkProcuracaoStatus(parsed.id);
+          return JSON.stringify({ 
+            status: "success", 
+            completed,
+            message: completed ? "Procuração já concluída" : "Procuração pendente"
+          });
+        } catch (error) {
+          console.error('Error in verificar_procuracao_status:', error);
+          return JSON.stringify({ status: "error", message: String(error) });
+        }
+      }
+    },
+    {
+      name: 'marcar_procuracao_concluida',
+      description: 'Marca a procuração como concluída no sistema.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      function: async () => {
+        try {
+          const userData = await getUser(context.userPhone);
+          if (!userData) {
+            return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
+          }
+          
+          const parsed = JSON.parse(userData);
+          if (parsed.status === 'error' || parsed.status === 'not_found') {
+            return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
+          }
+
+          await markProcuracaoCompleted(parsed.id);
+          return JSON.stringify({ 
+            status: "success", 
+            message: "Procuração marcada como concluída"
+          });
+        } catch (error) {
+          console.error('Error in marcar_procuracao_concluida:', error);
+          return JSON.stringify({ status: "error", message: String(error) });
+        }
+      }
     }
   ];
 

@@ -2,38 +2,14 @@ import { NextResponse } from 'next/server';
 import { runApoloAgent } from '@/lib/ai/agents/apolo';
 import { runVendedorAgent } from '@/lib/ai/agents/vendedor';
 import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
-import { AgentContext } from '@/lib/ai/types';
+import { AgentContext, AgentMessage } from '@/lib/ai/types';
 import { getUser, updateUser, createUser, getAgentRouting } from '@/lib/ai/tools/server-tools';
 import { addToHistory, getChatHistory } from '@/lib/chat-history';
 import { evolutionSendTextMessage } from '@/lib/evolution';
 import redis from '@/lib/redis';
+import { notifySocketServer } from '@/lib/socket';
+import { sendToN8nHandler } from '@/lib/n8n-client';
 
-// Helper to notify Socket Server (Redis Pub/Sub -> HTTP Fallback)
-async function notifySocketServer(channel: string, message: object) {
-  try {
-    // 1. Try Redis Pub/Sub (Fastest)
-    await redis.publish(channel, JSON.stringify(message));
-  } catch (redisError) {
-    console.warn('[Webhook] Redis publish failed, trying HTTP fallback:', redisError);
-
-    // 2. HTTP Fallback to Socket Server
-    try {
-      // Assuming Socket Server runs on localhost:3002 as configured
-      // In production, this URL should be in env vars
-      const socketServerUrl = 'http://localhost:3003/notify';
-      await fetch(socketServerUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-      });
-      console.log('[Webhook] HTTP notification sent to Socket Server successfully.');
-    } catch (httpError) {
-      console.error('[Webhook] Both Redis and HTTP notification failed:', httpError);
-    }
-  }
-}
-
-const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL;
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY;
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL;
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
@@ -65,8 +41,7 @@ export async function POST(req: Request) {
     }
 
     const msgData = body.data?.message;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let message: string | any[] = '';
+    let message: AgentMessage = '';
 
     // 1. Text extraction
     if (msgData?.conversation) {
@@ -101,7 +76,8 @@ export async function POST(req: Request) {
 
       if (base64 && mimetype === 'application/pdf') {
         try {
-          // @ts-ignore
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const pdfParseModule: any = await import('pdf-parse');
           const pdfParse = pdfParseModule.default || pdfParseModule;
           const pdfBuffer = Buffer.from(base64, 'base64');
@@ -218,20 +194,13 @@ export async function POST(req: Request) {
     console.log(`[Webhook] Mensagem de ${userPhone}: ${logMsg}`);
 
     // 0. Notify n8n about User Activity (Follow-up)
-    if (process.env.N8N_WHATSAPP_EVENTS_URL) {
+    // Using centralized client to ensure consistency
+    if (process.env.N8N_WEBHOOK_URL) {
+      const { notifyClientActivity } = await import('@/lib/n8n-client');
       // Fire and forget - Don't await to avoid blocking response
-      console.log(`[Webhook] Notificando N8N (Follow-up): ${process.env.N8N_WHATSAPP_EVENTS_URL}`);
-      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: userPhone,
-          name: pushName || 'Cliente',
-          message: typeof message === 'string' ? message : JSON.stringify(message),
-          event: 'user_message',
-          timestamp: new Date().toISOString()
-        })
-      }).catch(err => console.error('[Webhook] Failed to notify n8n of user message:', err));
+      notifyClientActivity(userPhone).catch(err => 
+        console.error('[Webhook] Failed to notify n8n of user activity:', err)
+      );
     }
 
     // 0. Salvar mensagem do usuário no histórico
@@ -364,26 +333,23 @@ export async function POST(req: Request) {
       // Split responseText by |||
       const messages = responseText.split('|||').map((m: string) => m.trim()).filter((m: string) => m.length > 0);
 
-      for (const msg of messages) {
-        const sentMessage = await evolutionSendTextMessage(sender, msg);
+      if (messages.length > 0) {
+        // Enviar para o n8n para gestão centralizada de envio e follow-up
+        const segments = messages.map((msg, index) => ({
+          content: msg,
+          type: 'text' as const,
+          delay: index === 0 ? 0 : 1500
+        }));
 
-        if (sentMessage) {
-          // Publish OUTGOING message to Redis
-          const outgoingSocketMsg = {
-            chatId: sender,
-            ...sentMessage
-          };
-          await notifySocketServer('chat-updates', outgoingSocketMsg);
-        }
-
-        // Add a small human-like delay between multiple messages (1.5 seconds)
-        if (messages.length > 1) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
+        await sendToN8nHandler({
+          phone: sender,
+          messages: segments,
+          context: 'agent-response'
+        });
       }
     } catch (sendError) {
-      console.error(`[Webhook] Falha ao enviar mensagem para ${sender}:`, sendError);
-      // Não retorna 500 para não travar o webhook do WhatsApp (que ficaria tentando reenviar)
+      console.error(`[Webhook] Falha ao enviar mensagem para ${sender} via n8n:`, sendError);
+      // Não retorna 500 para não travar o webhook do WhatsApp
     }
 
     return NextResponse.json({ status: 'success' });

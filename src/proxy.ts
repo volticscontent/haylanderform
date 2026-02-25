@@ -1,37 +1,33 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyAdminSession } from './lib/admin-auth'
 
-export function proxy(req: NextRequest) {
-  const url = req.nextUrl.clone()
-  const pathname = url.pathname
+export async function proxy(request: NextRequest) {
+    const path = request.nextUrl.pathname;
 
-  const isAdminPath = pathname.startsWith('/admin')
-  const isLoginPath = pathname === '/admin/login'
-  const hasSession = req.cookies.get('admin_session')?.value === 'true'
+    if (path.startsWith('/admin') && !path.startsWith('/admin/login')) {
+        const sessionCookie = request.cookies.get('admin_session')?.value;
+        const isValid = await verifyAdminSession(sessionCookie);
 
-  // Only guard /admin paths
-  if (!isAdminPath) {
-    return NextResponse.next()
-  }
-
-  // Allow /admin/login when not logged in; if logged, send to dashboard
-  if (isLoginPath) {
-    if (hasSession) {
-      url.pathname = '/admin/dashboard'
-      return NextResponse.redirect(url)
+        if (!isValid) {
+            return NextResponse.redirect(new URL('/admin/login', request.url));
+        }
     }
-    return NextResponse.next()
-  }
 
-  // For other /admin pages, require session
-  if (!hasSession) {
-    url.pathname = '/admin/login'
-    return NextResponse.redirect(url)
-  }
+    if (path === '/admin/login') {
+        const sessionCookie = request.cookies.get('admin_session')?.value;
+        // Check if already logged in to redirect to dashboard
+        if (sessionCookie) {
+             const isValid = await verifyAdminSession(sessionCookie);
+             if (isValid) {
+                 return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+             }
+        }
+    }
 
-  return NextResponse.next()
+    return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+    matcher: '/admin/:path*',
 }
