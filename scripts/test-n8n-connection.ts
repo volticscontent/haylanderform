@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const N8N_WEBHOOK_URL = (process.env.N8N_WEBHOOK_URL || 'https://n8n.haylander.com.br/webhook').replace(/\/$/, '');
 const N8N_API_KEY = process.env.N8N_API_KEY;
 
-const targetPhone = process.argv[2] || '5511999999999';
+const targetPhone = process.argv[2] || '553182354127';
 
 console.log('--- Configuração ---');
 console.log(`URL Base: ${N8N_WEBHOOK_URL}`);

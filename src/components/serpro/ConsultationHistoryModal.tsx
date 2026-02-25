@@ -63,12 +63,12 @@ export default function ConsultationHistoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
       <div className="bg-white dark:bg-zinc-900 w-full max-w-5xl h-[80vh] rounded-xl shadow-2xl flex flex-col border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
           <div>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            <h2 id="history-modal-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Histórico de Consultas
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">

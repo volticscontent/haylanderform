@@ -5,7 +5,7 @@ export const evolutionConfig = {
   apiKey: process.env.EVOLUTION_API_KEY || '',
   instance: process.env.EVOLUTION_INSTANCE_NAME || '',
   integration: (process.env.EVOLUTION_INTEGRATION as EvolutionIntegration) || 'WHATSAPP-BAILEYS',
-  timeoutMs: Number(process.env.EVOLUTION_TIMEOUT_MS || '15000'),
+  timeoutMs: Number(process.env.EVOLUTION_TIMEOUT_MS || '30000'),
   waBusiness: {
     token: process.env.WA_BUSINESS_TOKEN || '',
     numberId: process.env.WA_BUSINESS_NUMBER_ID || '',

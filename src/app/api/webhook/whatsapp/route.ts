@@ -353,7 +353,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ status: 'success' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erro no Webhook:', error);
     return NextResponse.json(
       {
