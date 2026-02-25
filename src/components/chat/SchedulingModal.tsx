@@ -60,14 +60,14 @@ export function SchedulingModal({ isOpen, onClose }: SchedulingModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="scheduling-modal-title">
       <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100 font-semibold">
             <Calendar className="w-5 h-5 text-indigo-500" />
-            <h3>Enviar Agendamento</h3>
+            <h3 id="scheduling-modal-title">Enviar Agendamento</h3>
           </div>
           <button 
             onClick={handleClose}

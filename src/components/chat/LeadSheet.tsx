@@ -177,7 +177,7 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-labelledby="lead-sheet-title">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" 
@@ -206,7 +206,7 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
                {lead.nome_completo ? lead.nome_completo.substring(0, 2).toUpperCase() : <User className="w-6 h-6" />}
              </div>
              <div>
-               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{lead.nome_completo || 'Sem nome'}</h2>
+               <h2 id="lead-sheet-title" className="text-xl font-bold text-zinc-900 dark:text-white">{lead.nome_completo || 'Sem nome'}</h2>
                <div className="flex items-center gap-2 text-sm text-zinc-500">
                  <span className="font-mono">{lead.cnpj || 'CNPJ N/A'}</span>
                  {lead.needs_attendant && (

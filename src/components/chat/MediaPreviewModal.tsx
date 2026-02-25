@@ -38,12 +38,12 @@ export function MediaPreviewModal({ isOpen, onClose, onSend, file, type }: Media
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="media-preview-modal-title">
       <div className="bg-white dark:bg-zinc-900 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-zinc-100 dark:border-zinc-800">
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">
+          <h3 id="media-preview-modal-title" className="font-semibold text-zinc-900 dark:text-zinc-100">
             Enviar {type === 'image' ? 'Imagem' : type === 'video' ? 'Vídeo' : type === 'audio' ? 'Áudio' : 'Arquivo'}
           </h3>
           <button onClick={handleClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
