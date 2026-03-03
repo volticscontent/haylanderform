@@ -18,7 +18,7 @@ interface N8nMessagePayload {
   leadId?: number;
 }
 
-const N8N_WEBHOOK_URL = (process.env.N8N_WEBHOOK_URL || 'https://n8n.haylander.com.br/webhook').replace(/\/$/, '');
+const N8N_WEBHOOK_URL = (process.env.N8N_WEBHOOK_URL || 'https://n8n.landcriativa.com/webhook').replace(/\/$/, '');
 const N8N_API_KEY = process.env.N8N_API_KEY; // Se necessário header de auth
 
 /**

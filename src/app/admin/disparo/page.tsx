@@ -81,7 +81,13 @@ async function getData() {
 export default async function DisparoPage() {
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
-  if (!session || session.value !== 'true') redirect('/admin/login')
+  
+  const { verifyAdminSession } = await import('@/lib/admin-auth')
+  const isValid = await verifyAdminSession(session?.value)
+
+  if (!isValid) {
+    redirect('/admin/login')
+  }
   const data = await getData()
   return (
     <div className="space-y-6 h-full">

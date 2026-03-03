@@ -1,24 +1,24 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { 
-  BarChart, 
-  Bar, 
+import {
+  BarChart,
+  Bar,
   LineChart,
   Line,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Cell
 } from 'recharts'
-import { 
-  BarChart3, 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  ArrowUpRight, 
+import {
+  BarChart3,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpRight,
   ArrowDownRight,
   CheckCircle2,
   XCircle,
@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { format, subDays, differenceInDays, isWithinInterval, parseISO, startOfDay, endOfDay, startOfMonth } from 'date-fns'
+import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 
 const MetaAdsFunnel = dynamic(() => import('../../../components/MetaAdsFunnel'), { ssr: false })
 
@@ -54,7 +55,7 @@ type DateRange = {
 export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] }) {
   const [filterColumn, setFilterColumn] = useState<'envio_disparo' | 'situacao' | 'qualificacao' | 'interesse_ajuda'>('envio_disparo')
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar')
-  
+
   // Date Filter State
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null })
@@ -64,17 +65,9 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
   const [currentSlide, setCurrentSlide] = useState(0)
 
   // Close date picker when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-        setShowDatePicker(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [datePickerRef])
+  useOnClickOutside(datePickerRef, () => {
+    setShowDatePicker(false)
+  })
 
   // 1. Filter Data by Date
   const filteredData = useMemo(() => {
@@ -87,7 +80,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
 
       if (dateRange.start && rowDateStr < dateRange.start) return false
       if (dateRange.end && rowDateStr > dateRange.end) return false
-      
+
       return true
     })
   }, [data, dateRange])
@@ -95,7 +88,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
   // 2. Aggregate data for the chart
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {}
-    
+
     filteredData.forEach(row => {
       // Get the value for the selected column, default to 'Não informado' if null/empty
       const value = (row[filterColumn] as string) || 'Não informado'
@@ -124,17 +117,17 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
         // If completed, it should be something else.
         // We assume anything NOT a1, a2, a3, Pendente, error is "Feito" (Sent)
         pendingSends: dataset.filter(d => {
-            const status = d.envio_disparo
-            return !status || status === 'Pendente' || ['a1', 'a2', 'a3'].includes(status)
+          const status = d.envio_disparo
+          return !status || status === 'Pendente' || ['a1', 'a2', 'a3'].includes(status)
         }).length,
-        
+
         sentMessages: dataset.filter(d => {
-            const status = d.envio_disparo
-            // Sent if status is 'concluido' (case insensitive)
-            // or if it's not pending/error/null and explicitly marked as sent in some way?
-            // User said: "Se a1, a2, a3 estão ativados que dizer que tem envios pendentes se estiver como concluido ai sim você não precisa marcar envio pendente mais envio concluido"
-            // So 'concluido' is the key.
-            return status && (status.toLowerCase() === 'concluido' || (!['Pendente', 'error', 'a1', 'a2', 'a3'].includes(status)))
+          const status = d.envio_disparo
+          // Sent if status is 'concluido' (case insensitive)
+          // or if it's not pending/error/null and explicitly marked as sent in some way?
+          // User said: "Se a1, a2, a3 estão ativados que dizer que tem envios pendentes se estiver como concluido ai sim você não precisa marcar envio pendente mais envio concluido"
+          // So 'concluido' is the key.
+          return status && (status.toLowerCase() === 'concluido' || (!['Pendente', 'error', 'a1', 'a2', 'a3'].includes(status)))
         }).length,
 
         interested,
@@ -144,24 +137,24 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     }
 
     const current = calculateMetrics(filteredData)
-    
+
     // Previous Period Calculation
     let previous: ReturnType<typeof calculateMetrics> | null = null
-    
+
     if (dateRange.start && dateRange.end) {
       const start = parseISO(dateRange.start)
       const end = parseISO(dateRange.end)
       const daysDiff = differenceInDays(end, start) + 1
-      
+
       const prevStart = subDays(start, daysDiff)
       const prevEnd = subDays(end, daysDiff)
-      
+
       const prevData = data.filter(row => {
         if (!row.atualizado_em) return false
         const rowDate = new Date(row.atualizado_em)
         return isWithinInterval(rowDate, { start: startOfDay(prevStart), end: endOfDay(prevEnd) })
       })
-      
+
       previous = calculateMetrics(prevData)
     }
 
@@ -232,7 +225,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
   const leadsPorHora = useMemo(() => {
     const horasBase = Array.from({ length: 24 }, (_, h) => ({
       hour: h,
-      label: `${String(h).padStart(2,'0')}:00`,
+      label: `${String(h).padStart(2, '0')}:00`,
       count: 0,
     }))
 
@@ -268,22 +261,21 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 Visualizando {filteredData.length} registros
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Date Filter Button - Full width on mobile grid row 1 */}
               <div className="relative col-span-2 sm:col-span-1 w-full sm:w-auto" ref={datePickerRef}>
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
-                  className={`w-full flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    dateRange.start || dateRange.end 
+                  className={`w-full flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange.start || dateRange.end
                       ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
                       : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
-                  }`}
+                    }`}
                 >
                   <CalendarIcon className="w-4 h-4" />
                   {dateRange.start ? (
                     <span className="truncate">
-                      {format(parseISO(dateRange.start), 'dd/MM')} 
+                      {format(parseISO(dateRange.start), 'dd/MM')}
                       {dateRange.end ? ` - ${format(parseISO(dateRange.end), 'dd/MM')}` : ''}
                     </span>
                   ) : (
@@ -296,29 +288,39 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     {/* Presets Sidebar */}
                     <div className="p-2 bg-zinc-50 dark:bg-zinc-800/50 border-b sm:border-b-0 sm:border-r border-zinc-200 dark:border-zinc-700 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:min-w-[140px]">
                       {[
-                        { label: 'Hoje', action: () => {
+                        {
+                          label: 'Hoje', action: () => {
                             const today = new Date();
                             setDateRange({ start: format(today, 'yyyy-MM-dd'), end: format(today, 'yyyy-MM-dd') });
-                        }},
-                        { label: 'Ontem', action: () => {
+                          }
+                        },
+                        {
+                          label: 'Ontem', action: () => {
                             const yesterday = subDays(new Date(), 1);
                             setDateRange({ start: format(yesterday, 'yyyy-MM-dd'), end: format(yesterday, 'yyyy-MM-dd') });
-                        }},
-                        { label: 'Últimos 7 dias', action: () => {
+                          }
+                        },
+                        {
+                          label: 'Últimos 7 dias', action: () => {
                             const end = new Date();
                             const start = subDays(end, 6);
                             setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(end, 'yyyy-MM-dd') });
-                        }},
-                        { label: 'Este Mês', action: () => {
+                          }
+                        },
+                        {
+                          label: 'Este Mês', action: () => {
                             const today = new Date();
                             const start = startOfMonth(today);
                             setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(today, 'yyyy-MM-dd') });
-                        }},
-                        { label: 'Últimos 30 dias', action: () => {
+                          }
+                        },
+                        {
+                          label: 'Últimos 30 dias', action: () => {
                             const end = new Date();
                             const start = subDays(end, 29);
                             setDateRange({ start: format(start, 'yyyy-MM-dd'), end: format(end, 'yyyy-MM-dd') });
-                        }},
+                          }
+                        },
                       ].map((preset) => (
                         <button
                           key={preset.label}
@@ -335,8 +337,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-medium text-zinc-500 mb-1">Data Início</label>
-                          <input 
-                            type="date" 
+                          <input
+                            type="date"
                             className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
                             value={dateRange.start || ''}
                             onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
@@ -344,15 +346,15 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-zinc-500 mb-1">Data Fim</label>
-                          <input 
-                            type="date" 
+                          <input
+                            type="date"
                             className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
                             value={dateRange.end || ''}
                             onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                           />
                         </div>
                       </div>
-                      
+
                       <div className="pt-2 flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 mt-4">
                         <span className="text-xs text-zinc-400">
                           {dateRange.start && dateRange.end ? (
@@ -360,7 +362,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                           ) : 'Selecione um período'}
                         </span>
                         <div className="flex gap-2">
-                           <button 
+                          <button
                             onClick={() => {
                               setDateRange({ start: null, end: null })
                               // Don't close, just clear
@@ -369,7 +371,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                           >
                             Limpar
                           </button>
-                          <button 
+                          <button
                             onClick={() => setShowDatePicker(false)}
                             className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium transition-colors"
                           >
@@ -386,21 +388,19 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-700 h-10 sm:h-auto items-center justify-center">
                 <button
                   onClick={() => setChartType('bar')}
-                  className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${
-                    chartType === 'bar' 
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' 
+                  className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${chartType === 'bar'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                  }`}
+                    }`}
                 >
                   Barras
                 </button>
                 <button
                   onClick={() => setChartType('line')}
-                  className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${
-                    chartType === 'line' 
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm' 
+                  className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${chartType === 'line'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
                       : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                  }`}
+                    }`}
                 >
                   Linhas
                 </button>
@@ -425,21 +425,21 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               {chartType === 'bar' ? (
                 <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} className="dark:opacity-10" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#71717a" 
-                    fontSize={11} 
-                    tickLine={false} 
+                  <XAxis
+                    dataKey="name"
+                    stroke="#71717a"
+                    fontSize={11}
+                    tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis 
-                    stroke="#71717a" 
-                    fontSize={12} 
-                    tickLine={false} 
+                  <YAxis
+                    stroke="#71717a"
+                    fontSize={12}
+                    tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: 'transparent' }}
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
@@ -464,21 +464,21 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               ) : (
                 <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} className="dark:opacity-10" />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#71717a" 
-                    fontSize={12} 
-                    tickLine={false} 
+                  <XAxis
+                    dataKey="name"
+                    stroke="#71717a"
+                    fontSize={12}
+                    tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis 
-                    stroke="#71717a" 
-                    fontSize={12} 
-                    tickLine={false} 
+                  <YAxis
+                    stroke="#71717a"
+                    fontSize={12}
+                    tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
-                  <Tooltip 
+                  <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
@@ -493,10 +493,10 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                       return null;
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#6366f1" 
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#6366f1"
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
                     activeDot={{ r: 6 }}
@@ -531,73 +531,71 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           </div>
           <div className="hidden sm:flex bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-4 sm:p-6 flex-1 flex-col">
             <div className="flex justify-between items-center mb-4">
-               <h4 className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Resumo Rápido</h4>
-               <div className="hidden sm:flex gap-1">
-                 <button 
-                   onClick={prevSlide}
-                   className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
-                 >
-                   <ChevronLeft className="w-4 h-4" />
-                 </button>
-                 <button 
-                   onClick={nextSlide}
-                   className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
-                 >
-                   <ChevronRight className="w-4 h-4" />
-                 </button>
-               </div>
+              <h4 className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">Resumo Rápido</h4>
+              <div className="hidden sm:flex gap-1">
+                <button
+                  onClick={prevSlide}
+                  className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 flex items-center justify-center overflow-hidden relative">
-               {/* Carousel Content */}
-               <div className="w-full animate-in fade-in slide-in-from-right duration-300" key={currentSlide}>
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <div className={`p-3 rounded-full ${carouselItems[currentSlide].bg} ${carouselItems[currentSlide].color}`}>
-                      <CurrentIcon className="w-6 h-6" />
-                    </div>
-                    <h5 className="text-zinc-600 dark:text-zinc-300 font-medium">{carouselItems[currentSlide].title}</h5>
-                    <div className="text-4xl font-bold text-zinc-900 dark:text-white tracking-tight">
-                      {carouselItems[currentSlide].value}{carouselItems[currentSlide].suffix}
-                    </div>
-                    
-                    {/* Comparison Badge */}
-                    {summaryMetrics.previous && (
-                      <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
-                        (carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) 
-                          ? 'bg-green-50 text-green-500 dark:bg-gray-500/50 dark:text--400'
-                          : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
+              {/* Carousel Content */}
+              <div className="w-full animate-in fade-in slide-in-from-right duration-300" key={currentSlide}>
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <div className={`p-3 rounded-full ${carouselItems[currentSlide].bg} ${carouselItems[currentSlide].color}`}>
+                    <CurrentIcon className="w-6 h-6" />
+                  </div>
+                  <h5 className="text-zinc-600 dark:text-zinc-300 font-medium">{carouselItems[currentSlide].title}</h5>
+                  <div className="text-4xl font-bold text-zinc-900 dark:text-white tracking-tight">
+                    {carouselItems[currentSlide].value}{carouselItems[currentSlide].suffix}
+                  </div>
+
+                  {/* Comparison Badge */}
+                  {summaryMetrics.previous && (
+                    <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0))
+                        ? 'bg-green-50 text-green-500 dark:bg-gray-500/50 dark:text--400'
+                        : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
                           ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                           : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                       }`}>
-                        {(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) ? (
-                          <ArrowUpRight className="w-3 h-3" />
-                        ) : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0)) ? (
-                          <ArrowDownRight className="w-3 h-3" />
-                        ) : (
-                          <span>=</span>
-                        )}
-                        {carouselItems[currentSlide].prevValue !== undefined && carouselItems[currentSlide].prevValue !== 0 ? (
-                          <span>
-                            {Math.abs(Math.round(((carouselItems[currentSlide].value - carouselItems[currentSlide].prevValue) / carouselItems[currentSlide].prevValue) * 100))}%
-                          </span>
-                        ) : (
-                          <span>-</span>
-                        )}
-                        <span className="opacity-60 ml-1">vs anterior</span>
-                      </div>
-                    )}
-                  </div>
-               </div>
+                      {(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) ? (
+                        <ArrowUpRight className="w-3 h-3" />
+                      ) : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0)) ? (
+                        <ArrowDownRight className="w-3 h-3" />
+                      ) : (
+                        <span>=</span>
+                      )}
+                      {carouselItems[currentSlide].prevValue !== undefined && carouselItems[currentSlide].prevValue !== 0 ? (
+                        <span>
+                          {Math.abs(Math.round(((carouselItems[currentSlide].value - carouselItems[currentSlide].prevValue) / carouselItems[currentSlide].prevValue) * 100))}%
+                        </span>
+                      ) : (
+                        <span>-</span>
+                      )}
+                      <span className="opacity-60 ml-1">vs anterior</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            
+
             {/* Pagination Dots */}
             <div className="flex justify-center gap-1.5 mt-4">
               {carouselItems.map((_, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    idx === currentSlide ? 'bg-indigo-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-indigo-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
+                    }`}
                 />
               ))}
             </div>
@@ -633,7 +631,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} className="dark:opacity-10" />
               <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip 
+              <Tooltip
                 cursor={{ fill: 'transparent' }}
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
@@ -649,7 +647,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   return null;
                 }}
               />
-              <Bar dataKey="value" radius={[4,4,0,0]} fill="#3b82f6" />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#3b82f6" />
             </BarChart>
           </ResponsiveContainer>
         </div>
