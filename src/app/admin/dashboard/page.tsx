@@ -60,8 +60,11 @@ async function getData() {
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
+  
+  const { verifyAdminSession } = await import('@/lib/admin-auth')
+  const isValid = await verifyAdminSession(session?.value)
 
-  if (!session || session.value !== 'true') {
+  if (!isValid) {
     redirect('/admin/login')
   }
 

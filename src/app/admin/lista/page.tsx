@@ -95,7 +95,10 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
 
-  if (!session || session.value !== 'true') {
+  const { verifyAdminSession } = await import('@/lib/admin-auth')
+  const isValid = await verifyAdminSession(session?.value)
+
+  if (!isValid) {
     redirect('/admin/login')
   }
 
