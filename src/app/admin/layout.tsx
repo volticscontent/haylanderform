@@ -10,9 +10,9 @@ export default async function AdminLayout({
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
 
-  // Lazy import or direct import if at top
-  const { verifyAdminSession } = await import('@/lib/admin-auth')
+  const { verifyAdminSession, getSession } = await import('@/lib/admin-auth')
   const isLoggedIn = !!session && await verifyAdminSession(session.value)
+  const colaborador = isLoggedIn ? await getSession(session!.value) : null
 
   async function logout() {
     'use server'
@@ -22,7 +22,12 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminShell isLoggedIn={isLoggedIn} onLogout={logout}>
+    <AdminShell
+      isLoggedIn={isLoggedIn}
+      onLogout={logout}
+      nomeColaborador={colaborador?.nome || null}
+      permissoes={colaborador?.permissoes || []}
+    >
       {children}
     </AdminShell>
   )

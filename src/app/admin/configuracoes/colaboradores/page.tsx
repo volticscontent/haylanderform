@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { getColaboradores, createColaborador, updateColaborador, toggleColaboradorAtivo, type Colaborador, type ColaboradorInput } from './actions';
-import { Loader2, Plus, X, UserCheck, UserX, Search, Edit2, Save } from 'lucide-react';
+import { getColaboradores, createColaborador, updateColaborador, toggleColaboradorAtivo, resetSenha, type Colaborador, type ColaboradorInput } from './actions';
+import { Loader2, Plus, X, UserCheck, UserX, Search, Edit2, Save, KeyRound } from 'lucide-react';
 
 const CARGOS_PADRAO = ['Admin', 'Atendente', 'Closer', 'SDR', 'Financeiro', 'Suporte'];
 const PERMISSOES_DISPONIVEIS = [
@@ -242,12 +242,16 @@ function ColaboradorModal({ colaborador, onClose, onSuccess }: {
     const isEditing = !!colaborador;
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resetSenhaOpen, setResetSenhaOpen] = useState(false);
+    const [novaSenha, setNovaSenha] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
     const [form, setForm] = useState<ColaboradorInput>({
         nome: colaborador?.nome || '',
         email: colaborador?.email || '',
         telefone: colaborador?.telefone || '',
         cargo: colaborador?.cargo || 'Atendente',
         permissoes: colaborador?.permissoes || [],
+        senha: '',
     });
 
     const handlePermissaoToggle = (permId: string) => {
@@ -264,9 +268,15 @@ function ColaboradorModal({ colaborador, onClose, onSuccess }: {
         setSaving(true);
         setError(null);
 
+        const payload = { ...form };
+        // Não enviar senha vazia no update
+        if (isEditing && !payload.senha) {
+            delete (payload as Partial<ColaboradorInput>).senha;
+        }
+
         const res = isEditing
-            ? await updateColaborador(colaborador!.id, form)
-            : await createColaborador(form);
+            ? await updateColaborador(colaborador!.id, payload)
+            : await createColaborador(payload);
 
         if (res.success) {
             onSuccess();
@@ -274,6 +284,21 @@ function ColaboradorModal({ colaborador, onClose, onSuccess }: {
             setError(res.error || 'Erro desconhecido');
         }
         setSaving(false);
+    };
+
+    const handleResetSenha = async () => {
+        if (!colaborador || !novaSenha) return;
+        setResetLoading(true);
+        setError(null);
+        const res = await resetSenha(colaborador.id, novaSenha);
+        if (res.success) {
+            setResetSenhaOpen(false);
+            setNovaSenha('');
+            setError(null);
+        } else {
+            setError(res.error || 'Erro ao redefinir senha');
+        }
+        setResetLoading(false);
     };
 
     return (
@@ -309,9 +334,10 @@ function ColaboradorModal({ colaborador, onClose, onSuccess }: {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label>
                             <input
                                 type="email"
+                                required
                                 value={form.email}
                                 onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
                                 placeholder="email@empresa.com"
@@ -367,6 +393,64 @@ function ColaboradorModal({ colaborador, onClose, onSuccess }: {
                             })}
                         </div>
                     </div>
+
+                    {/* Senha */}
+                    {!isEditing && (
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Senha de acesso *</label>
+                            <input
+                                type="password"
+                                required={!isEditing}
+                                value={form.senha || ''}
+                                onChange={(e) => setForm(prev => ({ ...prev, senha: e.target.value }))}
+                                placeholder="Senha para login"
+                                minLength={4}
+                                className="w-full px-3 py-2.5 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            />
+                        </div>
+                    )}
+
+                    {/* Redefinir Senha (apenas edição) */}
+                    {isEditing && (
+                        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                            {!resetSenhaOpen ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setResetSenhaOpen(true)}
+                                    className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+                                >
+                                    <KeyRound className="w-4 h-4" />
+                                    Redefinir senha
+                                </button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        value={novaSenha}
+                                        onChange={(e) => setNovaSenha(e.target.value)}
+                                        placeholder="Nova senha (min 4 chars)"
+                                        minLength={4}
+                                        className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleResetSenha}
+                                        disabled={resetLoading || novaSenha.length < 4}
+                                        className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                                    >
+                                        {resetLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setResetSenhaOpen(false); setNovaSenha(''); }}
+                                        className="p-2 text-zinc-400 hover:text-zinc-600"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
                         <button

@@ -45,32 +45,32 @@ export function ChatInterface() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
   }, []);
 
   const handleViewLeadSheet = async (chat: Chat) => {
-      setLeadSheetOpen(true);
-      setDesktopSidebarOpen(false); // Close admin sidebar
-      setLoadingLeadData(true);
-      setCurrentLeadData(null);
+    setLeadSheetOpen(true);
+    setDesktopSidebarOpen(false); // Close admin sidebar
+    setLoadingLeadData(true);
+    setCurrentLeadData(null);
 
-      try {
-          const phone = chat.id.split('@')[0];
-          const result = await getLeadByPhone(phone);
-          if (result.success && result.data) {
-              setCurrentLeadData(result.data as LeadSheetData);
-          }
-      } catch (error) {
-          console.error("Error loading lead sheet:", error);
-      } finally {
-          setLoadingLeadData(false);
+    try {
+      const phone = chat.id.split('@')[0];
+      const result = await getLeadByPhone(phone);
+      if (result.success && result.data) {
+        setCurrentLeadData(result.data as LeadSheetData);
       }
+    } catch (error) {
+      console.error("Error loading lead sheet:", error);
+    } finally {
+      setLoadingLeadData(false);
+    }
   };
 
   // Helper to extract text for preview
@@ -78,32 +78,32 @@ export function ChatInterface() {
   function extractMessagePreview(msg: any): string {
     if (!msg) return '';
     if (typeof msg === 'string') return msg;
-    
+
     const m = msg.message || msg;
-    const content = m.viewOnceMessage?.message || 
-                    m.viewOnceMessageV2?.message || 
-                    m.ephemeralMessage?.message || 
-                    m.documentWithCaptionMessage?.message || 
-                    m;
+    const content = m.viewOnceMessage?.message ||
+      m.viewOnceMessageV2?.message ||
+      m.ephemeralMessage?.message ||
+      m.documentWithCaptionMessage?.message ||
+      m;
 
     // Direct text
     if (content.conversation) return content.conversation;
-    
+
     // Extended text
     if (content.extendedTextMessage?.text) return content.extendedTextMessage.text;
-    
+
     // Image
     if (content.imageMessage) return '📷 [Imagem] ' + (content.imageMessage.caption || '');
-    
+
     // Audio
     if (content.audioMessage) return '🎵 [Áudio]';
-    
+
     // Video
     if (content.videoMessage) return '🎥 [Vídeo]';
-    
+
     // Document
     if (content.documentMessage) return 'Vk [Documento] ' + (content.documentMessage.fileName || '');
-    
+
     // Sticker
     if (content.stickerMessage) return '💟 [Figurinha]';
 
@@ -117,13 +117,13 @@ export function ChatInterface() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function normalizeMessage(m: any): Message {
     const originalContent = m.message || m;
-    
+
     // Unwrap wrappers
-    const contentObj = originalContent.viewOnceMessage?.message || 
-                       originalContent.viewOnceMessageV2?.message || 
-                       originalContent.ephemeralMessage?.message || 
-                       originalContent.documentWithCaptionMessage?.message || 
-                       originalContent;
+    const contentObj = originalContent.viewOnceMessage?.message ||
+      originalContent.viewOnceMessageV2?.message ||
+      originalContent.ephemeralMessage?.message ||
+      originalContent.documentWithCaptionMessage?.message ||
+      originalContent;
 
     let content = '';
     let mediaType: Message['mediaType'] = null;
@@ -204,76 +204,104 @@ export function ChatInterface() {
 
       // Deduplicate chats based on ID
       const uniqueChats = Array.from(new Map(mappedChats.map((c: Chat) => [c.id, c])).values());
-      
+
       // Sort by timestamp descending (future/recent first)
       uniqueChats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-      
+
       setChats(uniqueChats);
     }
     setLoadingChats(false);
   }, []);
 
-  // --- SOCKET IO CLIENT ---
+  // --- EVOLUTION API WEBSOCKET ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [socket, setSocket] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Connect to external Socket Server
-    // Em produção, a URL deve vir de ENV ou hardcoded para o servidor externo
-    // Como estamos na Vercel, localhost:3001 não funciona para o cliente final, 
-    // precisaria ser a URL pública do socket server.
-    // Mas para teste local: 'http://localhost:3001'
-    
-    // ATENÇÃO: Se o servidor socket não estiver rodando ou bloqueado, isso falha silenciosamente.
-    const socketUrl = 'http://localhost:3002'; 
-    
-    console.log('Connecting to Socket.io:', socketUrl);
-    
+    // Conectar direto no WebSocket da Evolution API
+    const evolutionUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL || 'https://evolutionapi.landcriativa.com';
+    const instanceName = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || 'teste';
+    const socketUrl = `${evolutionUrl}/${instanceName}`;
+
+    console.log('[Evolution WS] Connecting to:', socketUrl);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newSocket: any = io(socketUrl, {
       transports: ['websocket'],
-      withCredentials: true
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Socket connected:', newSocket.id);
+      console.log('[Evolution WS] ✅ Connected:', newSocket.id);
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
+      console.log('[Evolution WS] ❌ Disconnected');
       setIsConnected(false);
     });
 
+    // Evento: nova mensagem recebida ou enviada
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('chat-update-global', (data: any) => {
-        console.log('🔔 Global chat update received:', data);
-        
-        // Se for uma nova mensagem para o chat atual, adicionamos à lista
-        if (selectedChatIdRef.current && data.chatId === selectedChatIdRef.current) {
-             console.log('👀 Update belongs to current chat:', data.chatId);
-             const normalized = normalizeMessage(data);
-             setMessages(prev => {
-                if (prev.some(m => m.id === normalized.id)) {
-                    console.log('⚠️ Message already exists, skipping:', normalized.id);
-                    return prev;
-                }
-                console.log('➕ Adding message to state:', normalized.id);
-                // Add to top (reverse order in UI) - Note: In ChatWindow messages are reversed or not?
-                // If ChatWindow renders array as is (bottom to top), new messages should be at the end.
-                // Wait, loadMessages reverses the array from API. 
-                // Let's check how they are rendered. Usually [oldest, ..., newest].
-                return [...prev, normalized]; 
-             });
-        } else {
-             console.log('🙈 Update ignored for current view (different chat or no chat selected)');
-        }
+    newSocket.on('messages.upsert', (data: any) => {
+      console.log('[Evolution WS] 📩 messages.upsert:', data);
 
-        // Atualizar lista de chats (última mensagem, unread count, etc)
-        // Por simplicidade, recarregamos a lista ou atualizamos o item específico
-        loadChats(); 
+      // data pode vir como { instance, data: [mensagens] } ou diretamente
+      const messages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [data];
+
+      for (const msg of messages) {
+        const chatId = msg.key?.remoteJid;
+        if (!chatId) continue;
+
+        // Se é do chat selecionado, adicionar à conversa
+        if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
+          const normalized = normalizeMessage(msg);
+          setMessages(prev => {
+            if (prev.some(m => m.id === normalized.id)) return prev;
+            return [...prev, normalized];
+          });
+        }
+      }
+
+      // Recarregar lista de chats para atualizar preview/unread
+      loadChats();
+    });
+
+    // Evento: mensagem atualizada (status: delivered, read, etc)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    newSocket.on('messages.update', (data: any) => {
+      console.log('[Evolution WS] 🔄 messages.update:', data);
+
+      const updates = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [data];
+
+      for (const update of updates) {
+        const msgId = update.key?.id;
+        const status = update.update?.status;
+        if (msgId && status !== undefined) {
+          setMessages(prev => prev.map(m =>
+            m.id === msgId ? { ...m, status } : m
+          ));
+        }
+      }
+    });
+
+    // Evento: presença online/typing (opcional, para futuro)
+    newSocket.on('send.message', (data: any) => {
+      console.log('[Evolution WS] 📤 send.message:', data);
+      // Mensagem enviada pela API (pode ser pelo bot)
+      const msg = data?.data || data;
+      const chatId = msg?.key?.remoteJid;
+
+      if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
+        const normalized = normalizeMessage(msg);
+        setMessages(prev => {
+          if (prev.some(m => m.id === normalized.id)) return prev;
+          return [...prev, normalized];
+        });
+      }
+
+      loadChats();
     });
 
     setSocket(newSocket);
@@ -281,48 +309,21 @@ export function ChatInterface() {
     return () => {
       newSocket.disconnect();
     };
-  }, [loadChats]); // Removed selectedChatId dependency to avoid reconnect loops
-
-  // Join chat room when selected
-  useEffect(() => {
-    if (!socket || !selectedChatId) return;
-
-    socket.emit('join-chat', selectedChatId);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleNewMessage = (data: any) => {
-      console.log('📩 New message in room:', data);
-      const normalized = normalizeMessage(data);
-      
-      setMessages(prev => {
-        // Deduplicate
-        if (prev.some(m => m.id === normalized.id)) return prev;
-        // Add to top (reverse order in UI)
-        return [normalized, ...prev]; 
-      });
-    };
-
-    socket.on('new-message', handleNewMessage);
-
-    return () => {
-      socket.emit('leave-chat', selectedChatId);
-      socket.off('new-message', handleNewMessage);
-    };
-  }, [socket, selectedChatId]);
+  }, [loadChats]);
 
   const loadMessages = useCallback(async (jid: string, pageNum = 1, silent = false) => {
     if (pageNum === 1 && !silent) setLoadingMessages(true);
     else if (pageNum > 1) setLoadingMore(true);
 
     const res = await getMessages(jid, pageNum);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const records = (res.data as any)?.messages?.records || (Array.isArray(res.data) ? res.data : []);
 
     if (res.success && Array.isArray(records)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedMessages = records.map((m: any) => normalizeMessage(m)).reverse();
-      
+
       // Deduplicate mappedMessages itself (just in case API returns duplicates)
       const uniqueMappedMessages = Array.from(new Map(mappedMessages.map((m: Message) => [m.id, m])).values());
 
@@ -331,14 +332,14 @@ export function ChatInterface() {
       } else {
         // Filter out duplicates based on ID
         setMessages(prev => {
-            const existingIds = new Set(prev.map(msg => msg.id));
-            const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
-            return [...newUniqueMessages, ...prev];
+          const existingIds = new Set(prev.map(msg => msg.id));
+          const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
+          return [...newUniqueMessages, ...prev];
         });
       }
       setHasMore(records.length >= 20);
     }
-    
+
     if (pageNum === 1 && !silent) setLoadingMessages(false);
     else setLoadingMore(false);
   }, []);
@@ -367,38 +368,38 @@ export function ChatInterface() {
     // Check for bot commands
     const command = text.trim().split(' ')[0].toLowerCase();
     if (['/apolo', '/hermes', '/icaro'].includes(command)) {
-        const botName = command.substring(1); // remove slash
-        
-        // Optimistic update for system message
-        const tempId = 'system-' + Date.now();
-        const systemMessage: Message = {
-            id: tempId,
-            fromMe: true, 
-            content: `🤖 Iniciando bot ${botName.charAt(0).toUpperCase() + botName.slice(1)}...`,
-            timestamp: Date.now() / 1000,
-            type: 'conversation',
-            status: 'pending'
-        };
-        setMessages(prev => [...prev, systemMessage]);
+      const botName = command.substring(1); // remove slash
 
-        const res = await triggerBot(selectedChatId, botName);
-        
-        if (res.success) {
-             setMessages(prev => prev.map(m => 
-                m.id === tempId 
-                ? { ...m, content: `✅ Bot ${botName.charAt(0).toUpperCase() + botName.slice(1)} ativado com sucesso!`, status: 'sent' }
-                : m
-             ));
-        } else {
-             setMessages(prev => prev.map(m => 
-                m.id === tempId 
-                ? { ...m, content: `❌ Falha ao iniciar bot ${botName}: ${res.error}`, status: 'error' }
-                : m
-             ));
-        }
-        return;
+      // Optimistic update for system message
+      const tempId = 'system-' + Date.now();
+      const systemMessage: Message = {
+        id: tempId,
+        fromMe: true,
+        content: `🤖 Iniciando bot ${botName.charAt(0).toUpperCase() + botName.slice(1)}...`,
+        timestamp: Date.now() / 1000,
+        type: 'conversation',
+        status: 'pending'
+      };
+      setMessages(prev => [...prev, systemMessage]);
+
+      const res = await triggerBot(selectedChatId, botName);
+
+      if (res.success) {
+        setMessages(prev => prev.map(m =>
+          m.id === tempId
+            ? { ...m, content: `✅ Bot ${botName.charAt(0).toUpperCase() + botName.slice(1)} ativado com sucesso!`, status: 'sent' }
+            : m
+        ));
+      } else {
+        setMessages(prev => prev.map(m =>
+          m.id === tempId
+            ? { ...m, content: `❌ Falha ao iniciar bot ${botName}: ${res.error}`, status: 'error' }
+            : m
+        ));
+      }
+      return;
     }
-    
+
     // Optimistic update
     const tempId = 'temp-' + Date.now();
     const newMessage: Message = {
@@ -409,24 +410,24 @@ export function ChatInterface() {
       type: 'conversation',
       status: 'pending'
     };
-    
+
     setMessages(prev => [...prev, newMessage]);
 
     const res = await sendMessage(selectedChatId, text);
     if (res.success) {
       setMessages(prev => prev.map(m => {
         if (m.id === tempId) {
-            // If we have the real message data, use it
-            if (res.data && res.data.key) {
-                return normalizeMessage(res.data);
-            }
-            // Otherwise just update status
-            return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
+          // If we have the real message data, use it
+          if (res.data && res.data.key) {
+            return normalizeMessage(res.data);
+          }
+          // Otherwise just update status
+          return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
         }
         return m;
       }));
     } else {
-      setMessages(prev => prev.map(m => 
+      setMessages(prev => prev.map(m =>
         m.id === tempId ? { ...m, status: 'error' } : m
       ));
       alert('Erro ao enviar mensagem');
@@ -460,14 +461,14 @@ export function ChatInterface() {
     if (isVoiceNote) formData.append('isVoiceNote', 'true');
 
     const res = await sendMedia(selectedChatId, formData);
-    
+
     if (res.success) {
       setMessages(prev => prev.map(m => {
         if (m.id === tempId) {
-            if (res.data && res.data.key) {
-                return normalizeMessage(res.data);
-            }
-            return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
+          if (res.data && res.data.key) {
+            return normalizeMessage(res.data);
+          }
+          return { ...m, status: 'sent', id: res.data?.key?.id || m.id };
         }
         return m;
       }));
@@ -477,21 +478,21 @@ export function ChatInterface() {
         const newChats = [...prev];
         const idx = newChats.findIndex(c => c.id === selectedChatId);
         if (idx !== -1) {
-            const chat = { ...newChats[idx] };
-            if (type === 'image') chat.lastMessage = '📷 [Imagem] ' + (caption || '');
-            else if (type === 'video') chat.lastMessage = '🎥 [Vídeo]';
-            else if (type === 'audio') chat.lastMessage = '🎵 [Áudio]';
-            else if (type === 'document') chat.lastMessage = 'Vk [Documento]';
-            else chat.lastMessage = '[Arquivo]';
-            
-            chat.timestamp = Math.floor(Date.now() / 1000);
-            newChats.splice(idx, 1);
-            newChats.unshift(chat);
+          const chat = { ...newChats[idx] };
+          if (type === 'image') chat.lastMessage = '📷 [Imagem] ' + (caption || '');
+          else if (type === 'video') chat.lastMessage = '🎥 [Vídeo]';
+          else if (type === 'audio') chat.lastMessage = '🎵 [Áudio]';
+          else if (type === 'document') chat.lastMessage = 'Vk [Documento]';
+          else chat.lastMessage = '[Arquivo]';
+
+          chat.timestamp = Math.floor(Date.now() / 1000);
+          newChats.splice(idx, 1);
+          newChats.unshift(chat);
         }
         return newChats;
       });
     } else {
-      setMessages(prev => prev.map(m => 
+      setMessages(prev => prev.map(m =>
         m.id === tempId ? { ...m, status: 'error' } : m
       ));
       alert('Erro ao enviar mídia');
@@ -500,66 +501,66 @@ export function ChatInterface() {
 
   const handleRegister = async (chat: Chat) => {
     if (confirm(`Deseja cadastrar ${chat.name}?`)) {
-        const res = await registerLead(chat.name, chat.id);
-        if (res.success) {
-            setChats(prev => prev.map(c => c.id === chat.id ? { ...c, isRegistered: true, leadId: res.data.id } : c));
-            alert('Cadastrado com sucesso!');
-        } else {
-            alert('Erro ao cadastrar: ' + res.error);
-        }
+      const res = await registerLead(chat.name, chat.id);
+      if (res.success) {
+        setChats(prev => prev.map(c => c.id === chat.id ? { ...c, isRegistered: true, leadId: res.data.id } : c));
+        alert('Cadastrado com sucesso!');
+      } else {
+        alert('Erro ao cadastrar: ' + res.error);
+      }
     }
   };
 
   const handleViewLead = (chat: Chat) => {
-      // Assuming you want to go to the list and search for this lead, or go to details
-      // For now, redirecting to list with query params to find the user
-      const params = new URLSearchParams({
-        search: chat.leadName || chat.name
-      });
-      router.push(`/admin/lista?${params.toString()}`);
+    // Assuming you want to go to the list and search for this lead, or go to details
+    // For now, redirecting to list with query params to find the user
+    const params = new URLSearchParams({
+      search: chat.leadName || chat.name
+    });
+    router.push(`/admin/lista?${params.toString()}`);
   };
 
   const handleMassRegister = async (selectedChats: Chat[]) => {
-      if (confirm(`Deseja cadastrar ${selectedChats.length} contatos?`)) {
-          const leadsToRegister = selectedChats.map(c => ({ name: c.name, phone: c.id }));
-          const res = await massRegisterLeads(leadsToRegister);
-          if (res.success) {
-              setChats(prev => {
-                  const registeredIds = new Set(selectedChats.map(c => c.id));
-                  return prev.map(c => registeredIds.has(c.id) ? { ...c, isRegistered: true } : c);
-              });
-              alert(`${res.count} contatos cadastrados com sucesso!`);
-          } else {
-              alert('Erro ao cadastrar em massa: ' + res.error);
-          }
+    if (confirm(`Deseja cadastrar ${selectedChats.length} contatos?`)) {
+      const leadsToRegister = selectedChats.map(c => ({ name: c.name, phone: c.id }));
+      const res = await massRegisterLeads(leadsToRegister);
+      if (res.success) {
+        setChats(prev => {
+          const registeredIds = new Set(selectedChats.map(c => c.id));
+          return prev.map(c => registeredIds.has(c.id) ? { ...c, isRegistered: true } : c);
+        });
+        alert(`${res.count} contatos cadastrados com sucesso!`);
+      } else {
+        alert('Erro ao cadastrar em massa: ' + res.error);
       }
+    }
   };
 
   const handleExport = (chat: Chat, destination: string) => {
-      // Logic to handle export - e.g. save to local storage or state management context
-      // For now we'll just redirect to the page with query params
-      const phone = chat.id.replace(/\D/g, '');
-      const name = chat.name;
-      
-      const params = new URLSearchParams({
-        phone,
-        name
-      });
-      
-      switch(destination) {
-        case 'disparo':
-            router.push(`/admin/disparo?${params.toString()}`);
-            break;
-        case 'consulta':
-            router.push(`/admin/serpro?${params.toString()}`);
-            break;
-        case 'emissao':
-            router.push(`/admin/serpro/cnd?${params.toString()}`);
-            break;
-        case 'divida':
-            router.push(`/admin/serpro/divida-ativa?${params.toString()}`);
-            break;
-      }
+    // Logic to handle export - e.g. save to local storage or state management context
+    // For now we'll just redirect to the page with query params
+    const phone = chat.id.replace(/\D/g, '');
+    const name = chat.name;
+
+    const params = new URLSearchParams({
+      phone,
+      name
+    });
+
+    switch (destination) {
+      case 'disparo':
+        router.push(`/admin/disparo?${params.toString()}`);
+        break;
+      case 'consulta':
+        router.push(`/admin/serpro?${params.toString()}`);
+        break;
+      case 'emissao':
+        router.push(`/admin/serpro/cnd?${params.toString()}`);
+        break;
+      case 'divida':
+        router.push(`/admin/serpro/divida-ativa?${params.toString()}`);
+        break;
+    }
   };
 
   return (
@@ -570,9 +571,9 @@ export function ChatInterface() {
         transform transition-transform duration-300 ease-in-out shadow-xl
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <ChatSidebar 
-          chats={chats} 
-          selectedChatId={selectedChatId} 
+        <ChatSidebar
+          chats={chats}
+          selectedChatId={selectedChatId}
           onSelectChat={(id) => {
             setSelectedChatId(id);
             setIsSidebarOpen(false);
@@ -586,17 +587,17 @@ export function ChatInterface() {
 
       {/* Overlay for mobile or when sidebar is open over chat */}
       {isSidebarOpen && selectedChatId && (
-          <div 
-            className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsSidebarOpen(false)}
-          />
+        <div
+          className="absolute inset-0 z-30 bg-black/20 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
       )}
 
       {/* Main Content Area */}
       <div className="w-full h-full bg-zinc-50 dark:bg-zinc-900">
         {selectedChatId ? (
-          <ChatWindow 
-            chat={chats.find(c => c.id === selectedChatId)} 
+          <ChatWindow
+            chat={chats.find(c => c.id === selectedChatId)}
             messages={messages}
             onSendMessage={handleSendMessage}
             onSendMedia={handleSendMedia}
@@ -622,12 +623,12 @@ export function ChatInterface() {
         )}
       </div>
 
-      <LeadSheet 
+      <LeadSheet
         lead={currentLeadData}
         isOpen={leadSheetOpen}
         onClose={() => {
-            setLeadSheetOpen(false);
-            setDesktopSidebarOpen(true); // Re-open admin sidebar when closing lead sheet
+          setLeadSheetOpen(false);
+          setDesktopSidebarOpen(true); // Re-open admin sidebar when closing lead sheet
         }}
         loading={loadingLeadData}
         mode={isMobile ? "overlay" : "inline"}

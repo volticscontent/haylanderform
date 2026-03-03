@@ -2,6 +2,7 @@
 
 import pool from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import bcrypt from 'bcryptjs';
 
 export type Colaborador = {
     id: number;
@@ -17,17 +18,18 @@ export type Colaborador = {
 
 export type ColaboradorInput = {
     nome: string;
-    email?: string;
+    email: string;
     telefone?: string;
     cargo: string;
     permissoes?: string[];
+    senha?: string;
 };
 
 const REVALIDATE_PATH = '/admin/configuracoes/colaboradores';
 
 export async function getColaboradores(filtro?: { cargo?: string; ativo?: boolean }) {
     try {
-        let sql = 'SELECT * FROM colaboradores';
+        let sql = 'SELECT id, nome, email, telefone, cargo, permissoes, ativo, created_at, updated_at FROM colaboradores';
         const conditions: string[] = [];
         const values: unknown[] = [];
         let i = 1;
@@ -58,15 +60,20 @@ export async function getColaboradores(filtro?: { cargo?: string; ativo?: boolea
 
 export async function createColaborador(data: ColaboradorInput) {
     try {
-        if (!data.nome || !data.cargo) {
-            return { success: false, error: 'Nome e cargo são obrigatórios' };
+        if (!data.nome || !data.cargo || !data.email) {
+            return { success: false, error: 'Nome, email e cargo são obrigatórios' };
+        }
+
+        let senhaHash: string | null = null;
+        if (data.senha) {
+            senhaHash = await bcrypt.hash(data.senha, 10);
         }
 
         const { rows } = await pool.query<Colaborador>(
-            `INSERT INTO colaboradores (nome, email, telefone, cargo, permissoes)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [data.nome, data.email || null, data.telefone || null, data.cargo, data.permissoes || []]
+            `INSERT INTO colaboradores (nome, email, telefone, cargo, permissoes, senha_hash)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING id, nome, email, telefone, cargo, permissoes, ativo, created_at, updated_at`,
+            [data.nome, data.email, data.telefone || null, data.cargo, data.permissoes || [], senhaHash]
         );
 
         revalidatePath(REVALIDATE_PATH);
@@ -151,5 +158,29 @@ export async function getCargosDisponiveis() {
     } catch (error) {
         console.error('getCargosDisponiveis error:', error);
         return { success: false, error: 'Falha ao carregar cargos' };
+    }
+}
+
+export async function resetSenha(id: number, novaSenha: string) {
+    try {
+        if (!novaSenha || novaSenha.length < 4) {
+            return { success: false, error: 'A senha deve ter no mínimo 4 caracteres' };
+        }
+
+        const hash = await bcrypt.hash(novaSenha, 10);
+        const { rowCount } = await pool.query(
+            'UPDATE colaboradores SET senha_hash = $1, updated_at = NOW() WHERE id = $2',
+            [hash, id]
+        );
+
+        if (rowCount === 0) {
+            return { success: false, error: 'Colaborador não encontrado' };
+        }
+
+        revalidatePath(REVALIDATE_PATH);
+        return { success: true };
+    } catch (error) {
+        console.error('resetSenha error:', error);
+        return { success: false, error: 'Falha ao redefinir senha' };
     }
 }

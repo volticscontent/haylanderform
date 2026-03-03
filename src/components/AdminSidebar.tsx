@@ -9,6 +9,19 @@ interface AdminSidebarProps {
   isOpen?: boolean
   isDesktopOpen?: boolean
   onClose?: () => void
+  permissoes?: string[]
+}
+
+// Mapa: nome do link → quais permissões dão acesso
+const LINK_PERMISSIONS: Record<string, string[]> = {
+  'Dashboard': ['admin', 'vendas', 'atendimento', 'financeiro'],
+  'Atendimentos': ['admin', 'atendimento'],
+  'Chat': ['admin', 'atendimento'],
+  'Lista': ['admin', 'vendas', 'atendimento'],
+  'Disparo': ['admin', 'disparo'],
+  'Serpro': ['admin', 'serpro'],
+  'Documentação': [], // todos podem ver
+  'Configurações': ['admin'],
 }
 
 type NavItem = {
@@ -124,7 +137,15 @@ const docsLinks: NavItem[] = [
   },
 ]
 
-export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onClose }: AdminSidebarProps) {
+function hasAccess(linkName: string, permissoes: string[]): boolean {
+  // Se não tem restrição, todos acessam
+  const required = LINK_PERMISSIONS[linkName]
+  if (!required || required.length === 0) return true
+  // Se o colaborador tem alguma das permissões necessárias
+  return permissoes.some(p => required.includes(p))
+}
+
+export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onClose, permissoes = [] }: AdminSidebarProps) {
   const pathname = usePathname()
   const isDocs = pathname?.startsWith('/admin/docs')
 
@@ -225,7 +246,9 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
     }
   }, [pathname])
 
-  const links = isDocs ? docsLinks : adminLinks
+  // Filtrar links com base nas permissões
+  const filteredAdminLinks = adminLinks.filter(link => hasAccess(link.name, permissoes))
+  const links = isDocs ? docsLinks : filteredAdminLinks
 
   // State for expanded sections
   // Default to expanding sections if current path matches one of the children
@@ -326,8 +349,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                   <button
                     onClick={() => handleToggle(link.name)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
+                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
                       }`}
                   >
                     <div className="flex items-center gap-3">
@@ -367,8 +390,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                             }
                           }}
                           className={`flex items-center gap-3 pl-11 pr-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${isChildActive
-                              ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10'
-                              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                            ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10'
+                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                             }`}
                         >
                           <div className={`w-1.5 h-1.5 rounded-full bg-current ${isChildActive ? 'opacity-100' : 'opacity-40'}`} />
@@ -387,8 +410,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                 href={link.href || '#'}
                 onClick={() => onClose?.()}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
+                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
                   }`}
               >
                 <Icon className="w-5 h-5" />
