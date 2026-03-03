@@ -14,19 +14,32 @@ export default function LoginPage() {
             Área Administrativa
           </h2>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            Entre com a senha de acesso
+            Entre com suas credenciais
           </p>
         </div>
-        <form action={action} className="mt-8 space-y-6">
+        <form action={action} className="mt-8 space-y-4">
           <div>
-            <label htmlFor="password" className="sr-only">Senha</label>
+            <label htmlFor="email" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              className="relative block w-full rounded-md border-0 py-2.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-950 dark:text-white dark:ring-zinc-700 dark:focus:ring-indigo-500 px-3"
+              placeholder="voce@empresa.com"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Senha</label>
             <input
               id="password"
               name="password"
               type="password"
               required
+              autoComplete="current-password"
               className="relative block w-full rounded-md border-0 py-2.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-950 dark:text-white dark:ring-zinc-700 dark:focus:ring-indigo-500 px-3"
-              placeholder="Senha"
+              placeholder="Sua senha"
             />
           </div>
 
@@ -45,6 +58,10 @@ export default function LoginPage() {
               {isPending ? 'Entrando...' : 'Entrar'}
             </button>
           </div>
+
+          <p className="text-xs text-center text-zinc-400 dark:text-zinc-500">
+            Administrador? Use apenas a senha sem email.
+          </p>
         </form>
       </div>
     </div>
