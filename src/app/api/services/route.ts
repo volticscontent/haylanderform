@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
 export async function GET() {
+  // Garantir tabela e seed inicial
+  await ensureServicesTable();
+  await seedIfEmpty();
+
   const client = await pool.connect();
   try {
     // Verificar se tabela existe
@@ -204,19 +208,28 @@ async function seedIfEmpty() {
         `INSERT INTO services (${nameCol}, ${valueCol}, ${descriptionCol}) VALUES 
         ($1, $2, $3),
         ($4, $5, $6),
-        ($7, $8, $9)`,
+        ($7, $8, $9),
+        ($10, $11, $12),
+        ($13, $14, $15)`,
         [
           "Abertura de MEI",
-          150.0,
-          "Processo completo de abertura de Microempreendedor Individual",
+          0,
+          "Processo completo de abertura de Microempreendedor Individual — valor sob consulta",
           "Regularização de Pendências",
-          200.0,
-          "Análise e regularização de pendências fiscais",
-          "Declaração Anual",
-          100.0,
-          "Envio da declaração anual de faturamento (DASN-SIMEI)",
+          0,
+          "Análise e regularização de pendências fiscais do MEI — valor depende da análise",
+          "Declaração Anual (DASN-SIMEI)",
+          0,
+          "Envio da declaração anual de faturamento do MEI — valor sob consulta",
+          "Parcelamento de Dívidas",
+          0,
+          "Negociação e parcelamento de dívidas fiscais — valor depende do débito",
+          "Consultoria Contábil",
+          0,
+          "Orientação contábil especializada para MEI e empresas — valor sob consulta",
         ],
       );
+      console.log('[Services] Seed inicial criado com 5 serviços (sem preço fixo).');
     }
   } catch (e) {
     console.error("Erro ao seedar serviços:", e);
@@ -228,7 +241,7 @@ async function seedIfEmpty() {
 export async function POST(req: Request) {
   try {
     await ensureServicesTable();
-    // await seedIfEmpty(); // Opcional: seedar apenas se quiser popular inicialmente
+    await seedIfEmpty();
 
     const { nameCol, valueCol, descriptionCol } = await getServiceColumns();
     const body = await req.json();
