@@ -213,50 +213,53 @@ export function ChatInterface() {
     setLoadingChats(false);
   }, []);
 
-  // --- EVOLUTION API WEBSOCKET ---
+  // --- BOT BACKEND WEBSOCKET (via nosso socket server na porta 3001) ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [socket, setSocket] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Conectar direto no WebSocket da Evolution API
-    const evolutionUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL || 'https://evolutionapi.landcriativa.com';
-    const instanceName = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || 'teste';
-    const socketUrl = `${evolutionUrl}/${instanceName}`;
+    // Conectar no nosso Bot Backend Socket Server (NÃO na Evolution direta)
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://bot.landcriativa.com';
 
-    console.log('[Evolution WS] Connecting to:', socketUrl);
+    console.log('[Bot WS] Connecting to:', socketUrl);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newSocket: any = io(socketUrl, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
     });
 
     newSocket.on('connect', () => {
-      console.log('[Evolution WS] ✅ Connected:', newSocket.id);
+      console.log('[Bot WS] ✅ Connected:', newSocket.id);
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('[Evolution WS] ❌ Disconnected');
+      console.log('[Bot WS] ❌ Disconnected');
       setIsConnected(false);
     });
 
-    // Evento: nova mensagem recebida ou enviada
+    newSocket.on('connect_error', (err: Error) => {
+      console.warn('[Bot WS] Connection error:', err.message);
+    });
+
+    // Evento global: qualquer atualização de chat (nova msg, msg enviada pelo bot, etc.)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('messages.upsert', (data: any) => {
-      console.log('[Evolution WS] 📩 messages.upsert:', data);
+    newSocket.on('chat-update-global', (data: any) => {
+      console.log('[Bot WS] 📩 chat-update-global:', data);
 
-      // data pode vir como { instance, data: [mensagens] } ou diretamente
-      const messages = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [data];
+      const chatId = data.chatId;
+      if (!chatId) return;
 
-      for (const msg of messages) {
-        const chatId = msg.key?.remoteJid;
-        if (!chatId) continue;
-
-        // Se é do chat selecionado, adicionar à conversa
-        if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
-          const normalized = normalizeMessage(msg);
+      // Se é do chat selecionado, adicionar à conversa
+      if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
+        if (data.message) {
+          const normalized = normalizeMessage({
+            key: { remoteJid: chatId, fromMe: data.fromMe ?? false, id: data.key?.id || `ws-${Date.now()}` },
+            message: data.message,
+            messageTimestamp: data.messageTimestamp || Math.floor(Date.now() / 1000),
+          });
           setMessages(prev => {
             if (prev.some(m => m.id === normalized.id)) return prev;
             return [...prev, normalized];
@@ -268,40 +271,27 @@ export function ChatInterface() {
       loadChats();
     });
 
-    // Evento: mensagem atualizada (status: delivered, read, etc)
+    // Evento específico: mensagem nova na sala do chat selecionado
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('messages.update', (data: any) => {
-      console.log('[Evolution WS] 🔄 messages.update:', data);
+    newSocket.on('new-message', (data: any) => {
+      console.log('[Bot WS] 📨 new-message:', data);
 
-      const updates = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [data];
-
-      for (const update of updates) {
-        const msgId = update.key?.id;
-        const status = update.update?.status;
-        if (msgId && status !== undefined) {
-          setMessages(prev => prev.map(m =>
-            m.id === msgId ? { ...m, status } : m
-          ));
-        }
-      }
-    });
-
-    // Evento: presença online/typing (opcional, para futuro)
-    newSocket.on('send.message', (data: any) => {
-      console.log('[Evolution WS] 📤 send.message:', data);
-      // Mensagem enviada pela API (pode ser pelo bot)
-      const msg = data?.data || data;
-      const chatId = msg?.key?.remoteJid;
+      const chatId = data.chatId;
+      if (!chatId) return;
 
       if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
-        const normalized = normalizeMessage(msg);
-        setMessages(prev => {
-          if (prev.some(m => m.id === normalized.id)) return prev;
-          return [...prev, normalized];
-        });
+        if (data.message) {
+          const normalized = normalizeMessage({
+            key: { remoteJid: chatId, fromMe: data.fromMe ?? false, id: data.key?.id || `ws-${Date.now()}` },
+            message: data.message,
+            messageTimestamp: data.messageTimestamp || Math.floor(Date.now() / 1000),
+          });
+          setMessages(prev => {
+            if (prev.some(m => m.id === normalized.id)) return prev;
+            return [...prev, normalized];
+          });
+        }
       }
-
-      loadChats();
     });
 
     setSocket(newSocket);
