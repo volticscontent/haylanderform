@@ -188,19 +188,25 @@ export function ChatInterface() {
     const res = await getChats();
     if (res.success && Array.isArray(res.data)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mappedChats = res.data.map((c: any) => ({
-        id: c.remoteJid || c.id || c.conversationId,
-        name: c.pushName || c.name || c.id?.split('@')[0] || 'Desconhecido',
-        image: c.profilePicUrl || c.profilePictureUrl,
-        unreadCount: c.unreadCount || 0,
-        lastMessage: extractMessagePreview(c.lastMessage || c),
-        timestamp: c.lastMessage?.messageTimestamp || c.conversationTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
-        isRegistered: c.isRegistered,
-        leadId: c.leadId,
-        leadName: c.leadName,
-        leadStatus: c.leadStatus,
-        leadDataReuniao: c.leadDataReuniao
-      }));
+      const mappedChats = res.data.map((c: any) => {
+        let displayName = c.leadName || c.name || c.pushName;
+        if (!displayName || displayName === 'Você') displayName = c.id?.split('@')[0] || 'Desconhecido';
+
+        return {
+          id: c.remoteJid || c.id || c.conversationId,
+          evolutionJid: c.evolutionJid || c.remoteJid || c.id || c.conversationId,
+          name: displayName,
+          image: c.profilePicUrl || c.profilePictureUrl,
+          unreadCount: c.unreadCount || 0,
+          lastMessage: extractMessagePreview(c.lastMessage || c),
+          timestamp: c.lastMessage?.messageTimestamp || c.conversationTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
+          isRegistered: c.isRegistered,
+          leadId: c.leadId,
+          leadName: c.leadName,
+          leadStatus: c.leadStatus,
+          leadDataReuniao: c.leadDataReuniao
+        };
+      });
 
       // Deduplicate chats based on ID
       const uniqueChats = Array.from(new Map(mappedChats.map((c: Chat) => [c.id, c])).values());
@@ -254,8 +260,16 @@ export function ChatInterface() {
       // Verifica se é de grupo
       if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      const senderId = data?.data?.key?.remoteJid || data?.senderpn || data?.senderPhone || data?.data?.senderpn || data?.data?.senderPhone;
+      let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid;
       if (!senderId) return;
+
+      // Força a usar PhoneNumber explicitamente igual ao Backend actions.ts e ignora LIDs onde possível
+      const isLid = String(senderId).includes('@lid');
+      let phone = String(senderId).split('@')[0].replace(/\D/g, '');
+      if (data?.data?.key?.senderPn) {
+        phone = String(data.data.key.senderPn).replace(/\D/g, '');
+      }
+      senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
 
       const normalizedMsg = normalizeMessage(data?.data || data);
 
@@ -275,8 +289,14 @@ export function ChatInterface() {
       console.log('[Evolution WS] 📤 send.message:', data);
       if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      const senderId = data?.data?.key?.remoteJid;
+      let senderId = data?.data?.key?.remoteJid;
       if (!senderId) return;
+
+      let phone = String(senderId).split('@')[0].replace(/\D/g, '');
+      if (data?.data?.key?.senderPn || data?.data?.message?.senderPn) {
+        phone = String(data?.data?.key?.senderPn || data?.data?.message?.senderPn).replace(/\D/g, '');
+      }
+      senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
 
       const normalizedMsg = normalizeMessage(data?.data || data);
 
@@ -334,22 +354,26 @@ export function ChatInterface() {
     loadChats();
   }, [loadChats]);
 
+  // Efetua carregamento baseado no selection (ID Novo) mas mandando o OLD pra API
   useEffect(() => {
-    if (selectedChatId) {
+    if (selectedChatId && chats.length > 0) {
       setPage(1);
-      loadMessages(selectedChatId, 1);
+      const chat = chats.find(c => c.id === selectedChatId);
+      loadMessages(chat?.evolutionJid || selectedChatId, 1);
     }
-  }, [selectedChatId, loadMessages]);
+  }, [selectedChatId, chats, loadMessages]);
 
   const handleLoadMore = async () => {
     if (!selectedChatId || !hasMore || loadingMessages || loadingMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
-    await loadMessages(selectedChatId, nextPage);
+    const chat = chats.find(c => c.id === selectedChatId);
+    await loadMessages(chat?.evolutionJid || selectedChatId, nextPage);
   };
 
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId) return;
+    const currentChat = chats.find(c => c.id === selectedChatId);
 
     // Check for bot commands
     const command = text.trim().split(' ')[0].toLowerCase();
@@ -399,7 +423,7 @@ export function ChatInterface() {
 
     setMessages(prev => [...prev, newMessage]);
 
-    const res = await sendMessage(selectedChatId, text);
+    const res = await sendMessage(currentChat?.evolutionJid || selectedChatId, text);
     if (res.success) {
       setMessages(prev => prev.map(m => {
         if (m.id === tempId) {
@@ -446,7 +470,8 @@ export function ChatInterface() {
     if (caption) formData.append('caption', caption);
     if (isVoiceNote) formData.append('isVoiceNote', 'true');
 
-    const res = await sendMedia(selectedChatId, formData);
+    const chat = chats.find(c => c.id === selectedChatId);
+    const res = await sendMedia(chat?.evolutionJid || selectedChatId, formData);
 
     if (res.success) {
       setMessages(prev => prev.map(m => {

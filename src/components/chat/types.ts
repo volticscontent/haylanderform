@@ -1,7 +1,10 @@
 export interface Chat {
   id: string;
+  evolutionJid?: string;
   name: string;
   image?: string;
+  profilePicUrl?: string | null;
+  senderPhone?: string;
   unreadCount?: number;
   lastMessage?: string;
   timestamp?: number;
