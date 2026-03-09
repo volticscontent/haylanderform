@@ -51,6 +51,22 @@ export async function evolutionFindChats() {
   return res.json()
 }
 
+export async function evolutionFetchProfilePicture(number: string) {
+  if (!number) return null;
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/fetchProfilePictureUrl/${encodeURIComponent(evolutionConfig.instance)}`
+  const res = await withTimeout(fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    body: JSON.stringify({ number })
+  }), evolutionConfig.timeoutMs)
+
+  if (!res.ok) {
+    return null; // Don't throw if picture not found, some people don't have pictures
+  }
+  const data = await res.json();
+  return data?.profilePictureUrl || null;
+}
+
 export async function evolutionFindMessages(jid: string, limit: number = 20, page: number = 1) {
   if (!jid) {
     console.warn('evolutionFindMessages called without JID');
@@ -74,7 +90,7 @@ export async function evolutionFindMessages(jid: string, limit: number = 20, pag
       }
     })
   }), evolutionConfig.timeoutMs)
-  
+
   if (!res.ok) throw new Error(`FindMessages failed: ${res.status}`)
   return res.json()
 }
@@ -89,11 +105,11 @@ export async function evolutionGetBase64FromMediaMessage(message: unknown) {
       convertToMp4: false
     })
   }), evolutionConfig.timeoutMs)
-  
+
   if (!res.ok) {
-     // Don't throw, just return null so we don't break the whole list
-     console.error(`GetBase64 failed: ${res.status}`);
-     return null;
+    // Don't throw, just return null so we don't break the whole list
+    console.error(`GetBase64 failed: ${res.status}`);
+    return null;
   }
   return res.json()
 }
@@ -119,16 +135,16 @@ export async function evolutionSendTextMessage(jid: string, text: string) {
 
   // Notify N8N about Bot Message
   if (process.env.N8N_WHATSAPP_EVENTS_URL) {
-      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              phone: jid,
-              message: text,
-              event: 'bot_message',
-              timestamp: new Date().toISOString()
-          })
-      }).catch(err => console.error('Failed to notify N8N of bot message:', err));
+    fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: jid,
+        message: text,
+        event: 'bot_message',
+        timestamp: new Date().toISOString()
+      })
+    }).catch(err => console.error('Failed to notify N8N of bot message:', err));
   }
 
   return res.json()
@@ -136,7 +152,7 @@ export async function evolutionSendTextMessage(jid: string, text: string) {
 
 export async function evolutionSendMediaMessage(jid: string, media: string, type: 'image' | 'video' | 'audio' | 'document', caption?: string, fileName?: string, mimetype?: string) {
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendMedia/${encodeURIComponent(evolutionConfig.instance)}`
-  
+
   const body = {
     number: jid,
     media: media, // Base64 or URL
@@ -160,16 +176,16 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
 
   // Notify N8N about Bot Message (Media)
   if (process.env.N8N_WHATSAPP_EVENTS_URL) {
-      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              phone: jid,
-              message: `[Media: ${type}] ${caption || ''}`,
-              event: 'bot_message',
-              timestamp: new Date().toISOString()
-          })
-      }).catch(err => console.error('Failed to notify N8N of bot media message:', err));
+    fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: jid,
+        message: `[Media: ${type}] ${caption || ''}`,
+        event: 'bot_message',
+        timestamp: new Date().toISOString()
+      })
+    }).catch(err => console.error('Failed to notify N8N of bot media message:', err));
   }
 
   return res.json()
@@ -177,7 +193,7 @@ export async function evolutionSendMediaMessage(jid: string, media: string, type
 
 export async function evolutionSendWhatsAppAudio(jid: string, audio: string) {
   const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/message/sendWhatsAppAudio/${encodeURIComponent(evolutionConfig.instance)}`
-  
+
   const body = {
     number: jid,
     audio: audio // Base64
@@ -193,16 +209,16 @@ export async function evolutionSendWhatsAppAudio(jid: string, audio: string) {
 
   // Notify N8N about Bot Message (Audio)
   if (process.env.N8N_WHATSAPP_EVENTS_URL) {
-      fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              phone: jid,
-              message: '[Audio]',
-              event: 'bot_message',
-              timestamp: new Date().toISOString()
-          })
-      }).catch(err => console.error('Failed to notify N8N of bot audio message:', err));
+    fetch(process.env.N8N_WHATSAPP_EVENTS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: jid,
+        message: '[Audio]',
+        event: 'bot_message',
+        timestamp: new Date().toISOString()
+      })
+    }).catch(err => console.error('Failed to notify N8N of bot audio message:', err));
   }
 
   return res.json()

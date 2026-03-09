@@ -1,6 +1,6 @@
 'use server';
 
-import { evolutionFindChats, evolutionFindMessages, evolutionSendTextMessage, evolutionSendMediaMessage, evolutionSendWhatsAppAudio, evolutionGetBase64FromMediaMessage } from "@/lib/evolution";
+import { evolutionFindChats, evolutionFindMessages, evolutionSendTextMessage, evolutionSendMediaMessage, evolutionSendWhatsAppAudio, evolutionGetBase64FromMediaMessage, evolutionFetchProfilePicture } from "@/lib/evolution";
 import pool from "@/lib/db";
 import { generatePhoneVariations } from "@/lib/phone-utils";
 
@@ -59,8 +59,54 @@ export async function triggerBot(chatId: string, botName: string) {
 
 export async function getChats() {
   try {
-    const chats = await evolutionFindChats();
-    const chatsArray = Array.isArray(chats) ? (chats as Chat[]) : [];
+    let chatsArray: any[] = [];
+    try {
+      const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'teste';
+      const instanceRes = await pool.query(`SELECT id FROM "Instance" WHERE name = $1 LIMIT 1`, [instanceName]);
+      const instanceId = instanceRes.rows[0]?.id;
+
+      if (instanceId) {
+        const chatsQuery = await pool.query(`
+          SELECT 
+            c."remoteJid" as id, 
+            c."remoteJid" as "remoteJid",
+            c."pushName", 
+            c."profilePicUrl",
+            ch."unreadMessages" as "unreadCount",
+            m."message",
+            m.key,
+            m."messageTimestamp"
+          FROM "Contact" c
+          INNER JOIN "Chat" ch ON c."remoteJid" = ch."remoteJid" AND c."instanceId" = ch."instanceId"
+          LEFT JOIN LATERAL (
+              SELECT "message", "messageTimestamp", "key" 
+              FROM "Message" 
+              WHERE "remoteJid" = c."remoteJid" AND "instanceId" = c."instanceId"
+              ORDER BY "messageTimestamp" DESC LIMIT 1
+          ) m ON true
+          WHERE c."instanceId" = $1
+          ORDER BY m."messageTimestamp" DESC NULLS LAST
+          LIMIT 300
+        `, [instanceId]);
+
+        chatsArray = chatsQuery.rows.map(row => ({
+          id: row.id,
+          remoteJid: row.remoteJid,
+          pushName: row.pushName,
+          profilePicUrl: row.profilePicUrl,
+          unreadCount: row.unreadCount,
+          lastMessage: row.message ? {
+            key: row.key,
+            message: row.message,
+            messageTimestamp: row.messageTimestamp
+          } : null
+        }));
+      }
+    } catch (e) {
+      console.error("Falha ao puxar do Evolution DB, executando fallback");
+      const chatsFallback = await evolutionFindChats();
+      chatsArray = Array.isArray(chatsFallback) ? chatsFallback : [];
+    }
 
     // Get all registered phone numbers to minimize DB queries
     const registeredMap = new Map();
@@ -105,8 +151,45 @@ export async function getChats() {
 
     // Enrich chats with lastMessage and registration status
     const enrichedChats = await Promise.all(chatsArray.map(async (chat) => {
-      const jid = chat.remoteJid || chat.id;
-      const phone = jid ? jid.split('@')[0].replace(/\D/g, '') : '';
+      // Evolution API v2 armazena o número real (mesmo para LIDs) no campo senderPn, participant, ou no próprio JID, muitas vezes dentro de lastMessage
+      let phone = '';
+      let computedRemoteJid = '';
+      try {
+        computedRemoteJid = chat?.remoteJid || chat?.id || chat?.lastMessage?.key?.remoteJid;
+        let senderPnVal = chat?.senderPn;
+        let participantVal = chat?.participant;
+        let lastMsgKey = chat?.lastMessage?.key;
+
+        // Se a raiz tem o message e key injetado pelo SQL, extrai dele
+        if (!lastMsgKey && chat?.key) {
+          lastMsgKey = chat.key;
+        }
+
+        if (!lastMsgKey?.fromMe) {
+          senderPnVal = senderPnVal || chat?.lastMessage?.senderPn || lastMsgKey?.senderPn;
+          participantVal = participantVal || chat?.lastMessage?.participant || lastMsgKey?.participant;
+        }
+
+        if (participantVal && String(participantVal).includes('@lid')) {
+          participantVal = null;
+        }
+
+        if (senderPnVal) {
+          phone = String(senderPnVal).replace(/\D/g, '');
+        } else if (participantVal) {
+          phone = String(participantVal).split('@')[0].replace(/\D/g, '');
+        } else if (computedRemoteJid && !String(computedRemoteJid).includes('@lid')) {
+          phone = String(computedRemoteJid).split('@')[0].replace(/\D/g, '');
+        } else if (chat?.key?.remoteJid && !String(chat.key.remoteJid).includes('@lid')) {
+          phone = String(chat.key.remoteJid).split('@')[0].replace(/\D/g, '');
+        } else if (computedRemoteJid && String(computedRemoteJid).includes('@lid')) {
+          // Força extração de números caso sobre apenas LID 
+          phone = String(computedRemoteJid).replace(/\D/g, '');
+        }
+      } catch (e: any) {
+        console.error("Falha ao processar JID do chat:", chat, e.message);
+        phone = '';
+      }
 
       // Try to find exact match or variations
       let leadInfo = registeredMap.get(phone);
@@ -129,8 +212,26 @@ export async function getChats() {
         matchedLeadIds.add(leadInfo.id);
       }
 
+      const finalJid = phone ? `${phone}@s.whatsapp.net` : (computedRemoteJid || chat?.id || 'unknown');
+      let finalPushName = chat?.pushName || chat?.name;
+
+      // Se não tem nome ou é o nome do bot ("Você"), busca alternativas. 
+      // O SQL novo já traz pushName preenchido de 'Contact', então isso resolve 99% dos casos.
+      if (!finalPushName || finalPushName === 'Você') {
+        let lastMsgPushName = chat?.lastMessage?.pushName;
+        let lastMsgFromMe = chat?.lastMessage?.key?.fromMe;
+        if (chat?.key) lastMsgFromMe = chat.key.fromMe; // Suporte SQL raiz
+
+        finalPushName = !lastMsgFromMe ? (lastMsgPushName || 'Desconhecido') : 'Desconhecido';
+      }
+
       const enrichedChat = {
         ...chat,
+        id: finalJid,
+        remoteJid: finalJid,
+        evolutionJid: computedRemoteJid || chat?.id, // ID Intacto pro backend Evolution (mantém o lid se necessário)
+        senderPhone: phone,
+        pushName: finalPushName,
         isRegistered: !!leadInfo,
         leadId: leadInfo?.id || undefined,
         leadName: leadInfo?.name || undefined,
@@ -176,6 +277,18 @@ export async function getChats() {
   } catch (error) {
     console.error("Error fetching chats:", error);
     return { success: false, error: "Failed to fetch chats" };
+  }
+}
+
+export async function getContactProfilePicture(jid: string) {
+  try {
+    // Remove o suffix se houver pra enviar apenas numericos para a API
+    const phone = jid.split('@')[0];
+    const url = await evolutionFetchProfilePicture(phone);
+    return { success: true, url };
+  } catch (error) {
+    console.error("Error fetching profile picture:", error);
+    return { success: false, url: null };
   }
 }
 

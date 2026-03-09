@@ -7,6 +7,7 @@ import { formatChatListDate } from './dateUtils';
 import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar, AlertCircle } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { SchedulingModal } from './SchedulingModal';
+import { ChatAvatar } from './ChatAvatar';
 
 interface ChatSidebarProps {
   chats: Chat[];
@@ -137,8 +138,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             <button
               onClick={toggleSelectionMode}
               className={`p-2 rounded-lg transition-colors ${isSelectionMode
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                  : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
               title={isSelectionMode ? "Cancelar seleção" : "Selecionar contatos"}
             >
@@ -164,8 +165,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
           <button
             onClick={() => setActiveTab('all')}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${activeTab === 'all'
-                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
           >
             <MessageSquare size={12} />
@@ -174,8 +175,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
           <button
             onClick={() => setActiveTab('unread')}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${activeTab === 'unread'
-                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
           >
             <Clock size={12} />
@@ -184,8 +185,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
           <button
             onClick={() => setActiveTab('unregistered')}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${activeTab === 'unregistered'
-                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             title="Não Cadastrados"
           >
@@ -195,8 +196,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
           <button
             onClick={() => setActiveTab('scheduled')}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all flex items-center justify-center gap-1 ${activeTab === 'scheduled'
-                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             title="Com Agendamento"
           >
@@ -230,8 +231,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             onClick={handleMassRegisterClick}
             disabled={selectedForMassAction.size === 0}
             className={`w-full text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-2 ${selectedForMassAction.size > 0
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow'
-                : 'bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600'
+              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow'
+              : 'bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600'
               }`}
           >
             <UserPlus size={14} />
@@ -276,8 +277,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                       <div
                         onClick={(e) => toggleChatSelection(e, chat.id)}
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400'
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400'
                           }`}
                       >
                         {isSelected && <CheckSquare size={14} />}
@@ -286,13 +287,13 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                   )}
 
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-500 font-bold overflow-hidden relative shrink-0 border border-zinc-100 dark:border-zinc-700">
-                    {chat.image ? (
-                      <Image src={chat.image} alt={chat.name} fill className="object-cover" unoptimized />
-                    ) : (
-                      chat.name.substring(0, 2).toUpperCase()
-                    )}
-                  </div>
+                  <ChatAvatar
+                    chatId={chat.senderPhone || chat.id}
+                    name={chat.name}
+                    fallbackImage={chat.image || chat.profilePicUrl}
+                    size={48}
+                    className="w-12 h-12"
+                  />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
@@ -338,8 +339,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                         </button>
                         {chat.leadDataReuniao && (
                           <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border font-medium ${currentTimestamp && new Date(chat.leadDataReuniao).getTime() < currentTimestamp
-                              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800'
+                            ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800'
                             }`}>
                             <Calendar size={12} />
                             {new Date(chat.leadDataReuniao).toLocaleDateString()}
@@ -347,8 +348,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                         )}
                         {chat.leadNeedsAttendant && (
                           <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border font-medium ${chat.leadAttendantRequestedAt && currentTimestamp && new Date(chat.leadAttendantRequestedAt).getTime() < currentTimestamp - 3600000
-                              ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                              : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
+                            ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                            : 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
                             }`}>
                             <AlertCircle size={12} />
                             Ajuda

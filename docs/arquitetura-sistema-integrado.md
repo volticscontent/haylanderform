@@ -1,219 +1,74 @@
-# Arquitetura do Sistema de Atendimento Automatizado - Haylander
+# Arquitetura do Sistema Integrado - Haylander
 
-## Visão Geral
+Este documento descreve a arquitetura atual do ecossistema Haylander, um sistema voltado para atendimento automatizado, qualificação de leads e regularização fiscal via WhatsApp, substituindo lógicas antigas de n8n por uma arquitetura escalável baseada em Node.js e filas.
 
-Este documento descreve a arquitetura do sistema de atendimento automatizado implementado para a Haylander Contabilidade, com foco no fluxo de regularização fiscal aprimorado e integração com n8n.
+## 1. Visão Geral da Arquitetura Atual
 
-## Componentes Principais
+O sistema foi modularizado a partir de um monolito Next.js para separar a interface administrativa (Frontend) da inteligência e processamento de mensagens pesadas (Bot Backend).
 
-### 1. Sistema de Agentes Inteligentes
+### Componentes Principais:
+1. **Frontend Admin (Next.js)**: Painel administrativo, visualização de chats em tempo real e controle de disparos em massa.
+2. **Bot Backend (Node.js + Express + BullMQ)**: O coração lógico do atendimento. Processa webhooks da Evolution API, roteia agentes de IA, gerencia concorrência e filas de envio.
+3. **Socket Server**: Subsistema de tempo-real que espelha as mensagens do WhatsApp (Evolution API) e do Bot para a interface em Next.js.
+4. **PostgreSQL**: Banco de dados relacional (gerenciado via pool de conexão nas duas aplicações) contendo usuários, leads e tracking de recursos.
+5. **Redis**: Banco de dados em memória utilizado tanto para filas do BullMQ quanto para o Pub/Sub do Socket.io.
 
-#### 1.1 Apollo (SDR/Qualificação)
-- **Função**: Primeiro contato com leads, qualificação e triagem
-- **Fluxo Aprimorado**: Implementa novo sistema de regularização fiscal com mensagens segmentadas
-- **Características**:
-  - Mensagens segmentadas com delay (resolve problema SSR/Vercel)
-  - Tracking de recursos entregues
-  - Fluxo dual: autônomo vs assistido
-  - Integração com sistema de procuração e-CAC
+---
 
-#### 1.2 Icaro (Vendas/Closer)
-- **Função**: Fechamento de vendas com leads qualificados
-- **Integração**: Recebe leads MQL/SQL do Apollo
+## 2. O Fluxo de Mensagens (Webhook e Processamento)
 
-#### 1.3 Atendente (Suporte)
-- **Função**: Suporte pós-venda e atendimento humano
-- **Integração**: Recebe transferências do Apollo quando necessário
+Diferente da arquitetura anterior baseada predominantemente no **n8n**, o processamento de mensagens recebidas agora ocorre **nativamente no Bot Backend**.
 
-### 2. Sistema de Tracking de Recursos
+### Ciclo de Vida de uma Mensagem
+1. **Recepção**: A Evolution API envia o evento `messages.upsert` para o endpoint `/webhook/whatsapp` no Bot Backend.
+2. **Registro e Roteamento Inicial**: A mensagem é logada no banco de dados e notificada via Redis Pub/Sub ao servidor de WebSockets para aparecer no Frontend imediatamente.
+3. **Debounce (BullMQ)**: Para evitar que a Inteligência Artificial responda a múltiplas mensagens picadas prematuramente (flood do usuário), a mensagem entra em uma Fila de Debounce (espera ~1.5s após a última mensagem).
+4. **Agentes de IA (Apolo / Icaro / Atendente)**: 
+   - Ao estourar o debounce, o estado do usuário é consultado no banco. O usuário cai com o SDR (Apolo), Closer (Icaro), ou Suporte (Atendente).
+   - O agente gera uma resposta (frequentemente segmentada em múltiplas mensagens de texto contendo delimitadores `|||`).
 
-#### 2.1 Tabela `resource_tracking`
-```sql
-CREATE TABLE resource_tracking (
-    id SERIAL PRIMARY KEY,
-    lead_id INTEGER REFERENCES leads(id),
-    resource_type VARCHAR(50) CHECK (resource_type IN ('video-tutorial', 'link-ecac', 'formulario', 'documentacao')),
-    resource_key VARCHAR(255),
-    delivered_at TIMESTAMP,
-    accessed_at TIMESTAMP,
-    status VARCHAR(20) CHECK (status IN ('delivered', 'accessed', 'completed')),
-    metadata JSONB
-);
-```
+5. **Envio (Fila de Mensagens / Message Queue)**: 
+   - A resposta do agente entra em uma nova fila BullMQ (`message-sending`) que cadencia o envio sequencial via Evolution API, imitando um humano digitando (com delays intercalados).
+   - Isso elimina antigos problemas de timeout da Vercel (onde requisições ficavam presas por > 10s no Next.js).
 
-#### 2.2 Funções de Tracking
-- `trackResourceDelivery()`: Registra entrega de recursos
-- `hasResourceBeenDelivered()`: Verifica se recurso já foi entregue
-- `checkProcuracaoStatus()`: Verifica status da procuração
-- `markProcuracaoCompleted()`: Marca procuração como concluída
+---
 
-### 3. Sistema de Mensagens Segmentadas
+## 3. Substituição do n8n
 
-#### 3.1 Estrutura de Mensagens
-```typescript
-interface MessageSegment {
-    id: string;
-    content: string;
-    type: 'text' | 'media' | 'link';
-    delay?: number;
-    metadata?: Record<string, unknown>;
-}
-```
+Anteriormente, o n8n era responsável por "Split-out" (segmentação de mensagens) e fallbacks automáticos, recebendo as mensagens do Next.js via webhook.
 
-#### 3.2 Fluxo de Mensagens para Regularização
-1. **Introdução**: Explicação sobre PGMEI e Dívida Ativa
-2. **Procuração e-CAC**: Informação sobre necessidade da procuração
-3. **Opções**: Autônomo vs Assistido
-4. **Recursos**: Links e vídeos tutoriais
-5. **Acompanhamento**: Verificação de conclusão
+**A nova arquitetura removeu o n8n do fluxo primário (conversacional) pelos seguintes motivos e soluções:**
+- **Controle de Estado Inconsistente**: Substituído por locks atômicos no Redis durante o *debounce*.
+- **Timeout e Tratamento de Erros**: O BullMQ possui retentativas embutidas nativas (`backoff: exponential`) diretamente no backend do bot.
+- **Divisão de Texto (Split-out)**: A IA agora usa strings multi-parte que a fila `message-queue.ts` consome, repassando um a um para a Evolution API.
 
-### 4. Integração com n8n
+> *Nota: O n8n ainda é passível de ser utilizado para disparos em massa, conforme sugerido pelo endpoint de callback em `src/app/api/disparos/callback/route.ts`.*
 
-#### 4.1 Arquitetura Proposta
-```
-[WhatsApp Evolution API] 
-        ↓
-[Webhook Router (Next.js)] 
-        ↓
-[Agente Apollo] 
-        ↓
-[n8n Workflow] 
-        ↓
-[Resposta Segmentada]
-```
+---
 
-#### 4.2 Vantagens da Integração com n8n
-- **Split-out nativo**: Processamento paralelo de mensagens
-- **Fallback automático**: Tratamento de erros robusto
-- **Visual workflow**: Interface visual para gestão
-- **Escalabilidade**: Processamento distribuído
-- **Logs centralizados**: Monitoramento unificado
+## 4. Sistema de Tracking e Regularização (MEI / e-CAC)
 
-#### 4.3 Endpoints de Integração
-- `POST /api/webhook/n8n/regularizacao`: Inicia workflow de regularização
-- `POST /api/webhook/n8n/message-split`: Processa mensagens segmentadas
-- `POST /api/webhook/n8n/tracking`: Atualiza tracking de recursos
+A integração e tracking persistem na tabela `resource_tracking` onde acompanhamos:
+- Entrega de recursos (vídeos de tutorial, links).
+- Autenticação e validação do e-CAC do governo brasileiro (Regularização fiscal autônoma vs assistida).
 
-### 5. Fluxo de Regularização Aprimorado
+O Bot consulta ativamente a situação (CNPJ, Dívida Ativa) no banco de dados para determinar se envia formulários Next.js ou responde em texto puro.
 
-#### 5.1 Passo 1: Educação do Cliente
-```
-Cliente escolhe "Regularização" → Apollo envia mensagens segmentadas:
-1. "Para realizar a regularização fiscal completa, precisamos consultar suas dívidas..."
-2. "Para este processo, é obrigatório ter uma procuração cadastrada no e-CAC..."
-3. "Você tem duas opções: fazer o processo de forma autônoma..."
-```
+---
 
-#### 5.2 Passo 2: Escolha do Processo
-- **Opção Autônoma**: 
-  - Link oficial do e-CAC
-  - Vídeo tutorial passo a passo
-  - Tracking de acesso
-  - Formulário após conclusão
+## 5. Tempo Real (Socket.io e Pub/Sub)
 
-- **Opção Assistida**:
-  - Transferência para atendente humano
-  - Acompanhamento personalizado
-  - Suporte durante todo processo
+Para sincronizar o Bot Backend com o Frontend Open-chat, as duas entidades comunicam-se de forma assíncrona:
+- **Redis Pub/Sub (`haylander-chat-updates`)**: O Bot Backend publica as mensagens aqui.
+- **Frontend App**: Conecta-se a um servidor Socket.io, que é assinante (Subscriber) deste canal Redis. Ao receber a mensagem, o Socket envia eventos globais (`chat-update-global`, `new-message`) diretamente aos navegadores logados no painel.
 
-#### 5.3 Passo 3: Tracking e Acompanhamento
-- Registro de todos os recursos entregues
-- Monitoramento de acesso e conclusão
-- Notificações para próximos passos
-- Métricas de engajamento
+---
 
-### 6. Sistema de Logs e Métricas
+## 6. Logs e Observabilidade
 
-#### 6.1 Logs Detalhados
-```typescript
-// Exemplo de log estruturado
-{
-  timestamp: '2024-01-15T10:30:00Z',
-  leadId: 12345,
-  phone: '5511999999999',
-  event: 'resource_delivered',
-  resourceType: 'video-tutorial',
-  resourceKey: 'video-tutorial-procuracao-ecac',
-  status: 'delivered',
-  metadata: { flowType: 'autonomo' }
-}
-```
+O Backend do Bot usa um logger customizado que gera artefatos de logs granulares para:
+- Atividade principal de Webhook (`webhookLogger`)
+- Estado e retentativas das Filas do BullMQ (`queueLogger`)
+- Processamento e Falhas de inteligência IA (`debounceLogger`)
 
-#### 6.2 Métricas de Performance
-- Taxa de conversão por fluxo (autônomo vs assistido)
-- Tempo médio de conclusão da procuração
-- Taxa de acesso aos recursos entregues
-- Taxa de abandono por etapa
-- Tempo de resposta dos agentes
-
-### 7. Tratamento de Problemas SSR/Vercel
-
-#### 7.1 Problema Identificado
-- SSR limita renderização a um único evento
-- Mensagens longas são truncadas ou não segmentadas
-- Perda de contexto conversacional
-
-#### 7.2 Solução Implementada
-- **Mensagens Segmentadas com Delay**: Cada mensagem é enviada com delay controlado
-- **Processamento Assíncrono**: Uso de Promises e setTimeout
-- **Estado Persistente**: Tracking em banco de dados
-- **Fallback Robusto**: Sistema de retry e tratamento de erros
-
-### 8. Estrutura de Dados
-
-#### 8.1 Tabela `leads`
-- Informações básicas do cliente
-- Status de qualificação
-- Observações e histórico
-- Dados de regularização
-
-#### 8.2 Tabela `resource_tracking`
-- Histórico de recursos entregues
-- Status de acesso e conclusão
-- Metadados adicionais
-- Timestamps para análise
-
-#### 8.3 Tabela `interpreter_memories`
-- Memórias de contexto da conversa
-- Categorização por tipo
-- Busca vetorial para relevância
-
-### 9. Segurança e Compliance
-
-#### 9.1 Proteção de Dados
-- Dados sensíveis armazenados com criptografia
-- Acesso apenas via HTTPS
-- Logs sem dados pessoais
-- Conformidade LGPD
-
-#### 9.2 Controle de Acesso
-- Autenticação via JWT
-- Rotas protegidas por middleware
-- Rate limiting por IP/usuário
-- Auditoria de acessos
-
-### 10. Monitoramento e Observabilidade
-
-#### 10.1 Dashboard de Métricas
-- Visualização em tempo real
-- Gráficos de conversão
-- Alertas de anomalias
-- Exportação de relatórios
-
-#### 10.2 Integração com Ferramentas
-- Sentry para error tracking
-- Datadog para métricas APM
-- Slack para notificações
-- Grafana para dashboards
-
-## Conclusão
-
-Esta arquitetura resolve os principais desafios identificados:
-
-1. **Fluxo de Regularização Aprimorado**: Sistema completo com tracking e mensagens segmentadas
-2. **Problema SSR/Vercel**: Resolvido com mensagens segmentadas e delay controlado
-3. **Integração n8n**: Workflow visual com split-out e fallback automático
-4. **Escalabilidade**: Sistema preparado para crescimento
-5. **Monitoramento**: Logs e métricas completas para análise
-
-O sistema mantém a estrutura existente de agentes e tabelas, adicionando camadas de funcionalidade para melhor experiência do cliente e eficiência operacional.
+Assim como os logs de Next.js. Comandos essenciais agora residem separados: `start` no Next.js para renderização de React Server Components e rotas normais, e instâncias separadas de PM2 / Docker para o Bot Backend (express + BullMQ workers).

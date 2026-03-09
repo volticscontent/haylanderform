@@ -41,7 +41,22 @@ const redisSub = new Redis(REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
 });
 
+// Conexão Redis separada para queries (GET/SET) — subscriber não pode executar comandos normais
+const redisClient = new Redis(REDIS_URL || 'redis://localhost:6379', {
+    retryStrategy(times) {
+        const delay = Math.min(times * 2000, 30000);
+        return delay;
+    },
+    maxRetriesPerRequest: null
+});
+
 // Tratamento de erro para evitar crash da aplicação (Unhandled error event)
+redisClient.on('error', (err) => {
+    if (err.code !== 'ECONNREFUSED') {
+        console.error('❌ Erro no Redis Client:', err.message);
+    }
+});
+
 redisSub.on('error', (err) => {
     if (err.code === 'ECONNREFUSED') {
         // Log menos alarmante para ambiente local sem Redis
@@ -65,10 +80,26 @@ redisSub.subscribe('chat-updates', (err, count) => {
     }
 });
 
-redisSub.on('message', (channel, message) => {
+redisSub.on('message', async (channel, message) => {
     if (channel === 'chat-updates') {
         try {
             const data = JSON.parse(message);
+
+            // Resolver LID → telefone real se necessário
+            let chatId = data.chatId;
+            if (chatId && chatId.includes('@lid')) {
+                try {
+                    const phone = chatId.split('@')[0];
+                    const realPhone = await redisClient.get(`lid_map:${chatId}`);
+                    if (realPhone) {
+                        chatId = `${realPhone}@s.whatsapp.net`;
+                        data.chatId = chatId;
+                        data.senderPn = chatId;
+                        console.log(`🗺️ [Redis PubSub] LID resolvido: ${phone} → ${realPhone}`);
+                    }
+                } catch (e) { /* ignore Redis errors */ }
+            }
+
             console.log(`📥 Redis Message Received -> Emitindo para Frontend: ${data.chatId}`);
             io.emit('chat-update-global', data);
             io.emit('new-message', data);
@@ -80,7 +111,7 @@ redisSub.on('message', (channel, message) => {
 
 io.on('connection', (socket) => {
     console.log('👤 Frontend conectado:', socket.id);
-    
+
     socket.on('disconnect', () => {
         console.log('👋 Frontend desconectado:', socket.id);
     });
@@ -97,11 +128,11 @@ function connectToEvolution() {
     // Tenta conectar no namespace da instância se não for global
     // Se a Evolution API não estiver com WEBSOCKET_GLOBAL_EVENTS=true, 
     // precisamos conectar em /<instance_name>
-    
+
     // Conexão por Namespace (Recomendado se GLOBAL_EVENTS=false)
     // Tenta conectar especificamente no namespace da instância: /<instance_name>
     const instanceNamespaceUrl = `${EVO_API_URL}/${EVO_INSTANCE}`;
-    
+
     console.log(`🔗 Conectando ao Socket.io da Evolution API (Namespace): ${instanceNamespaceUrl}`);
 
     const evoSocket = ioClient(instanceNamespaceUrl, {
@@ -129,26 +160,39 @@ function connectToEvolution() {
     });
 
     // Escuta TODOS os eventos para debug e repasse
-    evoSocket.onAny((eventName, ...args) => {
+    evoSocket.onAny(async (eventName, ...args) => {
         // args[0] geralmente é o payload
         const data = args[0] || {};
-        
+
         // Filtra por instância se necessário (alguns eventos vêm com instanceId)
         // Se a Evolution manda tudo, filtramos aqui.
         // Verifique a estrutura do payload nos logs.
-        
+
         // Log detalhado para entender a estrutura
         if (eventName === 'messages.upsert') {
             console.log('📨 Nova mensagem recebida (messages.upsert)');
             // console.log('Payload Full:', JSON.stringify(data, null, 2));
 
-            const msgData = data.data || data; 
-            
+            const msgData = data.data || data;
+            let chatId = msgData.key?.remoteJid;
+
+            // Tentar resolver LID → telefone real via Redis
+            if (chatId && chatId.includes('@lid')) {
+                try {
+                    const realPhone = await redisClient.get(`lid_map:${chatId}`);
+                    if (realPhone) {
+                        console.log(`🗺️ LID resolvido: ${chatId} → ${realPhone}@s.whatsapp.net`);
+                        chatId = `${realPhone}@s.whatsapp.net`;
+                    }
+                } catch (e) { /* ignore Redis errors */ }
+            }
+
             const socketMsg = {
-                chatId: msgData.key?.remoteJid,
+                chatId,
+                senderPn: chatId,
                 ...msgData
             };
-            
+
             console.log(`📤 Emitindo para frontend - ChatID: ${socketMsg.chatId}`);
 
             // Emite para o frontend
@@ -156,10 +200,10 @@ function connectToEvolution() {
             io.emit('new-message', socketMsg);
         } else if (eventName === 'messages.update') {
             console.log('📝 Atualização de mensagem (messages.update)');
-             // Tratamento similar se necessário
+            // Tratamento similar se necessário
         } else {
-             // Opcional: Logar outros eventos para conhecer
-             console.log(`ℹ️ Evento recebido: ${eventName}`);
+            // Opcional: Logar outros eventos para conhecer
+            console.log(`ℹ️ Evento recebido: ${eventName}`);
         }
     });
 }
@@ -177,10 +221,10 @@ app.get('/', (req, res) => {
 app.post('/notify', (req, res) => {
     const data = req.body;
     console.log(`📨 Notificação HTTP recebida -> Emitindo para Frontend: ${data.chatId}`);
-    
+
     io.emit('chat-update-global', data);
     io.emit('new-message', data);
-    
+
     res.json({ success: true });
 });
 
