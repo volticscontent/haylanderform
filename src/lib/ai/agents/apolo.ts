@@ -14,8 +14,8 @@ import {
 } from '../tools/server-tools';
 
 import { getDynamicContext } from '../knowledge-base';
-import { 
-  trackResourceDelivery, 
+import {
+  trackResourceDelivery,
   checkProcuracaoStatus,
   markProcuracaoCompleted,
   processMessageSegments,
@@ -102,6 +102,11 @@ Assim que você entender a intenção do cliente, USE AS TOOLS proativamente.
   2. Pergunte: "Você prefere aguardar para voltar ao MEI ou já resolver isso agora abrindo um novo MEI?"
   3. **Se escolher a Opção 1:** Vá para o fluxo de Procuração (ensinar e pedir).
   4. **Se escolher a Opção 2:** Vá para a abertura/baixa (Cenário B) explicando que a Senha GOV será obrigatória.
+  **Regras Críticas para este Cenário (MEI Excluído):**
+  - NUNCA fale de valores antes de explicar as diferenças entre as opções.
+  - SEMPRE justifique por que o acesso GOV será necessário (para executar baixa e abertura nos portais governamentais).
+  - Incentive a procuração quando possível/não houver urgência.
+  - Atendimento humano apenas se houver bloqueio.
 
 - **Cenário B: Abertura de Empresa / Dar Baixa no MEI**
   Se o cliente quiser abrir CNPJ, formalizar negócio ou Dar Baixa no CNPJ atual:
@@ -447,7 +452,7 @@ export async function runApoloAgent(message: AgentMessage, context: AgentContext
         try {
           const segments = createAssistidoMessageSegments();
           await processMessageSegments(context.userPhone, segments, (segment) => sendMessageSegment(context.userPhone, segment));
-          
+
           // Transfer to human attendant after messages
           return await callAttendant(context.userPhone, 'Solicitação de processo assistido de regularização');
         } catch (error) {
@@ -469,15 +474,15 @@ export async function runApoloAgent(message: AgentMessage, context: AgentContext
           if (!userData) {
             return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
           }
-          
+
           const parsed = JSON.parse(userData);
           if (parsed.status === 'error' || parsed.status === 'not_found') {
             return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
           }
 
           const completed = await checkProcuracaoStatus(parsed.id);
-          return JSON.stringify({ 
-            status: "success", 
+          return JSON.stringify({
+            status: "success",
             completed,
             message: completed ? "Procuração já concluída" : "Procuração pendente"
           });
@@ -500,15 +505,15 @@ export async function runApoloAgent(message: AgentMessage, context: AgentContext
           if (!userData) {
             return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
           }
-          
+
           const parsed = JSON.parse(userData);
           if (parsed.status === 'error' || parsed.status === 'not_found') {
             return JSON.stringify({ status: "error", message: "Usuário não encontrado" });
           }
 
           await markProcuracaoCompleted(parsed.id);
-          return JSON.stringify({ 
-            status: "success", 
+          return JSON.stringify({
+            status: "success",
             message: "Procuração marcada como concluída"
           });
         } catch (error) {
