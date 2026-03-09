@@ -220,78 +220,74 @@ export function ChatInterface() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Conectar no nosso Bot Backend Socket Server (NÃO na Evolution direta)
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://bot.landcriativa.com';
+    // Conectar direto na Evolution API
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://evolutionapi.landcriativa.com';
+    const apiKey = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY;
 
-    console.log('[Bot WS] Connecting to:', socketUrl);
+    console.log('[Evolution WS] Connecting to:', socketUrl);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newSocket: any = io(socketUrl, {
       transports: ['websocket', 'polling'],
+      auth: { apikey: apiKey }
     });
 
     newSocket.on('connect', () => {
-      console.log('[Bot WS] ✅ Connected:', newSocket.id);
+      console.log('[Evolution WS] ✅ Connected:', newSocket.id);
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('[Bot WS] ❌ Disconnected');
+      console.log('[Evolution WS] ❌ Disconnected');
       setIsConnected(false);
     });
 
     newSocket.on('connect_error', (err: Error) => {
-      console.warn('[Bot WS] Connection error:', err.message);
+      console.warn('[Evolution WS] Connection error:', err.message);
     });
 
-    // Evento global: qualquer atualização de chat (nova msg, msg enviada pelo bot, etc.)
+    // Evolution API v2: events are standard strings when Global Events is enabled
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('chat-update-global', (data: any) => {
-      console.log('[Bot WS] 📩 chat-update-global:', data);
+    newSocket.on('messages.upsert', (data: any) => {
+      console.log('[Evolution WS] 📩 messages.upsert:', data);
 
-      const chatId = data.chatId;
-      if (!chatId) return;
+      // Verifica se é de grupo
+      if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      // Se é do chat selecionado, adicionar à conversa
-      if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
-        if (data.message) {
-          const normalized = normalizeMessage({
-            key: { remoteJid: chatId, fromMe: data.fromMe ?? false, id: data.key?.id || `ws-${Date.now()}` },
-            message: data.message,
-            messageTimestamp: data.messageTimestamp || Math.floor(Date.now() / 1000),
-          });
-          setMessages(prev => {
-            if (prev.some(m => m.id === normalized.id)) return prev;
-            return [...prev, normalized];
-          });
-        }
+      const senderId = data?.data?.key?.remoteJid || data?.senderpn || data?.senderPhone || data?.data?.senderpn || data?.data?.senderPhone;
+      if (!senderId) return;
+
+      const normalizedMsg = normalizeMessage(data?.data || data);
+
+      if (selectedChatIdRef.current && senderId === selectedChatIdRef.current) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === normalizedMsg.id)) return prev; // deduplicate
+          return [...prev, normalizedMsg];
+        });
       }
 
       // Recarregar lista de chats para atualizar preview/unread
       loadChats();
     });
 
-    // Evento específico: mensagem nova na sala do chat selecionado
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('new-message', (data: any) => {
-      console.log('[Bot WS] 📨 new-message:', data);
+    newSocket.on('send.message', (data: any) => {
+      console.log('[Evolution WS] 📤 send.message:', data);
+      if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      const chatId = data.chatId;
-      if (!chatId) return;
+      const senderId = data?.data?.key?.remoteJid;
+      if (!senderId) return;
 
-      if (selectedChatIdRef.current && chatId === selectedChatIdRef.current) {
-        if (data.message) {
-          const normalized = normalizeMessage({
-            key: { remoteJid: chatId, fromMe: data.fromMe ?? false, id: data.key?.id || `ws-${Date.now()}` },
-            message: data.message,
-            messageTimestamp: data.messageTimestamp || Math.floor(Date.now() / 1000),
-          });
-          setMessages(prev => {
-            if (prev.some(m => m.id === normalized.id)) return prev;
-            return [...prev, normalized];
-          });
-        }
+      const normalizedMsg = normalizeMessage(data?.data || data);
+
+      if (selectedChatIdRef.current && senderId === selectedChatIdRef.current) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === normalizedMsg.id)) return prev;
+          return [...prev, normalizedMsg];
+        });
       }
+
+      loadChats();
     });
 
     setSocket(newSocket);
