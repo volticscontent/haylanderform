@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { evolutionSendTextMessage } from '@/lib/evolution';
-import { getAgentRouting } from '@/lib/ai/tools/server-tools';
+import { getAgentRouting } from '@/lib/server-tools';
 
 export async function POST(request: Request) {
     // Auth check
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         // Allow "Bearer <token>" or just "<token>"
         const token = process.env.CRON_SECRET;
         const isValid = authHeader === `Bearer ${token}` || authHeader === token;
-        
+
         if (!isValid) {
             console.warn(`[Fallback] Unauthorized access attempt. Header: ${authHeader?.substring(0, 10)}...`);
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
         // Check if lead is being attended by a bot
         const agentName = await getAgentRouting(phone);
-        
+
         // If agent is 'human', we should NOT send the nudge
         if (agentName === 'human') {
             console.log(`[Fallback] Skipping nudge for ${phone} (Agent is Human)`);
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         // Send the "Are you still there?" message
         const message = "Oi ainda esta ai?";
         await evolutionSendTextMessage(phone, message);
-        
+
         console.log(`[Fallback] Sent nudge to ${phone}`);
         return NextResponse.json({ message: 'Nudge sent successfully' });
 

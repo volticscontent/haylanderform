@@ -1,10 +1,6 @@
 'use server';
 
-import { runApoloAgent } from '@/lib/ai/agents/apolo';
-import { runVendedorAgent } from '@/lib/ai/agents/vendedor';
-import { runAtendenteAgent } from '@/lib/ai/agents/atendente';
-import { getUser, updateUser } from '@/lib/ai/tools/server-tools';
-import { AgentContext } from '@/lib/ai/types';
+import { getUser, updateUser } from '@/lib/server-tools';
 
 export async function sendMessageAction(message: string, userPhone: string, targetAgent?: string) {
   try {
@@ -15,7 +11,7 @@ export async function sendMessageAction(message: string, userPhone: string, targ
 
     // 1. Determinar o Estado do Usuário (Routing Logic)
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
-    
+
     // Consultar Banco de Dados
     const userJson = await getUser(userPhone);
     let user: Record<string, unknown> | null = null;
@@ -41,69 +37,51 @@ export async function sendMessageAction(message: string, userPhone: string, targ
       if (user.situacao === 'cliente') {
         userState = 'customer';
       } else if (user.qualificacao) {
-        // Se já tem qualificação (MQL, SQL, ICP, ou até desqualificado), vai para Vendedor
-        // Agora o Vendedor tenta converter até os desqualificados
         userState = 'qualified';
       } else {
-        // Padrão: Apolo (ainda qualificando ou desqualificado tentando contato)
         userState = 'lead';
       }
     }
 
-    // Contexto compartilhado
-    const context: AgentContext = {
-      userId: sender,
-      userName: pushName,
-      userPhone: userPhone,
-      history: [] 
-    };
-
-    let responseText = '';
-    let agentName = '';
+    let responseText = '[Erro de Simulação] A lógica de IA foi movida para o servidor "bot-backend", impedindo simulação realista neste painel offline.';
+    let agentName = 'Sistema';
 
     // 2. Despachar para o Agente Correto (Ou Forçado)
     if (targetAgent && targetAgent !== 'auto') {
-        switch (targetAgent.toLowerCase()) {
-            case 'vendedor':
-                agentName = 'Vendedor (Icaro)';
-                responseText = await runVendedorAgent(message, context);
-                break;
-            case 'atendente':
-                agentName = 'Atendente (Apolo Customer)';
-                responseText = await runAtendenteAgent(message, context);
-                break;
-            case 'apolo':
-            default:
-                agentName = 'Apolo (SDR)';
-                responseText = await runApoloAgent(message, context);
-                break;
-        }
+      switch (targetAgent.toLowerCase()) {
+        case 'vendedor':
+          agentName = 'Vendedor (Icaro)';
+          break;
+        case 'atendente':
+          agentName = 'Atendente (Apolo Customer)';
+          break;
+        case 'apolo':
+        default:
+          agentName = 'Apolo (SDR)';
+          break;
+      }
     } else {
-        // Lógica Automática Original
-        switch (userState) {
+      switch (userState) {
         case 'qualified':
-            agentName = 'Vendedor (Icaro)';
-            console.log(`[Test Chat] Direcionando para ${agentName}`);
-            responseText = await runVendedorAgent(message, context);
-            break;
+          agentName = 'Vendedor (Icaro)';
+          break;
         case 'customer':
-            agentName = 'Atendente (Apolo Customer)';
-            console.log(`[Test Chat] Direcionando para ${agentName}`);
-            responseText = await runAtendenteAgent(message, context);
-            break;
+          agentName = 'Atendente (Apolo Customer)';
+          break;
         case 'lead':
         default:
-            agentName = 'Apolo (SDR)';
-            console.log(`[Test Chat] Direcionando para ${agentName}`);
-            responseText = await runApoloAgent(message, context);
-            break;
-        }
+          agentName = 'Apolo (SDR)';
+          break;
+      }
     }
 
-    return { 
-      response: responseText, 
+    // Simulando delay de api
+    await new Promise(r => setTimeout(r, 1000));
+
+    return {
+      response: `[Agente ${agentName}] Esta é uma simulação offline. O Motor de IA real está rodando no bot-backend. Mensagem recebida: "${message}"`,
       agent: agentName,
-      userState 
+      userState
     };
 
   } catch (error: unknown) {
@@ -114,9 +92,9 @@ export async function sendMessageAction(message: string, userPhone: string, targ
 }
 
 export async function getUserDataAction(phone: string) {
-    return await getUser(phone);
+  return await getUser(phone);
 }
 
 export async function updateUserDataAction(data: Parameters<typeof updateUser>[0]) {
-    return await updateUser(data);
+  return await updateUser(data);
 }
