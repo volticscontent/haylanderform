@@ -28,4 +28,5 @@ export interface Message {
   mediaType?: 'image' | 'video' | 'audio' | 'document' | 'sticker' | null;
   fileName?: string | null;
   mimetype?: string | null;
+  agentName?: string;
 }

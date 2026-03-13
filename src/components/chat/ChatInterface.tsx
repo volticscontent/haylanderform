@@ -90,10 +90,10 @@ export function ChatInterface() {
     if (content.conversation) return content.conversation;
 
     // Extended text
-    if (content.extendedTextMessage?.text) return content.extendedTextMessage.text;
+    if (content.extendedTextMessage?.text) return content.extendedTextMessage.text.replace(/^\u200B+/, '');
 
     // Image
-    if (content.imageMessage) return '📷 [Imagem] ' + (content.imageMessage.caption || '');
+    if (content.imageMessage) return '📷 [Imagem] ' + (content.imageMessage.caption?.replace(/^\u200B+/, '') || '');
 
     // Audio
     if (content.audioMessage) return '🎵 [Áudio]';
@@ -169,6 +169,18 @@ export function ChatInterface() {
       mimetype = contentObj.stickerMessage.mimetype;
     }
 
+    let agentName: string | undefined = undefined;
+    if (content.startsWith('\u200B')) {
+      let zCount = 0;
+      while (content[zCount] === '\u200B') zCount++;
+      
+      if (zCount === 1) agentName = 'Apolo';
+      else if (zCount === 2) agentName = 'Icaro';
+      else agentName = 'Apolo'; // default fallback for other bot interactions
+      
+      content = content.substring(zCount);
+    }
+
     return {
       id: m.key?.id || m.id,
       fromMe: m.key?.fromMe || false,
@@ -179,7 +191,8 @@ export function ChatInterface() {
       mediaUrl,
       mediaType,
       fileName,
-      mimetype
+      mimetype,
+      agentName
     };
   }
 
@@ -254,20 +267,20 @@ export function ChatInterface() {
 
     // Evolution API v2: events are standard strings when Global Events is enabled
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('messages.upsert', (data: any) => {
-      console.log('[Evolution WS] 📩 messages.upsert:', data);
+    const handleIncomingMessage = (data: any) => {
+      console.log('[Evolution WS] 📩 nova mensagem (event):', data);
 
       // Verifica se é de grupo
-      if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
+      if (data?.data?.key?.remoteJid?.endsWith('@g.us') || data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid;
+      let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
       if (!senderId) return;
 
       // Força a usar PhoneNumber explicitamente igual ao Backend actions.ts e ignora LIDs onde possível
       const isLid = String(senderId).includes('@lid');
       let phone = String(senderId).split('@')[0].replace(/\D/g, '');
-      if (data?.data?.key?.senderPn) {
-        phone = String(data.data.key.senderPn).replace(/\D/g, '');
+      if (data?.data?.key?.senderPn || data?.key?.senderPn) {
+        phone = String(data?.data?.key?.senderPn || data?.key?.senderPn).replace(/\D/g, '');
       }
       senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
 
@@ -282,33 +295,12 @@ export function ChatInterface() {
 
       // Recarregar lista de chats para atualizar preview/unread
       loadChats();
-    });
+    };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    newSocket.on('send.message', (data: any) => {
-      console.log('[Evolution WS] 📤 send.message:', data);
-      if (data?.data?.key?.remoteJid?.endsWith('@g.us')) return;
-
-      let senderId = data?.data?.key?.remoteJid;
-      if (!senderId) return;
-
-      let phone = String(senderId).split('@')[0].replace(/\D/g, '');
-      if (data?.data?.key?.senderPn || data?.data?.message?.senderPn) {
-        phone = String(data?.data?.key?.senderPn || data?.data?.message?.senderPn).replace(/\D/g, '');
-      }
-      senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
-
-      const normalizedMsg = normalizeMessage(data?.data || data);
-
-      if (selectedChatIdRef.current && senderId === selectedChatIdRef.current) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === normalizedMsg.id)) return prev;
-          return [...prev, normalizedMsg];
-        });
-      }
-
-      loadChats();
-    });
+    newSocket.on('messages.upsert', handleIncomingMessage);
+    newSocket.on('new-message', handleIncomingMessage);
+    newSocket.on('chat-update-global', handleIncomingMessage);
+    newSocket.on('send.message', handleIncomingMessage);
 
     setSocket(newSocket);
 

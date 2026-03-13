@@ -46,8 +46,8 @@ export function ChatWindow({
   onViewLeadSheet,
   onRegister
 }: ChatWindowProps) {
-  const isRecording = false;
-  const recordingTime = 0;
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [mediaPreview, setMediaPreview] = useState<{ file: File, type: 'image' | 'video' | 'audio' | 'document' } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState<number>(0);
@@ -63,9 +63,9 @@ export function ChatWindow({
   }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  // const audioChunksRef = useRef<Blob[]>([]);
-  // const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevLoadingMoreRef = useRef(loadingMore);
@@ -140,12 +140,61 @@ export function ChatWindow({
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const audioFile = new File([audioBlob], 'audio_message.webm', { type: 'audio/webm' });
+            onSendMedia(audioFile, 'audio', undefined, true);
+        }
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      alert('Não foi possível acessar o microfone.');
+    }
+  };
+
   const stopRecording = () => {
-    // Recording disabled
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
   };
 
   const cancelRecording = () => {
-    // Recording disabled
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = () => {
+        mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+        audioChunksRef.current = [];
+      };
+      
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
   };
 
   if (!chat) {
@@ -398,6 +447,7 @@ export function ChatWindow({
         <ChatInput
           onSendMessage={onSendMessage}
           onFileSelect={handleFileSelect}
+          onStartRecording={startRecording}
           onStopRecording={stopRecording}
           onCancelRecording={cancelRecording}
           isRecording={isRecording}

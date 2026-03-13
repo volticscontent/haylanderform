@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, X } from 'lucide-react';
+import { Send, X, Paperclip, Mic } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
@@ -12,6 +12,7 @@ interface ChatInputProps {
   isRecording: boolean;
   recordingTime: number;
   disabled?: boolean;
+  onStartRecording?: () => void;
 }
 
 export function ChatInput({ 
@@ -21,11 +22,23 @@ export function ChatInput({
   onCancelRecording,
   isRecording,
   recordingTime,
-  disabled 
+  disabled,
+  onStartRecording
 }: ChatInputProps) {
   const [inputText, setInputText] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFileSelect(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -140,8 +153,7 @@ export function ChatInput({
   return (
     <div className="p-3 sm:p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
       <div className="flex items-end gap-2 max-w-4xl mx-auto">
-        {/* Media upload disabled for now */}
-        {/* <input 
+        <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange} 
@@ -156,7 +168,7 @@ export function ChatInput({
             title="Anexar arquivo"
         >
             <Paperclip size={22} />
-        </button> */}
+        </button>
 
         <div 
             className={`flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center border transition-colors ${
@@ -193,16 +205,14 @@ export function ChatInput({
                 <Send size={22} />
             </button>
         ) : (
-            // Voice recording disabled for now
-            /* <button 
+            <button 
                 onClick={onStartRecording}
                 disabled={disabled}
                 className="p-3 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors mb-0.5"
                 title="Gravar áudio"
             >
                 <Mic size={22} />
-            </button> */
-            <div className="w-[46px]"></div> // Placeholder to keep layout stable if needed, or remove
+            </button>
         )}
       </div>
     </div>

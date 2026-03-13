@@ -72,16 +72,16 @@ redisSub.on('error', (err) => {
     }
 });
 
-redisSub.subscribe('chat-updates', (err, count) => {
+redisSub.subscribe('haylander-chat-updates', (err, count) => {
     if (err) {
         console.error('❌ Falha ao se inscrever no Redis:', err);
     } else {
-        console.log(`✅ Inscrito no canal 'chat-updates' do Redis. Contagem: ${count}`);
+        console.log(`✅ Inscrito no canal 'haylander-chat-updates' do Redis. Contagem: ${count}`);
     }
 });
 
 redisSub.on('message', async (channel, message) => {
-    if (channel === 'chat-updates') {
+    if (channel === 'haylander-chat-updates') {
         try {
             const data = JSON.parse(message);
 
