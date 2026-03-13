@@ -23,6 +23,10 @@ export function ChatAvatar({ chatId, name, fallbackImage, className = '', size =
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        setImageUrl(fallbackImage || avatarCache.get(chatId) || null);
+    }, [chatId, fallbackImage]);
+
+    useEffect(() => {
         // Definir as iniciais baseadas no nome
         if (name) {
             setInitials(name.substring(0, 2).toUpperCase());
