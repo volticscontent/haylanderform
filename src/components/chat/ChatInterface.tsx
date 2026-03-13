@@ -182,8 +182,8 @@ export function ChatInterface() {
     }
 
     return {
-      id: m.key?.id || m.id,
-      fromMe: m.key?.fromMe || false,
+      id: m.key?.id || m.keyId || m.id,
+      fromMe: m.key?.fromMe !== undefined ? m.key.fromMe : (m.fromMe || false),
       content,
       timestamp: typeof m.messageTimestamp === 'number' ? m.messageTimestamp : (m.messageTimestamp instanceof Date ? Math.floor(m.messageTimestamp.getTime() / 1000) : (Number(m.messageTimestamp) || Math.floor(Date.now() / 1000))),
       type: m.messageType,

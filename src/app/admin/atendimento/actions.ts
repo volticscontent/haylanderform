@@ -84,7 +84,7 @@ export async function getChats() {
               WHERE "remoteJid" = c."remoteJid" AND "instanceId" = c."instanceId"
               ORDER BY "messageTimestamp" DESC LIMIT 1
           ) m ON true
-          WHERE c."instanceId" = $1
+          WHERE c."instanceId" = $1 AND c."remoteJid" NOT LIKE '%@lid'
           ORDER BY m."messageTimestamp" DESC NULLS LAST
           LIMIT 300
         `, [instanceId]);

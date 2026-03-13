@@ -73,7 +73,7 @@ export async function evolutionFindMessages(jid: string, limit: number = 20, pag
     return { messages: { records: [] } };
   }
 
-  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/findMessages/${encodeURIComponent(evolutionConfig.instance)}`
+  const url = `${evolutionConfig.baseUrl.replace(/\/$/, '')}/chat/findMessages/${encodeURIComponent(evolutionConfig.instance)}?page=${page}&limit=${limit}`
   const res = await withTimeout(fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
@@ -83,8 +83,6 @@ export async function evolutionFindMessages(jid: string, limit: number = 20, pag
           remoteJid: jid
         }
       },
-      take: limit,
-      skip: (page - 1) * limit,
       orderBy: {
         createdAt: 'desc'
       }
