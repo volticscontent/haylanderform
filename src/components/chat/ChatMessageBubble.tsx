@@ -210,6 +210,15 @@ export function MessageBubble({ message, isFirst = true, isLast = true }: Messag
             : 'bg-white dark:bg-[#202c33] text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]'
         }`}
       >
+        {isMe && message.agentName && isFirst && (
+            <div className={`text-[11px] font-bold mb-1 opacity-75 flex items-center gap-1 ${
+              message.agentName === 'Apolo' ? 'text-emerald-900 dark:text-emerald-300' :
+              message.agentName === 'Icaro' ? 'text-blue-900 dark:text-blue-300' :
+              'text-purple-900 dark:text-purple-300'
+            }`}>
+              🤖 {message.agentName}
+            </div>
+        )}
         {renderContent()}
         
         <div className={`text-[10px] flex items-center justify-end gap-1 mt-1 select-none min-h-[16px] ${
