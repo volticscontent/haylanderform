@@ -108,6 +108,12 @@ export async function getChats() {
       chatsArray = Array.isArray(chatsFallback) ? chatsFallback : [];
     }
 
+    // Filter out LID (Linked Devices) ghost chats entirely from the final array
+    chatsArray = chatsArray.filter(chat => {
+      const jid = chat.remoteJid || chat.id || '';
+      return !String(jid).includes('@lid');
+    });
+
     // Get all registered phone numbers to minimize DB queries
     const registeredMap = new Map();
     const matchedLeadIds = new Set<number>();

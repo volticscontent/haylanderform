@@ -276,6 +276,11 @@ export function ChatInterface() {
       let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
       if (!senderId) return;
 
+      // Drop LID (Linked Devices) messages completely to avoid phantom chats
+      if (String(senderId).includes('@lid') || String(data?.data?.key?.remoteJid).includes('@lid') || String(data?.key?.remoteJid).includes('@lid')) {
+        return;
+      }
+
       // Força a usar PhoneNumber explicitamente igual ao Backend actions.ts e ignora LIDs onde possível
       const isLid = String(senderId).includes('@lid');
       let phone = String(senderId).split('@')[0].replace(/\D/g, '');
