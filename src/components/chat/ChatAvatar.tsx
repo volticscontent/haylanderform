@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { getContactProfilePicture } from '@/app/admin/atendimento/actions';
 
@@ -17,14 +17,19 @@ interface ChatAvatarProps {
 }
 
 export function ChatAvatar({ chatId, name, fallbackImage, className = '', size = 48 }: ChatAvatarProps) {
-    const [imageUrl, setImageUrl] = useState<string | null>(fallbackImage || avatarCache.get(chatId) || null);
+    const [fetchedUrl, setFetchedUrl] = useState<string | null>(null);
     const [initials, setInitials] = useState<string>('');
     const [isVisible, setIsVisible] = useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
+    // Reseta a imagem buscada ao trocar de chat
     useEffect(() => {
-        setImageUrl(fallbackImage || avatarCache.get(chatId) || null);
-    }, [chatId, fallbackImage]);
+        setFetchedUrl(null);
+    }, [chatId]);
+
+    const imageUrl = useMemo(() => {
+        return fetchedUrl || fallbackImage || avatarCache.get(chatId) || null;
+    }, [fetchedUrl, fallbackImage, chatId]);
 
     useEffect(() => {
         // Definir as iniciais baseadas no nome
@@ -73,11 +78,13 @@ export function ChatAvatar({ chatId, name, fallbackImage, className = '', size =
 
                 if (isMounted) {
                     if (res.success && res.url) {
-                        setImageUrl(res.url);
+                        setFetchedUrl(res.url);
                         avatarCache.set(chatId, res.url);
                     } else {
                         // Salva como nulo no cache para não dar retry novamente em re-renders
                         avatarCache.set(chatId, null);
+                        // Força a atualização do useMemo disparando um setState vazio caso dependa de re-render
+                        setFetchedUrl(null);
                     }
                 } else {
                     // Se desmontou antes de terminar, salva no cache de qualquer forma pros irmãos acharem
