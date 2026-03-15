@@ -517,13 +517,37 @@ export async function massRegisterLeads(leads: { name: string, phone: string }[]
 
 export async function getMessages(jid: string, page: number = 1) {
   try {
-    // Fetch 50 messages per page to ensure bot messages aren't lost in pagination
-    const response = await evolutionFindMessages(jid, 50, page);
+    const jids = jid.split(',').filter(Boolean);
+    let allRecords: Message[] = [];
 
-    // Normalize structure
-    let records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
+    // Fetch 50 messages per page to ensure bot messages aren't lost in pagination
+    for (const singleJid of jids) {
+      try {
+        const response = await evolutionFindMessages(singleJid, 50, page);
+        const records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
+        allRecords = [...allRecords, ...records];
+      } catch (e) {
+        console.error(`Error fetching messages for JID ${singleJid}:`, e);
+      }
+    }
+
+    // Deduplicate by message ID and sort by messageTimestamp desc
+    const uniqueRecordsMap = new Map<string, Message>();
+    for (const r of allRecords) {
+      const msgId = r.key?.id || r.id;
+      if (msgId && !uniqueRecordsMap.has(msgId)) {
+        uniqueRecordsMap.set(msgId, r);
+      }
+    }
     
-    console.log(`[getMessages ServerAction] Fetched ${records.length} messages for ${jid} on page ${page}. First ID: ${records[0]?.key?.id}`);
+    let records = Array.from(uniqueRecordsMap.values());
+    records.sort((a, b) => {
+      const aTime = typeof a.messageTimestamp === 'number' ? a.messageTimestamp : (a.messageTimestamp instanceof Date ? Math.floor(a.messageTimestamp.getTime() / 1000) : (Number(a.messageTimestamp) || 0));
+      const bTime = typeof b.messageTimestamp === 'number' ? b.messageTimestamp : (b.messageTimestamp instanceof Date ? Math.floor(b.messageTimestamp.getTime() / 1000) : (Number(b.messageTimestamp) || 0));
+      return bTime - aTime;
+    });
+
+    console.log(`[getMessages ServerAction] Fetched ${records.length} unique messages for JIDs [${jids.join(', ')}] on page ${page}. First ID: ${records[0]?.key?.id}`);
 
     // Enrich media messages with base64
     if (Array.isArray(records)) {
