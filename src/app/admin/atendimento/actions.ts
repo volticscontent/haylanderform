@@ -575,6 +575,19 @@ export async function getMessages(jid: string, page: number = 1) {
 export async function sendMessage(jid: string, text: string) {
   try {
     const result = await evolutionSendTextMessage(jid, text);
+    
+    // Notifica via WebSocket para que outros atendentes vejam a mensagem em tempo real
+    try {
+      const { notifySocketServer } = await import("@/lib/socket");
+      notifySocketServer("haylander-chat-updates", {
+        chatId: jid,
+        fromMe: true,
+        message: { conversation: text },
+        id: `msg-${Date.now()}`,
+        messageTimestamp: Math.floor(Date.now() / 1000)
+      }).catch(() => {});
+    } catch (e) {}
+    
     return { success: true, data: result };
   } catch (error) {
     console.error("Error sending message:", error);
@@ -610,6 +623,18 @@ export async function sendMedia(jid: string, formData: FormData) {
         file.type
       );
     }
+    
+    // Notifica via WebSocket para que outros atendentes vejam a mensagem em tempo real
+    try {
+      const { notifySocketServer } = await import("@/lib/socket");
+      notifySocketServer("haylander-chat-updates", {
+        chatId: jid,
+        fromMe: true,
+        message: { conversation: caption || `[Midia enviada: ${file.name}]` },
+        id: `msg-${Date.now()}`,
+        messageTimestamp: Math.floor(Date.now() / 1000)
+      }).catch(() => {});
+    } catch (e) {}
 
     return { success: true, data: result };
   } catch (error) {
