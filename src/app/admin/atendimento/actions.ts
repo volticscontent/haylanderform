@@ -517,8 +517,8 @@ export async function massRegisterLeads(leads: { name: string, phone: string }[]
 
 export async function getMessages(jid: string, page: number = 1) {
   try {
-    // Fetch 20 messages per page
-    const response = await evolutionFindMessages(jid, 20, page);
+    // Fetch 50 messages per page to ensure bot messages aren't lost in pagination
+    const response = await evolutionFindMessages(jid, 50, page);
 
     // Normalize structure
     let records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];

@@ -344,7 +344,7 @@ export function ChatInterface() {
           return [...newUniqueMessages, ...prev];
         });
       }
-      setHasMore(records.length >= 20);
+      setHasMore(records.length >= 50);
     }
 
     if (pageNum === 1 && !silent) setLoadingMessages(false);
@@ -355,12 +355,11 @@ export function ChatInterface() {
     loadChats();
   }, [loadChats]);
 
-  // Efetua carregamento baseado no selection (ID Novo) mas mandando o OLD pra API
+  // Efetua carregamento da conversa (usando sempre o JID padronizado @s.whatsapp.net para não perder mensagens do bot ligadas ao número principal e não ao LID)
   useEffect(() => {
     if (selectedChatId && chats.length > 0) {
       setPage(1);
-      const chat = chats.find(c => c.id === selectedChatId);
-      loadMessages(chat?.evolutionJid || selectedChatId, 1);
+      loadMessages(selectedChatId, 1);
     }
   }, [selectedChatId, chats, loadMessages]);
 
