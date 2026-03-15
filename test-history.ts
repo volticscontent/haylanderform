@@ -1,12 +1,20 @@
 require('dotenv').config();
-const { evolutionFindMessages } = require('./src/lib/evolution');
+const { evolutionFindChats } = require('./src/lib/evolution');
 
 async function run() {
-  const jid = '553182354127@s.whatsapp.net'; // The number from the screenshot
-  console.log(`Fetching messages for ${jid}...`);
   try {
-    const res = await evolutionFindMessages(jid, 50, 1);
-    console.log(JSON.stringify(res, null, 2));
+    const res = await evolutionFindChats();
+    // find the chat for 553182354127
+    const chats = res || [];
+    const targetChats = chats.filter(c => c?.id?.includes('553182354127') || c?.remoteJid?.includes('553182354127'));
+    
+    console.log(`Found ${targetChats.length} chats matching 553182354127:`);
+    for (const c of targetChats) {
+      console.log(`- ID: ${c.id}`);
+      console.log(`- remoteJid: ${c.remoteJid}`);
+      console.log(`- name: ${c.name}`);
+      console.log('---');
+    }
   } catch(e) {
     console.error(e);
   }

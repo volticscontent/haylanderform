@@ -25,6 +25,7 @@ export async function evolutionGetInformation() {
   const url = evolutionConfig.baseUrl.replace(/\/$/, '')
   const res = await withTimeout(fetch(url, {
     headers: { apikey: evolutionConfig.apiKey },
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
   if (!res.ok) throw new Error(`Evolution info failed: ${res.status}`)
   return res.json()
@@ -35,7 +36,8 @@ export async function checkWhatsAppNumbers(numbers: string[]) {
   const res = await withTimeout(fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
-    body: JSON.stringify({ numbers })
+    body: JSON.stringify({ numbers }),
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
   if (!res.ok) throw new Error(`WhatsAppNumbers failed: ${res.status}`)
   return res.json() as Promise<Array<{ exists: boolean; jid: string; number: string }>>
@@ -46,6 +48,7 @@ export async function evolutionFindChats() {
   const res = await withTimeout(fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
   if (!res.ok) throw new Error(`FindChats failed: ${res.status}`)
   return res.json()
@@ -57,7 +60,8 @@ export async function evolutionFetchProfilePicture(number: string) {
   const res = await withTimeout(fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', apikey: evolutionConfig.apiKey },
-    body: JSON.stringify({ number })
+    body: JSON.stringify({ number }),
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
 
   if (!res.ok) {
@@ -86,7 +90,8 @@ export async function evolutionFindMessages(jid: string, limit: number = 20, pag
       orderBy: {
         createdAt: 'desc'
       }
-    })
+    }),
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
 
   if (!res.ok) throw new Error(`FindMessages failed: ${res.status}`)
@@ -101,7 +106,8 @@ export async function evolutionGetBase64FromMediaMessage(message: unknown) {
     body: JSON.stringify({
       message,
       convertToMp4: false
-    })
+    }),
+    cache: 'no-store'
   }), evolutionConfig.timeoutMs)
 
   if (!res.ok) {
