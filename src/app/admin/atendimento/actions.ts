@@ -534,7 +534,7 @@ export async function getMessages(jid: string, page: number = 1) {
     // Deduplicate by message ID and sort by messageTimestamp desc
     const uniqueRecordsMap = new Map<string, Message>();
     for (const r of allRecords) {
-      const msgId = r.key?.id || r.id;
+      const msgId = r.key?.id || r.keyId || r.id;
       if (msgId && !uniqueRecordsMap.has(msgId)) {
         uniqueRecordsMap.set(msgId, r);
       }
