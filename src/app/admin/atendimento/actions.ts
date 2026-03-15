@@ -522,6 +522,8 @@ export async function getMessages(jid: string, page: number = 1) {
 
     // Normalize structure
     let records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
+    
+    console.log(`[getMessages ServerAction] Fetched ${records.length} messages for ${jid} on page ${page}. First ID: ${records[0]?.key?.id}`);
 
     // Enrich media messages with base64
     if (Array.isArray(records)) {

@@ -282,9 +282,13 @@ export function ChatInterface() {
       }
 
       // Força a usar PhoneNumber explicitamente igual ao Backend actions.ts e ignora LIDs onde possível
-      const isLid = String(senderId).includes('@lid');
+      const isFromMe = data?.data?.key?.fromMe ?? data?.key?.fromMe ?? data?.fromMe ?? false;
       let phone = String(senderId).split('@')[0].replace(/\D/g, '');
-      if (data?.data?.key?.senderPn || data?.key?.senderPn) {
+      
+      if (isFromMe) {
+         const rJid = data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
+         if (rJid) phone = String(rJid).split('@')[0].replace(/\D/g, '');
+      } else if (data?.data?.key?.senderPn || data?.key?.senderPn) {
         phone = String(data?.data?.key?.senderPn || data?.key?.senderPn).replace(/\D/g, '');
       }
       senderId = phone ? `${phone}@s.whatsapp.net` : senderId;

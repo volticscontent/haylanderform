@@ -204,19 +204,21 @@ export function MessageBubble({ message, isFirst = true, isLast = true }: Messag
   return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${marginBottom} group select-none`}>
       <div 
-        className={`max-w-[85%] sm:max-w-[65%] p-2 shadow-sm relative transition-all break-words ${borderRadiusClass} ${
+        className={`max-w-[85%] sm:max-w-[65%] p-2.5 shadow-sm relative transition-all break-words ${borderRadiusClass} ${
           isMe 
-            ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' 
-            : 'bg-white dark:bg-[#202c33] text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]'
+            ? message.agentName
+                ? 'bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-900/20 border border-indigo-100 dark:border-indigo-800/50 text-zinc-900 dark:text-zinc-100 shadow-md ring-1 ring-black/5 dark:ring-white/5'
+                : 'bg-[#d9fdd3] dark:bg-[#005c4b] p-2 text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]' 
+            : 'bg-white dark:bg-[#202c33] p-2 text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]'
         }`}
       >
         {isMe && message.agentName && isFirst && (
-            <div className={`text-[11px] font-bold mb-1 opacity-75 flex items-center gap-1 ${
-              message.agentName === 'Apolo' ? 'text-emerald-900 dark:text-emerald-300' :
-              message.agentName === 'Icaro' ? 'text-blue-900 dark:text-blue-300' :
-              'text-purple-900 dark:text-purple-300'
+            <div className={`text-[12px] font-bold mb-1.5 pb-1 border-b flex items-center gap-1.5 ${
+              message.agentName === 'Apolo' ? 'text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50' :
+              message.agentName === 'Icaro' ? 'text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50' :
+              'text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800/50'
             }`}>
-              🤖 {message.agentName}
+              🤖 IA • {message.agentName.toUpperCase()}
             </div>
         )}
         {renderContent()}
