@@ -276,20 +276,15 @@ export function ChatInterface() {
       let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
       if (!senderId) return;
 
-      // Drop LID (Linked Devices) messages completely to avoid phantom chats
-      if (String(senderId).includes('@lid') || String(data?.data?.key?.remoteJid).includes('@lid') || String(data?.key?.remoteJid).includes('@lid')) {
-        return;
-      }
-
-      // Força a usar PhoneNumber explicitamente igual ao Backend actions.ts e ignora LIDs onde possível
+      // Normalize to base phone number to allow matching selectedChatId
       const isFromMe = data?.data?.key?.fromMe ?? data?.key?.fromMe ?? data?.fromMe ?? false;
-      let phone = String(senderId).split('@')[0].replace(/\D/g, '');
+      let phone = String(senderId).split('@')[0].split(':')[0].replace(/\D/g, '');
       
       if (isFromMe) {
          const rJid = data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
-         if (rJid) phone = String(rJid).split('@')[0].replace(/\D/g, '');
+         if (rJid) phone = String(rJid).split('@')[0].split(':')[0].replace(/\D/g, '');
       } else if (data?.data?.key?.senderPn || data?.key?.senderPn) {
-        phone = String(data?.data?.key?.senderPn || data?.key?.senderPn).replace(/\D/g, '');
+        phone = String(data?.data?.key?.senderPn || data?.key?.senderPn).split(':')[0].replace(/\D/g, '');
       }
       senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
 
