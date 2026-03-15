@@ -355,11 +355,13 @@ export function ChatInterface() {
     loadChats();
   }, [loadChats]);
 
-  // Efetua carregamento da conversa (usando sempre o JID padronizado @s.whatsapp.net para não perder mensagens do bot ligadas ao número principal e não ao LID)
+  // Efetua carregamento da conversa combinando JID normal (base) e JID LID (linked device)
   useEffect(() => {
     if (selectedChatId && chats.length > 0) {
       setPage(1);
-      loadMessages(selectedChatId, 1);
+      const chat = chats.find(c => c.id === selectedChatId);
+      const jidsToFetch = Array.from(new Set([selectedChatId, chat?.evolutionJid])).filter(Boolean).join(',');
+      loadMessages(jidsToFetch, 1);
     }
   }, [selectedChatId, chats, loadMessages]);
 
@@ -368,7 +370,8 @@ export function ChatInterface() {
     const nextPage = page + 1;
     setPage(nextPage);
     const chat = chats.find(c => c.id === selectedChatId);
-    await loadMessages(chat?.evolutionJid || selectedChatId, nextPage);
+    const jidsToFetch = Array.from(new Set([selectedChatId, chat?.evolutionJid])).filter(Boolean).join(',');
+    await loadMessages(jidsToFetch, nextPage);
   };
 
   const handleSendMessage = async (text: string) => {
