@@ -34,9 +34,9 @@ export async function updateLeadFields(telefone: string, updates: Record<string,
   const allowedColumns = new Set([
     'telefone', 'nome_completo', 'email', 'senha_gov', 'nome_mae', 'cpf', 'data_nascimento',
     'cnpj', 'razao_social', 'nome_fantasia', 'tipo_negocio', 'faturamento_mensal', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep', 'dados_serpro', 'cartao_cnpj',
-    'situacao', 'qualificacao', 'motivo_qualificacao', 'interesse_ajuda', 'pos_qualificacao', 'possui_socio',
+    'situacao', 'qualificacao', 'motivo_qualificacao', 'interesse_ajuda', 'pos_qualificacao', 'possui_socio', 'confirmacao_qualificacao',
     'tem_divida', 'tipo_divida', 'valor_divida_municipal', 'valor_divida_estadual', 'valor_divida_federal', 'valor_divida_ativa', 'tempo_divida', 'calculo_parcelamento',
-    'servico_negociado', 'status_atendimento', 'data_reuniao', 'procuracao', 'procuracao_ativa', 'procuracao_validade',
+    'servico_negociado', 'status_atendimento', 'data_reuniao', 'procuracao', 'procuracao_ativa', 'procuracao_validade', 'servico_escolhido', 'reuniao_agendada', 'vendido',
     'atendente_id', 'envio_disparo', 'data_controle_24h', 'data_ultima_consulta', 'observacoes'
   ])
 
@@ -73,6 +73,7 @@ export async function updateLeadFields(telefone: string, updates: Record<string,
     'interesse_ajuda': 'leads_qualificacao',
     'pos_qualificacao': 'leads_qualificacao',
     'possui_socio': 'leads_qualificacao',
+    'confirmacao_qualificacao': 'leads_qualificacao',
 
     // leads_financeiro
     'tem_divida': 'leads_financeiro',
@@ -91,6 +92,9 @@ export async function updateLeadFields(telefone: string, updates: Record<string,
     'procuracao': 'leads_vendas',
     'procuracao_ativa': 'leads_vendas',
     'procuracao_validade': 'leads_vendas',
+    'servico_escolhido': 'leads_vendas',
+    'reuniao_agendada': 'leads_vendas',
+    'vendido': 'leads_vendas',
 
     // leads_atendimento
     'atendente_id': 'leads_atendimento',
@@ -100,7 +104,7 @@ export async function updateLeadFields(telefone: string, updates: Record<string,
     'observacoes': 'leads_atendimento',
   }
 
-  const booleanColumns = new Set(['possui_socio', 'pos_qualificacao', 'procuracao', 'tem_divida', 'procuracao_ativa'])
+  const booleanColumns = new Set(['possui_socio', 'pos_qualificacao', 'procuracao', 'tem_divida', 'procuracao_ativa', 'confirmacao_qualificacao', 'reuniao_agendada', 'vendido'])
   const dateColumns = new Set(['data_reuniao', 'data_cadastro', 'data_controle_24h', 'data_ultima_consulta', 'procuracao_validade', 'data_nascimento'])
 
   // Filter and normalize values

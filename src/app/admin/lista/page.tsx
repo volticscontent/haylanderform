@@ -58,10 +58,15 @@ async function getData(page: number = 1, limit: number = 50) {
         lq.interesse_ajuda,
         lq.pos_qualificacao,
         lq.possui_socio,
+        lq.confirmacao_qualificacao,
 
         -- leads_vendas
         lv.servico_negociado,
-        lv.procuracao
+        lv.procuracao,
+        lv.servico_escolhido,
+        lv.reuniao_agendada,
+        lv.vendido,
+        lv.data_reuniao
 
       FROM leads l
       LEFT JOIN leads_empresarial le ON l.id = le.lead_id

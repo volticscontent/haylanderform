@@ -350,15 +350,27 @@ export function ChatInterface() {
     loadChats();
   }, [loadChats]);
 
+  const loadedChatIdRef = React.useRef<string | null>(null);
+
   // Efetua carregamento da conversa combinando JID normal (base) e JID LID (linked device)
   useEffect(() => {
-    if (selectedChatId && chats.length > 0) {
+    if (selectedChatId && chats.length > 0 && selectedChatId !== loadedChatIdRef.current) {
+      if (loadedChatIdRef.current && socket) {
+        socket.emit('leave-chat', loadedChatIdRef.current);
+      }
+
+      loadedChatIdRef.current = selectedChatId;
       setPage(1);
+
+      if (socket) {
+        socket.emit('join-chat', selectedChatId);
+      }
+
       const chat = chats.find(c => c.id === selectedChatId);
       const jidsToFetch = Array.from(new Set([selectedChatId, chat?.evolutionJid])).filter(Boolean).join(',');
       loadMessages(jidsToFetch, 1);
     }
-  }, [selectedChatId, chats, loadMessages]);
+  }, [selectedChatId, chats, loadMessages, socket]);
 
   const handleLoadMore = async () => {
     if (!selectedChatId || !hasMore || loadingMessages || loadingMore) return;
