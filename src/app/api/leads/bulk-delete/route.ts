@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       
       const res = await client.query(sql, params)
       await client.end()
-      revalidatePath('/admin/lista')
+      revalidatePath('')
       return NextResponse.json({ success: true, deleted: res.rowCount })
     }
 
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     const res = await client.query(sql, params)
     await client.end()
 
-    revalidatePath('/admin/lista')
+    revalidatePath('')
 
     return NextResponse.json({ success: true, deleted: res.rowCount })
   } catch (error: unknown) {

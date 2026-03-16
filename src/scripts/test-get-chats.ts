@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { getChats } from '../app/admin/atendimento/actions';
+import { getChats } from '../app/(admin)/atendimento/actions';
 
 async function test() {
     const res = await getChats();
@@ -7,7 +7,7 @@ async function test() {
         console.error("Failed:", res.error);
         return;
     }
-    const chats = res.data;
+    const chats = res.data || [];
     console.log(`Fetched ${chats.length} chats`);
     chats.slice(0, 5).forEach((c: any) => {
         console.log(`Chat ID: ${c.id}, Name: ${c.pushName}, leadName: ${c.leadName}, evolutionJid: ${c.evolutionJid}`);

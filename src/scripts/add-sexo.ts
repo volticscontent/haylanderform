@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import pool from './src/lib/db';
+import pool from '../lib/db';
 
 async function mapSexo() {
     const client = await pool.connect();

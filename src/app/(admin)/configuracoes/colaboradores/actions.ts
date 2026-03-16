@@ -25,7 +25,7 @@ export type ColaboradorInput = {
     senha?: string;
 };
 
-const REVALIDATE_PATH = '/admin/configuracoes/colaboradores';
+const REVALIDATE_PATH = '/colaboradores';
 
 export async function getColaboradores(filtro?: { cargo?: string; ativo?: boolean }) {
     try {

@@ -59,7 +59,7 @@ export const meeting = {
       ## Painel Administrativo
 
       ### Visualização de Agenda
-      O sistema conta com um módulo administrativo dedicado para gestão de reuniões (\`/admin/atendimentos\`).
+      O sistema conta com um módulo administrativo dedicado para gestão de reuniões (\`\`).
 
       **Funcionalidades:**
       - **Calendário Mensal**: Visualização intuitiva com indicadores de dias ocupados.

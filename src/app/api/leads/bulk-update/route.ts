@@ -222,7 +222,7 @@ export async function POST(request: Request) {
     const res = await client.query(sql, [...params, ...whereParams])
     await client.end()
 
-    revalidatePath('/admin/lista')
+    revalidatePath('')
 
     return NextResponse.json({ success: true, updated: res.rowCount })
   } catch (error: unknown) {

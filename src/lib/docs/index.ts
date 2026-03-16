@@ -1,6 +1,6 @@
 import { intro } from './intro'
 import { forms } from './forms'
-import { adminPanel } from './admin-panel'
+import { adminPanel } from './dashboard-panel'
 import { serproApi } from './serpro-api'
 import { disparoApi } from './disparo-api'
 import { listApi } from './list-api'

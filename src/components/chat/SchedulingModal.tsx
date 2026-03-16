@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Send, X, Calendar, Building, User, Phone, FileText } from 'lucide-react';
-import { searchLeadsForScheduling, sendSchedulingLink, SchedulingLead } from '@/app/admin/atendimento/agendamento-actions';
+import { searchLeadsForScheduling, sendSchedulingLink, SchedulingLead } from '@/app/(admin)/atendimento/agendamento-actions';
 
 interface SchedulingModalProps {
   isOpen: boolean;

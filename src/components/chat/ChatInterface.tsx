@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads, getLeadByPhone, triggerBot } from '@/app/admin/atendimento/actions';
+import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads, getLeadByPhone, triggerBot } from '@/app/(admin)/atendimento/actions';
 
 import { ChatSidebar, ChatWindow } from '.';
 import { LeadSheet, LeadSheetData } from './LeadSheet';
@@ -538,7 +538,7 @@ export function ChatInterface() {
     const params = new URLSearchParams({
       search: chat.leadName || chat.name
     });
-    router.push(`/admin/lista?${params.toString()}`);
+    router.push(`?${params.toString()}`);
   };
 
   const handleMassRegister = async (selectedChats: Chat[]) => {
@@ -570,16 +570,16 @@ export function ChatInterface() {
 
     switch (destination) {
       case 'disparo':
-        router.push(`/admin/disparo?${params.toString()}`);
+        router.push(`?${params.toString()}`);
         break;
       case 'consulta':
-        router.push(`/admin/serpro?${params.toString()}`);
+        router.push(`?${params.toString()}`);
         break;
       case 'emissao':
-        router.push(`/admin/serpro/cnd?${params.toString()}`);
+        router.push(`/cnd?${params.toString()}`);
         break;
       case 'divida':
-        router.push(`/admin/serpro/divida-ativa?${params.toString()}`);
+        router.push(`/divida-ativa?${params.toString()}`);
         break;
     }
   };

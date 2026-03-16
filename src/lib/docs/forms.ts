@@ -124,8 +124,8 @@ export const forms = {
       ## 4. Formulários Administrativos
       Além dos formulários públicos, o sistema conta com interfaces internas:
 
-      - **Login Administrativo** (\`src/app/admin/login\`): Utiliza Server Actions para autenticação segura baseada em sessão (cookie \`admin_session\`).
-      - **Configurador de Disparos** (\`src/app/admin/disparo\`): Uma interface complexa que permite filtrar a base de leads por múltiplos critérios (status, valores, etc.), compor mensagens com variáveis dinâmicas (ex: \`{{nome_completo}}\`) e agendar disparos. Diferente dos outros, este formulário salva as configurações no \`localStorage\` do navegador para serem processadas pela ferramenta de automação.
+      - **Login Administrativo** (\`src/app\`): Utiliza Server Actions para autenticação segura baseada em sessão (cookie \`admin_session\`).
+      - **Configurador de Disparos** (\`src/app\`): Uma interface complexa que permite filtrar a base de leads por múltiplos critérios (status, valores, etc.), compor mensagens com variáveis dinâmicas (ex: \`{{nome_completo}}\`) e agendar disparos. Diferente dos outros, este formulário salva as configurações no \`localStorage\` do navegador para serem processadas pela ferramenta de automação.
 
       ## Resumo Técnico - LeadForm
       - **Renderização**: Client Component (\`use client\`)

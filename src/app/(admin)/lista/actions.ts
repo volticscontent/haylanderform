@@ -16,7 +16,7 @@ export async function deleteLead(telefone: string) {
     await client.connect()
     // Cascade delete will handle related tables
     await client.query('DELETE FROM leads WHERE telefone = $1', [telefone])
-    revalidatePath('/admin/lista')
+    revalidatePath('')
     return { success: true, message: 'Lead excluído com sucesso' }
   } catch (error) {
     console.error('Error deleting lead:', error)
@@ -201,7 +201,7 @@ export async function updateLeadFields(telefone: string, updates: Record<string,
     }
 
     await client.query('COMMIT')
-    revalidatePath('/admin/lista')
+    revalidatePath('')
     return { success: true, message: 'Ficha atualizada com sucesso' }
   } catch (error) {
     await client.query('ROLLBACK')

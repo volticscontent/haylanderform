@@ -10,7 +10,7 @@ export default async function AdminLayout({
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
 
-  const { verifyAdminSession, getSession } = await import('@/lib/admin-auth')
+  const { verifyAdminSession, getSession } = await import('@/lib/dashboard-auth')
   const isLoggedIn = !!session && await verifyAdminSession(session.value)
   const colaborador = isLoggedIn ? await getSession(session!.value) : null
 
@@ -18,7 +18,7 @@ export default async function AdminLayout({
     'use server'
     const cookieStore = await cookies()
     cookieStore.delete('admin_session')
-    redirect('/admin/login')
+    redirect('/login')
   }
 
   return (
