@@ -82,11 +82,11 @@ export default async function DisparoPage() {
   const cookieStore = await cookies()
   const session = cookieStore.get('admin_session')
   
-  const { verifyAdminSession } = await import('@/lib/admin-auth')
+  const { verifyAdminSession } = await import('@/lib/dashboard-auth')
   const isValid = await verifyAdminSession(session?.value)
 
   if (!isValid) {
-    redirect('/admin/login')
+    redirect('/login')
   }
   const data = await getData()
   return (

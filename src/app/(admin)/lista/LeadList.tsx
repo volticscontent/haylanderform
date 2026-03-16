@@ -665,7 +665,7 @@ export default function LeadList({
             <MoreVertical className="w-4 h-4" />
             <span className="hidden sm:inline">Visualização</span>
           </button>
-          <Link href="/admin/disparo" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-500 transition-colors">
+          <Link href="" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-500 transition-colors">
             <Send className="w-4 h-4" />
             <span className="hidden sm:inline">Disparo</span>
           </Link>

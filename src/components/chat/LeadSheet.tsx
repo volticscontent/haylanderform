@@ -2,7 +2,7 @@
 
 import { X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText, Calendar, Clock, AlertCircle, Globe, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { getConsultationsByCnpj } from '@/app/admin/atendimento/actions'
+import { getConsultationsByCnpj } from '@/app/(admin)/atendimento/actions'
 
 import { DataViewer } from '@/components/serpro/DataViewer'
 

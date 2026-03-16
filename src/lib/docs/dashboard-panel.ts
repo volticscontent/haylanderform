@@ -2,7 +2,7 @@ export const adminPanel = {
     title: 'Painel Administrativo',
     content: `
       ## Visão Geral
-      O Painel Administrativo (\`/admin\`) é o centro de comando do Haylander CRM. É uma área restrita destinada à gestão de leads, configuração de disparos e análise de métricas.
+      O Painel Administrativo (\`/dashboard\`) é o centro de comando do Haylander CRM. É uma área restrita destinada à gestão de leads, configuração de disparos e análise de métricas.
 
       O acesso é protegido por autenticação baseada em sessão (cookies) e todas as operações sensíveis são validadas no servidor.
 
@@ -50,16 +50,16 @@ export const adminPanel = {
           
           alt Senha Correta
               Server->>Cookie: Set admin_session (HttpOnly)
-              Server-->>Login: Redireciona /admin/dashboard
+              Server-->>Login: Redireciona 
           else Senha Incorreta
               Server-->>Login: Erro "Credenciais Inválidas"
           end
 
           Note over Middleware: Em cada navegação:
-          Admin->>Middleware: Acessa rota /admin/*
+          Admin->>Middleware: Acessa rota /dashboard/*
           Middleware->>Cookie: Verifica admin_session
           alt Sem Sessão
-              Middleware-->>Admin: Redireciona /admin/login
+              Middleware-->>Admin: Redireciona 
           end
       \`\`\`
 
@@ -84,7 +84,7 @@ export const adminPanel = {
         if (!session) throw new Error('Unauthorized')
         
         // ... Lógica de Update no DB
-        revalidatePath('/admin') // Atualiza a UI instantaneamente
+        revalidatePath('/dashboard') // Atualiza a UI instantaneamente
       }
       \`\`\`
 

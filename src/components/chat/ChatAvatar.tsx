@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { getContactProfilePicture } from '@/app/admin/atendimento/actions';
+import { getContactProfilePicture } from '@/app/(admin)/atendimento/actions';
 
 // Módulo que atua como cache global temporário no frontend
 const avatarCache = new Map<string, string | null>();

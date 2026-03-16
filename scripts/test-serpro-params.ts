@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import { getConsultationsByCnpj } from '../src/app/admin/atendimento/actions';
+import { getConsultationsByCnpj } from '../src/app/(admin)/atendimento/actions';
 import pool from '../src/lib/db';
 
 async function testParams() {

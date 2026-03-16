@@ -32,51 +32,51 @@ type NavItem = {
 }
 
 const adminLinks: NavItem[] = [
-  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Atendimentos', href: '/admin/atendimentos', icon: Calendar },
-  { name: 'Chat', href: '/admin/atendimento', icon: MessageCircle },
-  { name: 'Lista', href: '/admin/lista', icon: Users },
-  { name: 'Disparo', href: '/admin/disparo', icon: Send },
-  { name: 'Serpro', href: '/admin/serpro', icon: Globe },
-  { name: 'Documentação', href: '/admin/docs', icon: Book },
+  { name: 'Dashboard', href: '', icon: LayoutDashboard },
+  { name: 'Atendimentos', href: '', icon: Calendar },
+  { name: 'Chat', href: '', icon: MessageCircle },
+  { name: 'Lista', href: '', icon: Users },
+  { name: 'Disparo', href: '', icon: Send },
+  { name: 'Serpro', href: '', icon: Globe },
+  { name: 'Documentação', href: '', icon: Book },
   {
     name: 'Configurações',
     icon: Settings,
     children: [
-      { name: 'Geral', href: '/admin/configuracoes', icon: Settings },
-      { name: 'Serviços', href: '/admin/configuracoes/servico', icon: Settings },
-      { name: 'Colaboradores', href: '/admin/configuracoes/colaboradores', icon: Users }
+      { name: 'Geral', href: '', icon: Settings },
+      { name: 'Serviços', href: '/servico', icon: Settings },
+      { name: 'Colaboradores', href: '/colaboradores', icon: Users }
     ]
   },
 ]
 
 const docsLinks: NavItem[] = [
-  { name: 'Introdução', href: '/admin/docs', icon: Book },
+  { name: 'Introdução', href: '', icon: Book },
   {
     name: 'Arquitetura',
     icon: Workflow,
     children: [
-      { name: 'Diagrama de Dados', href: '/admin/docs/diagrama-dados', icon: Database },
-      { name: 'Ciclo de Vida', href: '/admin/docs/ciclo-vida-lead', icon: GitBranch },
+      { name: 'Diagrama de Dados', href: '/diagrama-dados', icon: Database },
+      { name: 'Ciclo de Vida', href: '/ciclo-vida-lead', icon: GitBranch },
     ]
   },
   {
     name: 'Formulários',
     icon: FileText,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/forms#visao-geral', icon: FileText },
-      { name: 'Qualificação (Lead)', href: '/admin/docs/forms#lead-form', icon: FileText },
-      { name: 'Abertura MEI', href: '/admin/docs/forms#mei-form', icon: FileText },
-      { name: 'Cadastro e-CAC', href: '/admin/docs/forms#ecac-form', icon: FileText },
-      { name: 'Administrativos', href: '/admin/docs/forms#admin-forms', icon: FileText },
+      { name: 'Visão Geral', href: '/forms#visao-geral', icon: FileText },
+      { name: 'Qualificação (Lead)', href: '/forms#lead-form', icon: FileText },
+      { name: 'Abertura MEI', href: '/forms#mei-form', icon: FileText },
+      { name: 'Cadastro e-CAC', href: '/forms#ecac-form', icon: FileText },
+      { name: 'Administrativos', href: '/forms#admin-forms', icon: FileText },
     ]
   },
   {
     name: 'Banco de Dados',
     icon: Database,
     children: [
-      { name: 'Diagrama e SQL', href: '/admin/docs/diagrama-dados', icon: Database },
-      { name: 'Arquitetura do Bot', href: '/admin/docs/bot-architecture', icon: Book },
+      { name: 'Diagrama e SQL', href: '/diagrama-dados', icon: Database },
+      { name: 'Arquitetura do Bot', href: '/bot-architecture', icon: Book },
       { name: 'Visualização Live', href: '/docs/bd', icon: Workflow },
     ]
   },
@@ -84,55 +84,55 @@ const docsLinks: NavItem[] = [
     name: 'Painel Admin',
     icon: LayoutDashboard,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/admin-panel#visao-geral', icon: LayoutDashboard },
-      { name: 'Estrutura', href: '/admin/docs/admin-panel#estrutura-do-dashboard', icon: LayoutDashboard },
-      { name: 'Autenticação', href: '/admin/docs/admin-panel#fluxo-de-autenticacao', icon: LayoutDashboard },
-      { name: 'Tecnologias', href: '/admin/docs/admin-panel#tecnologias-e-componentes', icon: LayoutDashboard },
-      { name: 'Resumo Técnico', href: '/admin/docs/admin-panel#resumo-tecnico-painel-admin', icon: LayoutDashboard },
+      { name: 'Visão Geral', href: '/dashboard-panel#visao-geral', icon: LayoutDashboard },
+      { name: 'Estrutura', href: '/dashboard-panel#estrutura-do-dashboard', icon: LayoutDashboard },
+      { name: 'Autenticação', href: '/dashboard-panel#fluxo-de-autenticacao', icon: LayoutDashboard },
+      { name: 'Tecnologias', href: '/dashboard-panel#tecnologias-e-componentes', icon: LayoutDashboard },
+      { name: 'Resumo Técnico', href: '/dashboard-panel#resumo-tecnico-painel-admin', icon: LayoutDashboard },
     ]
   },
   {
     name: 'API Serpro',
     icon: Globe,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/serpro-api#visao-geral', icon: Globe },
-      { name: 'Autenticação', href: '/admin/docs/serpro-api#fluxo-de-autenticacao-e-consulta', icon: Globe },
-      { name: 'Configuração', href: '/admin/docs/serpro-api#configuracao-de-ambiente', icon: Globe },
-      { name: 'Endpoints', href: '/admin/docs/serpro-api#endpoints-da-api-interna', icon: Globe },
-      { name: 'Resumo Técnico', href: '/admin/docs/serpro-api#resumo-tecnico-serpro-integration', icon: Globe },
+      { name: 'Visão Geral', href: '/serpro-api#visao-geral', icon: Globe },
+      { name: 'Autenticação', href: '/serpro-api#fluxo-de-autenticacao-e-consulta', icon: Globe },
+      { name: 'Configuração', href: '/serpro-api#configuracao-de-ambiente', icon: Globe },
+      { name: 'Endpoints', href: '/serpro-api#endpoints-da-api-interna', icon: Globe },
+      { name: 'Resumo Técnico', href: '/serpro-api#resumo-tecnico-serpro-integration', icon: Globe },
     ]
   },
   {
     name: 'API Disparo',
     icon: Send,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/disparo-api#visao-geral', icon: Send },
-      { name: 'Endpoints', href: '/admin/docs/disparo-api#endpoints', icon: Send },
-      { name: 'Fluxo (Planejado)', href: '/admin/docs/disparo-api#fluxo-de-processamento-planejado', icon: Send },
-      { name: 'Regras de Negócio', href: '/admin/docs/disparo-api#regras-de-negocio', icon: Send },
-      { name: 'Resumo Técnico', href: '/admin/docs/disparo-api#resumo-tecnico-api-de-disparos', icon: Send },
+      { name: 'Visão Geral', href: '/disparo-api#visao-geral', icon: Send },
+      { name: 'Endpoints', href: '/disparo-api#endpoints', icon: Send },
+      { name: 'Fluxo (Planejado)', href: '/disparo-api#fluxo-de-processamento-planejado', icon: Send },
+      { name: 'Regras de Negócio', href: '/disparo-api#regras-de-negocio', icon: Send },
+      { name: 'Resumo Técnico', href: '/disparo-api#resumo-tecnico-api-de-disparos', icon: Send },
     ]
   },
   {
     name: 'API Lista',
     icon: Users,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/list-api#visao-geral', icon: Users },
-      { name: 'Bulk Actions', href: '/admin/docs/list-api#endpoints-em-massa-bulk', icon: Users },
-      { name: 'CRUD Individual', href: '/admin/docs/list-api#endpoints-individuais-crud', icon: Users },
-      { name: 'Filtros', href: '/admin/docs/list-api#estrutura-de-filtros-where', icon: Users },
-      { name: 'Resumo Técnico', href: '/admin/docs/list-api#resumo-tecnico-list-api', icon: Users },
+      { name: 'Visão Geral', href: '/list-api#visao-geral', icon: Users },
+      { name: 'Bulk Actions', href: '/list-api#endpoints-em-massa-bulk', icon: Users },
+      { name: 'CRUD Individual', href: '/list-api#endpoints-individuais-crud', icon: Users },
+      { name: 'Filtros', href: '/list-api#estrutura-de-filtros-where', icon: Users },
+      { name: 'Resumo Técnico', href: '/list-api#resumo-tecnico-list-api', icon: Users },
     ]
   },
   {
     name: 'Agendamento',
     icon: Book,
     children: [
-      { name: 'Visão Geral', href: '/admin/docs/meeting#visao-geral', icon: Book },
-      { name: 'Fluxo', href: '/admin/docs/meeting#fluxo-de-agendamento', icon: Book },
-      { name: 'Painel Admin', href: '/admin/docs/meeting#painel-administrativo', icon: Calendar },
-      { name: 'Detalhes Técnicos', href: '/admin/docs/meeting#detalhes-tecnicos', icon: Book },
-      { name: 'Resumo Técnico', href: '/admin/docs/meeting#resumo-tecnico-meeting-module', icon: Book },
+      { name: 'Visão Geral', href: '/meeting#visao-geral', icon: Book },
+      { name: 'Fluxo', href: '/meeting#fluxo-de-agendamento', icon: Book },
+      { name: 'Painel Admin', href: '/meeting#painel-administrativo', icon: Calendar },
+      { name: 'Detalhes Técnicos', href: '/meeting#detalhes-tecnicos', icon: Book },
+      { name: 'Resumo Técnico', href: '/meeting#resumo-tecnico-meeting-module', icon: Book },
     ]
   },
 ]
@@ -147,7 +147,7 @@ function hasAccess(linkName: string, permissoes: string[]): boolean {
 
 export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onClose, permissoes = [] }: AdminSidebarProps) {
   const pathname = usePathname()
-  const isDocs = pathname?.startsWith('/admin/docs')
+  const isDocs = pathname?.startsWith('')
 
   const [activeHash, setActiveHash] = useState('')
 
@@ -204,7 +204,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
         if (item.href?.includes('#')) {
           const [path, hash] = item.href.split('#');
           // Check if this link belongs to current page
-          if (path === pathname || path === pathname + '/' || (pathname === '/admin/docs' && path === '/admin/docs')) {
+          if (path === pathname || path === pathname + '/' || (pathname === '' && path === '')) {
             if (hash) idsToObserve.add(hash);
           }
         }
@@ -326,7 +326,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {isDocs && (
             <Link
-              href="/admin/dashboard"
+              href=""
               onClick={() => onClose?.()}
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors mb-4 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-700"
             >

@@ -35,7 +35,7 @@ export async function login(prevState: unknown, formData: FormData) {
     return { error: 'Preencha a senha' };
   }
 
-  const { signAdminSession } = await import('@/lib/admin-auth');
+  const { signAdminSession } = await import('@/lib/dashboard-auth');
 
   const cookieConfig = {
     httpOnly: true,
@@ -79,7 +79,7 @@ export async function login(prevState: unknown, formData: FormData) {
 
         const cookieStore = await cookies();
         cookieStore.set('admin_session', sessionValue, cookieConfig);
-        redirect('/admin/dashboard');
+        redirect('/dashboard');
       }
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -94,7 +94,7 @@ export async function login(prevState: unknown, formData: FormData) {
 
     const cookieStore = await cookies();
     cookieStore.set('admin_session', sessionValue, cookieConfig);
-    redirect('/admin/dashboard');
+    redirect('/dashboard');
   }
 
   return { error: 'Credenciais inválidas' };

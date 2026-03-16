@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from 'next/link';
-import { Calendar as CalendarIcon, AlertCircle, ArrowRight, ShieldCheck, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, AlertCircle, ArrowRight, ShieldCheck, TrendingUp, DollarSign, ChevronLeft, ChevronRight, Building2, MessageSquare } from "lucide-react";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import { 
   format, 
@@ -27,6 +27,19 @@ interface UserData {
   telefone: string;
   email?: string;
   situacao?: string;
+  cnpj?: string;
+  tipo_negocio?: string;
+  possui_divida?: string;
+  tipo_divida?: string;
+  valor_divida_municipal?: string;
+  valor_divida_estadual?: string;
+  valor_divida_federal?: string;
+  valor_divida_ativa?: string;
+  faturamento_mensal?: string;
+  possui_socio?: boolean;
+  interesse_ajuda?: string;
+  observacoes?: string;
+  calculo_parcelamento?: string;
 }
 
 const healthData = [
@@ -73,6 +86,20 @@ export default function ReuniaoPage() {
   // Form state
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [debts, setDebts] = useState<{ id: string; origin: string; value: string }[]>([]);
+  const [parcelas, setParcelas] = useState<string[]>([]);
+  const [formData, setFormData] = useState({
+    cnpj: "",
+    tipo_negocio: "",
+    possui_divida: "",
+    tipo_divida: "",
+    tempo_divida: "",
+    faturamento_mensal: "",
+    possui_socio: "",
+    interesse_ajuda: "",
+    observacoes: "",
+    calculo_parcelamento: "",
+  });
 
   // Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -89,6 +116,26 @@ export default function ReuniaoPage() {
       const data = await res.json();
       setUserData(data);
       if (data.email) setEmail(data.email);
+      
+      const loadedDebts = [];
+      if (data.valor_divida_municipal) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Municipal', value: data.valor_divida_municipal });
+      if (data.valor_divida_estadual) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Estadual', value: data.valor_divida_estadual });
+      if (data.valor_divida_federal) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Federal', value: data.valor_divida_federal });
+      if (data.valor_divida_ativa) loadedDebts.push({ id: crypto.randomUUID(), origin: 'Ativa', value: data.valor_divida_ativa });
+      setDebts(loadedDebts);
+
+      setFormData(prev => ({
+        ...prev,
+        cnpj: data.cnpj || "",
+        tipo_negocio: data.tipo_negocio || "",
+        possui_divida: (data.tipo_divida || loadedDebts.length > 0) ? "Sim" : "",
+        tipo_divida: data.tipo_divida || "",
+        faturamento_mensal: data.faturamento_mensal || "",
+        possui_socio: data.possui_socio === true ? "Sim" : (data.possui_socio === false ? "Não" : ""),
+        interesse_ajuda: data.interesse_ajuda || "",
+        observacoes: data.observacoes || "",
+        calculo_parcelamento: data.calculo_parcelamento || "",
+      }));
     } catch {
       setError("Não foi possível carregar os dados do usuário.");
     } finally {
@@ -96,9 +143,51 @@ export default function ReuniaoPage() {
     }
   }, [phone]);
 
+  // Calculate total debt and installments
+  useEffect(() => {
+    const totalValue = debts.reduce((acc, debt) => {
+      if (!debt.value) return acc;
+      const cleanValue = debt.value.replace(/[^\d,]/g, '').replace(',', '.');
+      const numericValue = parseFloat(cleanValue);
+      return acc + (isNaN(numericValue) ? 0 : numericValue);
+    }, 0);
+
+    if (totalValue <= 0) {
+      setParcelas([]);
+      return;
+    }
+
+    const options = [12, 24, 36, 48, 60].map(months => {
+      const installmentValue = totalValue / months;
+      return `${months}x de ${installmentValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    });
+    setParcelas(options);
+  }, [debts]);
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRadioChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddDebt = () => {
+    setDebts([...debts, { id: crypto.randomUUID(), origin: "", value: "" }]);
+  };
+
+  const handleRemoveDebt = (id: string) => {
+    setDebts(debts.filter(d => d.id !== id));
+  };
+
+  const handleDebtChange = (id: string, field: 'origin' | 'value', value: string) => {
+    setDebts(debts.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -195,18 +284,46 @@ export default function ReuniaoPage() {
     setSubmitting(true);
     
     try {
-        // Update user data if changed
         const decodedPhone = decodeURIComponent(String(phone));
         const dateStr = format(selectedDate, "dd/MM/yyyy");
         const fullDate = `${dateStr} ${selectedTime}`;
         
+        let obsFinal = formData.observacoes;
+        if (formData.possui_divida === "Sim" && formData.tempo_divida) {
+            obsFinal = `${obsFinal ? obsFinal + "\n" : ""}Tempo da dívida: ${formData.tempo_divida}`;
+        }
+
+        const payload: Record<string, any> = {
+            email,
+            data_reuniao: fullDate,
+            cnpj: formData.cnpj,
+            tipo_negocio: formData.tipo_negocio,
+            faturamento_mensal: formData.faturamento_mensal,
+            possui_socio: formData.possui_socio === "Sim" ? true : (formData.possui_socio === "Não" ? false : null),
+            interesse_ajuda: formData.interesse_ajuda,
+            observacoes: obsFinal,
+            calculo_parcelamento: formData.calculo_parcelamento
+        };
+
+        if (formData.possui_divida === "Sim") {
+            payload.tipo_divida = formData.tipo_divida;
+            payload.valor_divida_municipal = null;
+            payload.valor_divida_estadual = null;
+            payload.valor_divida_federal = null;
+            payload.valor_divida_ativa = null;
+
+            debts.forEach(debt => {
+                if (debt.origin === "Municipal") payload.valor_divida_municipal = debt.value;
+                if (debt.origin === "Estadual") payload.valor_divida_estadual = debt.value;
+                if (debt.origin === "Federal") payload.valor_divida_federal = debt.value;
+                if (debt.origin === "Ativa") payload.valor_divida_ativa = debt.value;
+            });
+        }
+        
         await fetch(`/api/user/${decodedPhone}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                email,
-                data_reuniao: fullDate
-            })
+            body: JSON.stringify(payload)
         });
 
         // Redirect to WhatsApp
@@ -381,10 +498,233 @@ export default function ReuniaoPage() {
                         </div>
                     )}
 
+                    {/* Qualification Fields */}
+                    {selectedDate && selectedTime && (
+                        <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-6 mt-6">
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3 border-t border-zinc-200 dark:border-zinc-800 pt-6">
+                                3. Qualifique seu negócio
+                            </label>
+
+                            {/* CNPJ */}
+                            <div className="space-y-2">
+                                <label htmlFor="cnpj" className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">CNPJ</label>
+                                <input
+                                    type="text"
+                                    id="cnpj"
+                                    name="cnpj"
+                                    required={!userData?.cnpj}
+                                    value={formData.cnpj}
+                                    onChange={handleChange}
+                                    placeholder="00.000.000/0000-00"
+                                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
+                                />
+                            </div>
+
+                            {/* Tipo de Negócio */}
+                            <div className="space-y-2">
+                                <label htmlFor="tipo_negocio" className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Qual é o tipo de negócio?</label>
+                                <select
+                                    id="tipo_negocio"
+                                    name="tipo_negocio"
+                                    required={!userData?.tipo_negocio}
+                                    value={formData.tipo_negocio}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none appearance-none dark:text-white"
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value="MEI">MEI</option>
+                                    <option value="Simples Nacional">Simples Nacional</option>
+                                    <option value="Lucro Presumido">Lucro Presumido</option>
+                                    <option value="Lucro Real">Lucro Real</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
+                            </div>
+
+                            {/* Dívida */}
+                            <div className="space-y-4 p-4 lg:p-6 bg-zinc-100 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                                <label className="text-lg font-bold text-zinc-800 dark:text-zinc-300 block">Você possui dívida?</label>
+                                <div className="flex gap-4">
+                                    {["Sim", "Não"].map((opt) => (
+                                    <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                        type="radio"
+                                        name="possui_divida"
+                                        value={opt}
+                                        checked={formData.possui_divida === opt}
+                                        onChange={() => handleRadioChange("possui_divida", opt)}
+                                        className="w-4 h-4 text-zinc-800 focus:ring-zinc-100"
+                                        />
+                                        <span className="text-zinc-800 dark:text-zinc-300">{opt}</span>
+                                    </label>
+                                    ))}
+                                </div>
+
+                                {formData.possui_divida === "Sim" && (
+                                    <div className="space-y-4 mt-4 pl-4 border-l-2 border-red-500 dark:border-zinc-900 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-300">Qual é o tipo de dívida?</label>
+                                        <select
+                                            name="tipo_divida"
+                                            value={formData.tipo_divida}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
+                                        >
+                                            <option value="">Selecione...</option>
+                                            <option value="Não Ajuizada">Não Ajuizada (Cobrança judicial não iniciada)</option>
+                                            <option value="Ajuizada">Ajuizada (Execução fiscal iniciada)</option>
+                                            <option value="Tributaria">Tributária</option>
+                                            <option value="Não tributaria">Não tributária</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Dívidas:</label>
+                                        {debts.map((debt) => (
+                                        <div key={debt.id} className="flex gap-4 items-start p-4 bg-white dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                            <div className="flex-1 space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-800 uppercase">Origem</label>
+                                                <select
+                                                value={debt.origin}
+                                                onChange={(e) => handleDebtChange(debt.id, 'origin', e.target.value)}
+                                                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none dark:text-white"
+                                                >
+                                                <option value="">Selecione...</option>
+                                                <option value="Municipal">Municipal</option>
+                                                <option value="Estadual">Estadual</option>
+                                                <option value="Federal">Federal</option>
+                                                <option value="Ativa">Ativa</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-800 uppercase">Valor</label>
+                                                <div className="relative">
+                                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                                <input
+                                                    type="text"
+                                                    value={debt.value}
+                                                    onChange={(e) => handleDebtChange(debt.id, 'value', e.target.value)}
+                                                    placeholder="R$ 0,00"
+                                                    className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none dark:text-white"
+                                                />
+                                                </div>
+                                            </div>
+                                            </div>
+                                            <button
+                                            type="button"
+                                            onClick={() => handleRemoveDebt(debt.id)}
+                                            className="mt-6 p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                                            </button>
+                                        </div>
+                                        ))}
+
+                                        <button
+                                        type="button"
+                                        onClick={handleAddDebt}
+                                        className="flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-400 hover:text-zinc-700 hover:underline mt-2"
+                                        >
+                                            Adicionar Dívida
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Tempo da dívida?</label>
+                                        <input
+                                            type="text"
+                                            name="tempo_divida"
+                                            value={formData.tempo_divida}
+                                            onChange={handleChange}
+                                            placeholder="Ex: 2 anos"
+                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-zinc-500 outline-none transition-all dark:text-white"
+                                        />
+                                    </div>
+
+                                    {parcelas.length > 0 && (
+                                        <div className="space-y-2 animate-in fade-in duration-300">
+                                            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Simulação de Parcelamento</label>
+                                            <select
+                                            name="calculo_parcelamento"
+                                            value={formData.calculo_parcelamento}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none transition-all dark:text-white"
+                                            >
+                                            <option value="">Selecione um plano...</option>
+                                            {parcelas.map((p) => (
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Info Extras */}
+                            <div className="space-y-2">
+                                <label htmlFor="faturamento_mensal" className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Qual seu faturamento mensal?</label>
+                                <select
+                                    id="faturamento_mensal"
+                                    name="faturamento_mensal"
+                                    required={!userData?.faturamento_mensal}
+                                    value={formData.faturamento_mensal}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none appearance-none dark:text-white"
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value="Abaixo de R$10.000">Abaixo de R$10.000</option>
+                                    <option value="R$ 10.000 - R$ 50.000">R$ 10.000 - R$ 50.000</option>
+                                    <option value="R$ 50.000 - R$ 100.000">R$ 50.000 - R$ 100.000</option>
+                                    <option value="R$ 100.000 - Acima de R$ 100.000">R$ 100.000 - Acima de R$ 100.000</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block">Sócio?</label>
+                                    <div className="flex gap-4">
+                                        {["Sim", "Não"].map((opt) => (
+                                        <label key={`socio-${opt}`} className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="possui_socio" value={opt} checked={formData.possui_socio === opt} onChange={() => handleRadioChange("possui_socio", opt)} className="w-4 h-4" />
+                                            <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
+                                        </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 block">Precisa ajuda?</label>
+                                    <div className="flex gap-4">
+                                        {["Sim", "Não"].map((opt) => (
+                                        <label key={`ajuda-${opt}`} className="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="interesse_ajuda" value={opt} checked={formData.interesse_ajuda === opt} onChange={() => handleRadioChange("interesse_ajuda", opt)} className="w-4 h-4" />
+                                            <span className="text-zinc-700 dark:text-zinc-300">{opt}</span>
+                                        </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label htmlFor="observacoes" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Observações Extras</label>
+                                <textarea
+                                    id="observacoes"
+                                    name="observacoes"
+                                    value={formData.observacoes}
+                                    onChange={handleChange}
+                                    rows={3}
+                                    placeholder="Descreva sua situação atual ou dúvidas..."
+                                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none dark:text-white resize-none"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* Email Input */}
-                    <div>
+                    {selectedDate && selectedTime && (
+                    <div className="pt-6">
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                            3. Confirme seu E-mail
+                            4. Confirme seu E-mail
                         </label>
                         <input 
                             type="email" 
@@ -395,6 +735,7 @@ export default function ReuniaoPage() {
                             required
                         />
                     </div>
+                    )}
 
                     <button
                         type="submit"

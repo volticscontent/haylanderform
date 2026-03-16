@@ -48,7 +48,7 @@ export async function updateSystemSetting(key: string, value: string) {
             'UPDATE system_settings SET value = $1, updated_at = NOW() WHERE key = $2',
             [value, key]
         );
-        revalidatePath('/admin/configuracoes');
+        revalidatePath('');
         return { success: true };
     } catch (error) {
         console.error('Error updating setting:', error);
@@ -62,7 +62,7 @@ export async function updateSettingBots(key: string, bots: string[]) {
             'UPDATE system_settings SET allowed_bots = $1, updated_at = NOW() WHERE key = $2',
             [bots, key]
         );
-        revalidatePath('/admin/configuracoes');
+        revalidatePath('');
         return { success: true };
     } catch (error) {
         console.error('Error updating setting bots:', error);
@@ -116,7 +116,7 @@ export async function createSystemSetting(data: { key: string; label: string; ty
              ON CONFLICT (key) DO NOTHING`,
             [data.key, data.label, data.type, data.value || '']
         );
-        revalidatePath('/admin/configuracoes');
+        revalidatePath('');
         return { success: true };
     } catch (error) {
         console.error('Error creating setting:', error);
@@ -127,7 +127,7 @@ export async function createSystemSetting(data: { key: string; label: string; ty
 export async function deleteSystemSetting(key: string) {
     try {
         await pool.query('DELETE FROM system_settings WHERE key = $1', [key]);
-        revalidatePath('/admin/configuracoes');
+        revalidatePath('');
         return { success: true };
     } catch (error) {
         console.error('Error deleting setting:', error);

@@ -31,25 +31,25 @@ Web -->|Server Actions| Auth["Autenticação"]
 
 ### 1. Captação e Qualificação
 Focada em converter visitantes em leads qualificados através de formulários dinâmicos que calculam dívidas e identificam o perfil tributário.
-- [Ver Documentação de Formulários](/admin/docs?section=forms)
+- [Ver Documentação de Formulários](?section=forms)
 
 ### 2. Gestão de Leads (CRM)
 Painel administrativo para visualização, filtragem e manipulação em massa da base de leads.
-- [Ver Documentação do Painel](/admin/docs?section=admin-panel)
-- [Ver API de Lista](/admin/docs?section=list-api)
+- [Ver Documentação do Painel](?section=admin-panel)
+- [Ver API de Lista](?section=list-api)
 
 ### 3. Integrações Governamentais
 Conexão direta com o Serpro para consulta de status MEI, DAS e PGMEI, com gestão automática de certificados digitais e tokens OAuth.
-- [Ver Documentação Serpro](/admin/docs?section=serpro-api)
+- [Ver Documentação Serpro](?section=serpro-api)
 
 ### 4. Automação e Disparos
 Ferramentas para envio de mensagens em massa e controle de fluxo de conversas via Bot (Apolo).
-- [Ver API de Disparos](/admin/docs?section=disparo-api)
-- [Ver Documentação do Bot](/admin/docs?section=bot-architecture)
+- [Ver API de Disparos](?section=disparo-api)
+- [Ver Documentação do Bot](?section=bot-architecture)
 
 ### 5. Agendamento de Reuniões
 Interface simplificada para que leads agendem conversas técnicas via WhatsApp, com validação de cadastro prévio.
-- [Ver Documentação de Agendamento](/admin/docs?section=meeting)
+- [Ver Documentação de Agendamento](?section=meeting)
 
 ---
 
