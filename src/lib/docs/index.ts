@@ -16,7 +16,7 @@ export const docsContent = {
   'bot-architecture': botArchitecture,
   'diagrama-dados': diagramaDados,
   'ciclo-vida-lead': cicloVidaLead,
-  'admin-panel': adminPanel,
+  'dashboard-panel': adminPanel,
   'serpro-api': serproApi,
   'disparo-api': disparoApi,
   'list-api': listApi

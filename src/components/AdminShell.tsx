@@ -20,7 +20,7 @@ function AdminShellContent({
 }) {
   const { isSidebarOpen, setSidebarOpen, isDesktopSidebarOpen } = useAdmin()
   const pathname = usePathname()
-  const isChatPage = pathname?.startsWith('')
+  const isChatPage = pathname?.startsWith('/atendimento')
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
