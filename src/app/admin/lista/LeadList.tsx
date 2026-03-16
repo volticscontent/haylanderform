@@ -45,6 +45,10 @@ type LeadRecord = {
   data_reuniao: string | null
   needs_attendant: boolean | null
   attendant_requested_at: string | null
+  servico_escolhido: string | null
+  reuniao_agendada: boolean | null
+  vendido: boolean | null
+  confirmacao_qualificacao: boolean | null
 }
 
 function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
@@ -337,8 +341,54 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <EditableField label="Data Reunião" field="data_reuniao" type="datetime-local" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Reunião Agendada?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.reuniao_agendada ? 'true' : 'false'}
+                    onChange={(e) => handleChange('reuniao_agendada', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200">{lead.reuniao_agendada ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
               <EditableField label="Serviço Negociado" field="servico_negociado" />
+              <EditableField label="Serviço Escolhido" field="servico_escolhido" />
               <EditableField label="Status Atendimento" field="status_atendimento" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Vendido?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.vendido ? 'true' : 'false'}
+                    onChange={(e) => handleChange('vendido', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200">{lead.vendido ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Confirmação de Qualificação?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.confirmacao_qualificacao ? 'true' : 'false'}
+                    onChange={(e) => handleChange('confirmacao_qualificacao', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200">{lead.confirmacao_qualificacao ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
             </div>
           </section>
 

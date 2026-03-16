@@ -250,8 +250,21 @@ export async function getChats() {
 
       // A Evolution API já retorna lastMessage no findChats — não precisamos buscar individualmente
       // Isso evita 162+ requests paralelas que causam timeout
+
+      if (String(computedRemoteJid).includes('@lid') || String(chat?.id).includes('@lid') || String(phone).includes('@lid')) {
+        return null;
+      }
+
       return enrichedChat;
     }));
+
+    // Post-filter to remove ANY chat that still couldn't resolve its lid or is a ghost
+    const cleanEnrichedChats = enrichedChats.filter(c => c !== null);
+
+    // Deduplicate by final remoteJid to ensure we don't have multiple clones of the same contact
+    const uniqueEnrichedChats = Array.from(
+      new Map(cleanEnrichedChats.map(item => [item!.id, item])).values() // item is not null here
+    );
 
     // Find leads with appointments that were not matched to any chat
     const virtualChats = allLeads
@@ -279,7 +292,7 @@ export async function getChats() {
         };
       });
 
-    return { success: true, data: [...enrichedChats, ...virtualChats] };
+    return { success: true, data: [...uniqueEnrichedChats, ...virtualChats] };
   } catch (error) {
     console.error("Error fetching chats:", error);
     return { success: false, error: "Failed to fetch chats" };

@@ -52,6 +52,7 @@ export interface LeadsQualificacaoTable {
   interesse_ajuda: string | null;
   pos_qualificacao: boolean | null;
   possui_socio: boolean | null;
+  confirmacao_qualificacao: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -80,6 +81,9 @@ export interface LeadsVendasTable {
   procuracao: boolean | null;
   procuracao_ativa: boolean | null;
   procuracao_validade: Date | null;
+  servico_escolhido: string | null;
+  reuniao_agendada: boolean | null;
+  vendido: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -121,6 +125,7 @@ export interface LeadComplete extends LeadsTable {
   interesse_ajuda?: string | null;
   pos_qualificacao?: boolean | null;
   possui_socio?: boolean | null;
+  confirmacao_qualificacao?: boolean | null;
 
   // From leads_financeiro
   tem_divida?: boolean | null;
@@ -139,6 +144,9 @@ export interface LeadComplete extends LeadsTable {
   procuracao?: boolean | null;
   procuracao_ativa?: boolean | null;
   procuracao_validade?: Date | null;
+  servico_escolhido?: string | null;
+  reuniao_agendada?: boolean | null;
+  vendido?: boolean | null;
 
   // From leads_atendimento
   atendente_id?: string | null;

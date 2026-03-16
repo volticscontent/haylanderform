@@ -9,7 +9,7 @@ async function checkLeadsTable() {
         const cols = await client.query(`
             SELECT column_name, data_type, character_maximum_length, is_nullable
             FROM information_schema.columns 
-            WHERE table_name = 'leads'
+            WHERE table_name = 'leads_vendas'
         `);
         console.table(cols.rows);
 
