@@ -14,6 +14,13 @@ export const evolutionConfig = {
   }
 }
 
+ 
+export function toWhatsAppJid(phone: string): string {
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.includes('@')) return cleanPhone;
+  return `${cleanPhone}@s.whatsapp.net`;
+}
+ 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = setTimeout(() => reject(new Error(`Evolution API timeout after ${ms}ms`)), ms)
