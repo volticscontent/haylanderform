@@ -8,6 +8,7 @@ export type Meeting = {
   nome_completo: string
   telefone: string
   data_reuniao: string
+  status_atendimento?: string | null
   observacoes: string | null
 }
 
@@ -37,6 +38,7 @@ export async function getMeetings() {
         l.nome_completo,
         l.telefone,
         lv.data_reuniao,
+        lv.status_atendimento,
         la.observacoes
       FROM leads l
       JOIN leads_vendas lv ON l.id = lv.lead_id

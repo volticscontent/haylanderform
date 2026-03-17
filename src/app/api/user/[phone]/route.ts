@@ -169,12 +169,36 @@ export async function PUT(
     // 7. Update leads_vendas
     if (data_reuniao) {
       await client.query(`
-        INSERT INTO leads_vendas (lead_id, data_reuniao)
-        VALUES ($1, $2)
+        INSERT INTO leads_vendas (lead_id, data_reuniao, status_atendimento, reuniao_agendada)
+        VALUES ($1, $2, 'reuniao', true)
         ON CONFLICT (lead_id) DO UPDATE SET
           data_reuniao = EXCLUDED.data_reuniao,
+          status_atendimento = 'reuniao',
+          reuniao_agendada = true,
           updated_at = NOW()
       `, [leadId, data_reuniao]);
+
+      // 8. Notify human attendant about the NEW MEETING
+      const attendantNumber = process.env.ATTENDANT_PHONE;
+      if (attendantNumber) {
+        try {
+          // We need to import logic to send via Evolution API. 
+          // Since we are in separate processes (Frontend vs Bot Backend), 
+          // we use a direct fetch to Evolution if possible, or a local utility.
+          const { evolutionSendTextMessage, toWhatsAppJid } = await import("@/lib/evolution");
+          
+          const text = `📅 *Nova Reunião Marcada!*\n\n` +
+                       `👤 *Cliente:* ${nome_completo || identifier}\n` +
+                       `📞 *Telefone:* ${telefone || identifier}\n` +
+                       `🗓️ *Data/Hora:* ${data_reuniao}\n` +
+                       `📝 *Obs:* ${observacoes || 'Sem observações'}\n` +
+                       `🔗 *Chat:* https://wa.me/${(telefone || identifier).replace(/\D/g, '')}`;
+
+          await evolutionSendTextMessage(toWhatsAppJid(attendantNumber), text);
+        } catch (notificationErr) {
+          console.error("Falha ao enviar notificação de reunião:", notificationErr);
+        }
+      }
     }
 
     await client.query('COMMIT');

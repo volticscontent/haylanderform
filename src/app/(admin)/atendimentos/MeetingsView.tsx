@@ -206,7 +206,15 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
                       <Clock size={16} />
                       {format(meeting.parsedDate, 'HH:mm')}
                     </div>
-                    {/* Link to chat? */}
+                    {meeting.status_atendimento && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        meeting.status_atendimento === 'reuniao' 
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {meeting.status_atendimento === 'reuniao' ? 'Reunião' : 'Atendimento'}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
