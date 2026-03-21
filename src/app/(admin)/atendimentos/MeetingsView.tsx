@@ -2,17 +2,17 @@
 
 import { useState, useMemo } from 'react'
 import { Meeting } from './actions'
-import { 
-  format, 
-  parse, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  startOfWeek, 
-  endOfWeek, 
-  isSameMonth, 
-  isSameDay, 
-  addMonths, 
+import {
+  format,
+  parse,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  startOfWeek,
+  endOfWeek,
+  isSameMonth,
+  isSameDay,
+  addMonths,
   subMonths,
   isToday
 } from 'date-fns'
@@ -33,10 +33,10 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
       try {
         // Handle ISO string from Postgres/Server Action
         let parsedDate = new Date(meeting.data_reuniao)
-        
+
         // If invalid, try legacy format (just in case)
         if (isNaN(parsedDate.getTime())) {
-           parsedDate = parse(meeting.data_reuniao, 'dd/MM/yyyy HH:mm', new Date())
+          parsedDate = parse(meeting.data_reuniao, 'dd/MM/yyyy HH:mm', new Date())
         }
 
         if (isNaN(parsedDate.getTime())) return null
@@ -74,7 +74,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
   }
 
   // Filter meetings for selected day
-  const selectedDayMeetings = parsedMeetings.filter(m => 
+  const selectedDayMeetings = parsedMeetings.filter(m =>
     isSameDay(m.parsedDate, selectedDate)
   ).sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime())
 
@@ -95,7 +95,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
           <CalendarIcon className="w-8 h-8" />
           Atendimentos Agendados
         </h1>
-        <button 
+        <button
           onClick={goToToday}
           className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded-lg transition-colors"
         >
@@ -112,13 +112,13 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
               {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
             </h2>
             <div className="flex items-center gap-1">
-              <button 
+              <button
                 onClick={prevMonth}
                 className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <ChevronLeft size={20} />
               </button>
-              <button 
+              <button
                 onClick={nextMonth}
                 className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
               >
@@ -161,7 +161,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
                   `}>
                     {format(day, 'd')}
                   </span>
-                  
+
                   {meetingCount > 0 && (
                     <div className="mt-auto w-full flex flex-col gap-1">
                       <div className="flex items-center gap-1">
@@ -197,7 +197,7 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
               </div>
             ) : (
               selectedDayMeetings.map((meeting) => (
-                <div 
+                <div
                   key={meeting.id}
                   className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-white dark:hover:bg-zinc-900 transition-shadow hover:shadow-md"
                 >
@@ -207,25 +207,29 @@ export function MeetingsView({ initialMeetings }: MeetingsViewProps) {
                       {format(meeting.parsedDate, 'HH:mm')}
                     </div>
                     {meeting.status_atendimento && (
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        meeting.status_atendimento === 'reuniao' 
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${meeting.status_atendimento === 'reuniao'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
                         {meeting.status_atendimento === 'reuniao' ? 'Reunião' : 'Atendimento'}
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-zinc-800 dark:text-zinc-100 font-medium">
                       <User size={16} className="text-zinc-400" />
                       {meeting.nome_completo || 'Sem nome'}
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                       <Phone size={16} className="text-zinc-400" />
                       {meeting.telefone}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                      <Phone size={16} className="text-zinc-400" />
+                      {meeting.status_atendimento}
                     </div>
 
                     {meeting.observacoes && (

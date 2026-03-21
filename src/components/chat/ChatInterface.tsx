@@ -240,57 +240,53 @@ export function ChatInterface() {
 
   useEffect(() => {
     // Conectar direto na Evolution API
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'https://evolutionapi.landcriativa.com';
-    const apiKey = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY;
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:3001';
 
-    console.log('[Evolution WS] Connecting to:', socketUrl);
+    console.log('[Bot Backend WS] Connecting to:', socketUrl);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Conectar ao nosso Backend (que gerencia o Dual-JID e padronização)
     const newSocket: any = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-      auth: { apikey: apiKey }
+      transports: ['websocket', 'polling']
+      // Removido apikey pois nosso backend usa auth diferente ou nenhuma em dev
     });
 
     newSocket.on('connect', () => {
-      console.log('[Evolution WS] ✅ Connected:', newSocket.id);
+      console.log('[Bot Backend WS] ✅ Connected:', newSocket.id);
       setIsConnected(true);
+      
+      // Se já houver um chat selecionado ao conectar/reconectar, entrar na sala
+      if (selectedChatIdRef.current) {
+        console.log('[Bot Backend WS] Re-joining room:', selectedChatIdRef.current);
+        newSocket.emit('join-chat', selectedChatIdRef.current);
+      }
     });
 
     newSocket.on('disconnect', () => {
-      console.log('[Evolution WS] ❌ Disconnected');
+      console.log('[Bot Backend WS] ❌ Disconnected');
       setIsConnected(false);
     });
 
     newSocket.on('connect_error', (err: Error) => {
-      console.warn('[Evolution WS] Connection error:', err.message);
+      console.warn('[Bot Backend WS] Connection error:', err.message);
     });
 
-    // Evolution API v2: events are standard strings when Global Events is enabled
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleIncomingMessage = (data: any) => {
-      console.log('[Evolution WS] 📩 nova mensagem (event):', data);
+      console.log('[Bot Backend WS] 📩 nova mensagem:', data);
 
       // Verifica se é de grupo
       if (data?.data?.key?.remoteJid?.endsWith('@g.us') || data?.key?.remoteJid?.endsWith('@g.us')) return;
 
-      let senderId = data?.data?.key?.senderPn || data?.senderpn || data?.data?.senderpn || data?.senderPhone || data?.data?.senderPhone || data?.data?.key?.participant || data?.data?.participant || data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
-      if (!senderId) return;
-
-      // Normalize to base phone number to allow matching selectedChatId
-      const isFromMe = data?.data?.key?.fromMe ?? data?.key?.fromMe ?? data?.fromMe ?? false;
-      let phone = String(senderId).split('@')[0].split(':')[0].replace(/\D/g, '');
+      // No nosso backend, o data já vem estruturado ou com chatId direto
+      const incomingChatId = data.chatId || data.remoteJid || data.key?.remoteJid;
       
-      if (isFromMe) {
-         const rJid = data?.data?.key?.remoteJid || data?.key?.remoteJid || data?.chatId;
-         if (rJid) phone = String(rJid).split('@')[0].split(':')[0].replace(/\D/g, '');
-      } else if (data?.data?.key?.senderPn || data?.key?.senderPn) {
-        phone = String(data?.data?.key?.senderPn || data?.key?.senderPn).split(':')[0].replace(/\D/g, '');
-      }
-      senderId = phone ? `${phone}@s.whatsapp.net` : senderId;
+      // Se não temos um ID de chat, não sabemos onde colocar a mensagem
+      if (!incomingChatId) return;
 
-      const normalizedMsg = normalizeMessage(data?.data || data);
+      const normalizedMsg = normalizeMessage(data.data || data);
 
-      if (selectedChatIdRef.current && senderId === selectedChatIdRef.current) {
+      // Verifica se a mensagem pertence ao chat atual (pode vir via chatId ou altChatId no socket)
+      if (selectedChatIdRef.current && (incomingChatId === selectedChatIdRef.current || data.altChatId === selectedChatIdRef.current)) {
         setMessages(prev => {
           if (prev.some(m => m.id === normalizedMsg.id)) return prev; // deduplicate
           return [...prev, normalizedMsg];
