@@ -11,7 +11,10 @@
       "name": "Webhook - Sistema (Envia Msg)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [100, 300]
+      "position": [
+        100,
+        300
+      ]
     },
     {
       "parameters": {
@@ -23,7 +26,10 @@
       "name": "Webhook - Cliente (Reseta Timer)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
-      "position": [100, 100]
+      "position": [
+        100,
+        100
+      ]
     },
     {
       "parameters": {
@@ -34,7 +40,10 @@
       "name": "Redis - Cancelar Timer",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [300, 100]
+      "position": [
+        300,
+        100
+      ]
     },
     {
       "parameters": {
@@ -44,7 +53,10 @@
       "name": "Preparar Mensagens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [300, 300]
+      "position": [
+        300,
+        300
+      ]
     },
     {
       "parameters": {
@@ -59,7 +71,10 @@
       "name": "Redis - Definir Timer",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [500, 300]
+      "position": [
+        500,
+        300
+      ]
     },
     {
       "parameters": {
@@ -73,7 +88,10 @@
       "name": "Split e Delay",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [700, 300]
+      "position": [
+        700,
+        300
+      ]
     },
     {
       "parameters": {
@@ -97,7 +115,10 @@
       "name": "Enviar para API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -114,7 +135,10 @@
       "name": "É a última mensagem?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1100, 300]
+      "position": [
+        1100,
+        300
+      ]
     },
     {
       "parameters": {
@@ -125,7 +149,10 @@
       "name": "Aguardar 2 min",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
-      "position": [1300, 200]
+      "position": [
+        1300,
+        200
+      ]
     },
     {
       "parameters": {
@@ -136,7 +163,10 @@
       "name": "Redis - Verificar Timer",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [1500, 200]
+      "position": [
+        1500,
+        200
+      ]
     },
     {
       "parameters": {
@@ -153,7 +183,10 @@
       "name": "Timer ainda válido?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1700, 200]
+      "position": [
+        1700,
+        200
+      ]
     },
     {
       "parameters": {
@@ -177,7 +210,10 @@
       "name": "Enviar Follow-up",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1900, 200]
+      "position": [
+        1900,
+        200
+      ]
     },
     {
       "parameters": {
@@ -188,7 +224,10 @@
       "name": "Redis - Limpar Timer",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
-      "position": [2100, 200]
+      "position": [
+        2100,
+        200
+      ]
     }
   ],
   "connections": {
@@ -333,7 +372,7 @@
     },
     {
       "id": "haylander",
-      "name": "Haylander Contabilidade"
+      "name": "Haylander Martins Contabilidade"
     }
   ]
 }

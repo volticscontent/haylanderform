@@ -114,12 +114,36 @@ export async function getChats() {
       return !String(jid).includes('@lid');
     });
 
-    // Get all registered phone numbers to minimize DB queries
+    // Mapeamento de contatos otimizado (O(1) memory load)
     const registeredMap = new Map();
     const matchedLeadIds = new Set<number>();
     let allLeads: Lead[] = [];
 
     try {
+      // 1. Extrair os telefones das 300 conversas carregadas
+      const chatPhones = new Set<string>();
+      chatsArray.forEach(chat => {
+        const jid = chat.remoteJid || chat.id || chat?.lastMessage?.key?.remoteJid || '';
+        const phone = String(jid).split('@')[0].replace(/\D/g, '');
+        if (phone) chatPhones.add(phone);
+      });
+
+      // 2. Gerar variações (com/sem 9, DDI) para dar o match exato
+      let uniquePhoneVariationsToQuery: string[] = [];
+      if (chatPhones.size > 0) {
+        const phoneVariationsToQuery = Array.from(chatPhones).flatMap(p => generatePhoneVariations(p));
+        uniquePhoneVariationsToQuery = Array.from(new Set(phoneVariationsToQuery));
+      }
+
+      // 3. Montar a query para buscar APENAS quem tá na tela de chat OU quem tem reunião marcada
+      let whereClause = 'WHERE lv.data_reuniao IS NOT NULL';
+      const queryParams: any[] = [];
+      
+      if (uniquePhoneVariationsToQuery.length > 0) {
+        whereClause = `WHERE REGEXP_REPLACE(l.telefone, '\\D', '', 'g') = ANY($1) OR lv.data_reuniao IS NOT NULL`;
+        queryParams.push(uniquePhoneVariationsToQuery);
+      }
+
       const { rows: leads } = await pool.query<Lead>(`
           SELECT 
             l.id, 
@@ -132,7 +156,8 @@ export async function getChats() {
           FROM leads l
           LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
           LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
-        `);
+          ${whereClause}
+        `, queryParams);
       allLeads = leads;
 
       leads.forEach((lead) => {
