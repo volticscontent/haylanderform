@@ -556,10 +556,31 @@ export async function massRegisterLeads(leads: { name: string, phone: string }[]
 export async function getMessages(jid: string, page: number = 1) {
   try {
     const jids = jid.split(',').filter(Boolean);
+    const jidsWithLids = new Set(jids);
+
+    // Tentar descobrir LIDs associados a esses números normais na base da Evolution ("Message" table)
+    try {
+      if (jids.length > 0) {
+        const queryParams = jids.map((_, i) => `$${i + 1}`).join(',');
+        const { rows } = await pool.query(`
+          SELECT DISTINCT key->>'remoteJid' as lid
+          FROM "Message"
+          WHERE key->>'remoteJidAlt' = ANY(ARRAY[${queryParams}])
+             OR key->>'senderPn' = ANY(ARRAY[${queryParams}])
+        `, jids);
+        
+        for (const row of rows) {
+          if (row.lid) jidsWithLids.add(row.lid);
+        }
+      }
+    } catch (dbErr) {
+      console.error('Error resolving LIDs in getMessages:', dbErr);
+    }
+
     let allRecords: Message[] = [];
 
     // Fetch 50 messages per page to ensure bot messages aren't lost in pagination
-    for (const singleJid of jids) {
+    for (const singleJid of Array.from(jidsWithLids)) {
       try {
         const response = await evolutionFindMessages(singleJid, 50, page);
         const records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
