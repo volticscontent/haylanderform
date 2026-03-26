@@ -65,9 +65,21 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
   }
 };
 
+// Chaves técnicas que o contador não precisa ver
+const IGNORED_KEYS = [
+  'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados', 
+  'responseDateTime', 'idSistema', 'idServico', 'versaoSistema',
+  'tipo', 'numero', 'id'
+];
+
 // Componente recursivo para exibir dados
 export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: string; level?: number }) => {
   if (data === null || data === undefined) return null;
+
+  // Se for uma chave ignorada, não renderiza
+  if (title && IGNORED_KEYS.includes(title.toLowerCase()) || (title && IGNORED_KEYS.some(k => formatKey(k) === title))) {
+    return null;
+  }
 
   // Se for string que parece JSON, tenta parsear
   if (typeof data === 'string') {
@@ -123,7 +135,11 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
     // Tenta renderizar como tabela se forem objetos simples
     const isSimpleObject = data.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
     if (isSimpleObject && data.length > 0) {
-      const keys = Object.keys(data[0]);
+      // Filtra as chaves para a tabela também
+      const keys = Object.keys(data[0]).filter(k => !IGNORED_KEYS.includes(k));
+
+      if (keys.length === 0) return null;
+
       return (
         <div className="mt-2 overflow-x-auto">
           <div className="flex justify-between items-center mb-2">
@@ -183,14 +199,16 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   }
 
   // Objetos
-  const keys = Object.keys(data);
-  if (keys.length === 0) return null;
+  const allKeys = Object.keys(data);
+  const filteredKeys = allKeys.filter(key => !IGNORED_KEYS.includes(key));
+  
+  if (filteredKeys.length === 0) return null;
 
   return (
     <div className={`space-y-1 ${level > 0 ? 'mt-2' : ''}`}>
       {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 mb-2 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
       <div className={`${level === 0 ? 'bg-white dark:bg-zinc-900 rounded-lg' : ''}`}>
-        {keys.map(key => {
+        {filteredKeys.map(key => {
           const val = (data as Record<string, unknown>)[key];
           return (
             <div key={key}>

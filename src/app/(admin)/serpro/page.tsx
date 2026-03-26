@@ -273,29 +273,11 @@ export default function SerproPage() {
 
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800">
                 <DataViewer data={primaryData} title="Dados da Consulta" />
-                
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-                    Ver JSON Bruto
-                  </summary>
-                  <pre className="mt-2 bg-zinc-100 dark:bg-zinc-950 p-4 rounded overflow-auto text-xs text-zinc-600 dark:text-zinc-400 max-h-[200px] border border-zinc-200 dark:border-zinc-800">
-                    {JSON.stringify(primaryData, null, 2)}
-                  </pre>
-                </details>
               </div>
 
               {fallbackData && (
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 border-l-4 border-l-emerald-500">
                   <DataViewer data={fallbackData} title="Dados Complementares (PGMEI)" />
-                  
-                  <details className="mt-4">
-                    <summary className="cursor-pointer text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-                      Ver JSON Bruto (Fallback)
-                    </summary>
-                    <pre className="mt-2 bg-zinc-100 dark:bg-zinc-950 p-4 rounded overflow-auto text-xs text-zinc-600 dark:text-zinc-400 max-h-[200px] border border-zinc-200 dark:border-zinc-800">
-                      {JSON.stringify(fallbackData, null, 2)}
-                    </pre>
-                  </details>
                 </div>
               )}
             </div>

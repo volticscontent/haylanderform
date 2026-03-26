@@ -471,16 +471,10 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                                 
                                 {expandedConsultation === consultation.id && (
                                     <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 overflow-x-auto">
+                                        <div className="mb-2 flex items-center gap-2 text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
+                                            <FileText className="w-3 h-3" /> Resumo do Documento
+                                        </div>
                                         <DataViewer data={consultation.resultado} />
-                                        
-                                        <details className="mt-4">
-                                            <summary className="cursor-pointer text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
-                                                Ver JSON Bruto
-                                            </summary>
-                                            <pre className="mt-2 text-xs text-zinc-600 dark:text-zinc-400 font-mono whitespace-pre-wrap overflow-x-auto max-h-[200px] bg-white dark:bg-zinc-950 p-2 rounded border border-zinc-200 dark:border-zinc-800">
-                                                {JSON.stringify(consultation.resultado, null, 2)}
-                                            </pre>
-                                        </details>
                                     </div>
                                 )}
                             </div>
