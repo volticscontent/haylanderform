@@ -270,6 +270,8 @@ export function ChatInterface() {
       console.warn('[Bot Backend WS] Connection error:', err.message);
     });
 
+    let debounceTimer: NodeJS.Timeout;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleIncomingMessage = (data: any) => {
       console.log('[Bot Backend WS] 📩 nova mensagem:', data);
@@ -278,12 +280,14 @@ export function ChatInterface() {
       if (data?.data?.key?.remoteJid?.endsWith('@g.us') || data?.key?.remoteJid?.endsWith('@g.us')) return;
 
       // No nosso backend, o data já vem estruturado ou com chatId direto
-      const incomingChatId = data.chatId || data.remoteJid || data.key?.remoteJid;
+      // Na Evolution API, a mensagem nova vem dentro de data.messages[0] ou data.data
+      const evolutionDirectMsg = data?.data?.messages?.[0] || data?.data;
+      const incomingChatId = data.chatId || data.remoteJid || data.key?.remoteJid || evolutionDirectMsg?.key?.remoteJid;
       
       // Se não temos um ID de chat, não sabemos onde colocar a mensagem
       if (!incomingChatId) return;
 
-      const normalizedMsg = normalizeMessage(data.data || data);
+      const normalizedMsg = normalizeMessage(evolutionDirectMsg || data);
 
       // Verifica se a mensagem pertence ao chat atual (pode vir via chatId ou altChatId no socket)
       if (selectedChatIdRef.current && (incomingChatId === selectedChatIdRef.current || data.altChatId === selectedChatIdRef.current)) {
@@ -293,10 +297,14 @@ export function ChatInterface() {
         });
       }
 
-      // Recarregar lista de chats para atualizar preview/unread
-      loadChats();
+      // Recarregar lista de chats para atualizar preview/unread (DEBOUNCED para não explodir a API)
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadChats();
+      }, 500);
     };
 
+    // Apenas listamos os eventos emitidos pelo NOSSO backend-socket. Retiramos os redundantes
     newSocket.on('messages.upsert', handleIncomingMessage);
     newSocket.on('new-message', handleIncomingMessage);
     newSocket.on('chat-update-global', handleIncomingMessage);
@@ -305,6 +313,7 @@ export function ChatInterface() {
     setSocket(newSocket);
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       newSocket.disconnect();
     };
   }, [loadChats]);
