@@ -17,8 +17,8 @@ export function MessageBubble({ message, isFirst = true, isLast = true }: Messag
 
   // Define border radius based on position in group
   const borderRadiusClass = isMe
-    ? `${isFirst ? 'rounded-tr-xl' : 'rounded-tr-sm'} ${isLast ? 'rounded-br-xl' : 'rounded-br-sm'} rounded-l-xl`
-    : `${isFirst ? 'rounded-tl-xl' : 'rounded-tl-sm'} ${isLast ? 'rounded-bl-xl' : 'rounded-bl-sm'} rounded-r-xl`;
+    ? `${isFirst ? 'rounded-tr-none' : 'rounded-tr-xl'} rounded-l-xl rounded-br-xl`
+    : `${isFirst ? 'rounded-tl-none' : 'rounded-tl-xl'} rounded-r-xl rounded-bl-xl`;
 
   // Margin bottom logic
   const marginBottom = isLast ? 'mb-2' : 'mb-0.5';
@@ -199,15 +199,24 @@ export function MessageBubble({ message, isFirst = true, isLast = true }: Messag
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${marginBottom} group select-none`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${marginBottom} px-2 sm:px-4 group select-none`}>
       <div
-        className={`max-w-[85%] sm:max-w-[65%] p-2.5 shadow-sm relative transition-all wrap-break-words ${borderRadiusClass} ${isMe
+        className={`max-w-[85%] sm:max-w-[75%] p-2 pb-1.5 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] relative transition-all wrap-break-words ${borderRadiusClass} ${isMe
           ? message.agentName
-            ? 'bg-linear-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-900/20 border border-indigo-100 dark:border-indigo-800/50 text-zinc-900 dark:text-zinc-100 shadow-md ring-1 ring-black/5 dark:ring-white/5'
-            : 'bg-[#d9fdd3] dark:bg-[#005c4b] p-2 text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]'
-          : 'bg-white dark:bg-[#202c33] p-2 text-zinc-900 dark:text-zinc-100 shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]'
+            ? 'bg-linear-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/60 dark:to-blue-900/40 border border-indigo-100/50 dark:border-indigo-800/30 text-zinc-900 dark:text-zinc-100 shadow-md'
+            : 'bg-[#d9fdd3] dark:bg-[#005c4b] text-zinc-900 dark:text-zinc-50'
+          : 'bg-white dark:bg-[#202c33] text-zinc-900 dark:text-zinc-50'
           }`}
       >
+        {/* Tail effect for first message in group */}
+        {isFirst && (
+          <div className={`absolute top-0 w-2 h-2 overflow-hidden ${isMe ? '-right-2' : '-left-2'}`}>
+            <div className={`w-4 h-4 rotate-45 transform origin-top-left ${isMe 
+              ? (message.agentName ? 'bg-indigo-50 dark:bg-indigo-950/60' : 'bg-[#d9fdd3] dark:bg-[#005c4b]') 
+              : 'bg-white dark:bg-[#202c33]'}`} 
+            />
+          </div>
+        )}
         {isMe && message.agentName && isFirst && (
           <div className={`text-[12px] font-bold mb-1.5 pb-1 border-b flex items-center gap-1.5 ${message.agentName === 'Apolo' ? 'text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50' :
             message.agentName === 'Icaro' ? 'text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50' :

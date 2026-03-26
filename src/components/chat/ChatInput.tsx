@@ -191,7 +191,7 @@ export function ChatInput({
                 aria-label="Digite sua mensagem"
                 disabled={disabled}
                 rows={1}
-                className={`w-full px-4 py-3 bg-transparent border-none rounded-2xl outline-none resize-none max-h-32 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 ${isDragging ? 'pointer-events-none' : ''}`}
+                className={`w-full px-4 py-3 bg-transparent border-none rounded-2xl outline-none resize-none max-h-32 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 ${isDragging ? 'pointer-events-none' : ''}`}
             />
         </div>
 
