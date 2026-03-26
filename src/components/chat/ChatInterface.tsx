@@ -170,15 +170,18 @@ export function ChatInterface() {
     }
 
     let agentName: string | undefined = undefined;
-    if (content.startsWith('\u200B')) {
+    const safeContent = content || '';
+    if (typeof safeContent === 'string' && safeContent.startsWith('\u200B')) {
       let zCount = 0;
-      while (content[zCount] === '\u200B') zCount++;
+      while (safeContent[zCount] === '\u200B') zCount++;
       
       if (zCount === 1) agentName = 'Apolo';
       else if (zCount === 2) agentName = 'Icaro';
       else agentName = 'Apolo'; // default fallback for other bot interactions
       
-      content = content.substring(zCount);
+      content = safeContent.substring(zCount);
+    } else {
+      content = safeContent;
     }
 
     return {
@@ -319,36 +322,40 @@ export function ChatInterface() {
   }, [loadChats]);
 
   const loadMessages = useCallback(async (jid: string, pageNum = 1, silent = false) => {
-    if (pageNum === 1 && !silent) setLoadingMessages(true);
-    else if (pageNum > 1) setLoadingMore(true);
+    try {
+      if (pageNum === 1 && !silent) setLoadingMessages(true);
+      else if (pageNum > 1) setLoadingMore(true);
 
-    const res = await getMessages(jid, pageNum);
+      const res = await getMessages(jid, pageNum);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const records = (res.data as any)?.messages?.records || (Array.isArray(res.data) ? res.data : []);
-
-    if (res.success && Array.isArray(records)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mappedMessages = records.map((m: any) => normalizeMessage(m)).reverse();
+      const records = (res.data as any)?.messages?.records || (Array.isArray(res.data) ? res.data : []);
 
-      // Deduplicate mappedMessages itself (just in case API returns duplicates)
-      const uniqueMappedMessages = Array.from(new Map(mappedMessages.map((m: Message) => [m.id, m])).values());
+      if (res.success && Array.isArray(records)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedMessages = records.map((m: any) => normalizeMessage(m)).reverse();
 
-      if (pageNum === 1) {
-        setMessages(uniqueMappedMessages);
-      } else {
-        // Filter out duplicates based on ID
-        setMessages(prev => {
-          const existingIds = new Set(prev.map(msg => msg.id));
-          const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
-          return [...newUniqueMessages, ...prev];
-        });
+        // Deduplicate mappedMessages itself (just in case API returns duplicates)
+        const uniqueMappedMessages = Array.from(new Map(mappedMessages.map((m: Message) => [m.id, m])).values());
+
+        if (pageNum === 1) {
+          setMessages(uniqueMappedMessages);
+        } else {
+          // Filter out duplicates based on ID
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(msg => msg.id));
+            const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
+            return [...newUniqueMessages, ...prev];
+          });
+        }
+        setHasMore(records.length >= 50);
       }
-      setHasMore(records.length >= 50);
+    } catch (error) {
+      console.error("Failed to load/parse messages:", error);
+    } finally {
+      if (pageNum === 1 && !silent) setLoadingMessages(false);
+      else setLoadingMore(false);
     }
-
-    if (pageNum === 1 && !silent) setLoadingMessages(false);
-    else setLoadingMore(false);
   }, []);
 
   useEffect(() => {
