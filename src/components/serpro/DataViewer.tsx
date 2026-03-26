@@ -32,11 +32,11 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
 
   // Pega as chaves do primeiro objeto para o cabeçalho
   const headers = Object.keys(data[0]);
-  
+
   // Cria o conteúdo do CSV
   const csvContent = [
     headers.join(','), // Cabeçalho
-    ...data.map(row => 
+    ...data.map(row =>
       headers.map(header => {
         const value = row[header];
         // Trata valores para CSV (escapa aspas, converte objetos para string, etc)
@@ -67,7 +67,7 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
 
 // Chaves técnicas que o contador não precisa ver
 const IGNORED_KEYS = [
-  'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados', 
+  'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados',
   'responseDateTime', 'idSistema', 'idServico', 'versaoSistema',
   'tipo', 'numero', 'id'
 ];
@@ -94,13 +94,13 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
     if (parsed) {
       return <DataViewer data={parsed} title={title} level={level} />;
     }
-    
+
     // Verifica se é PDF
     if (isPdfBase64(data)) {
       return (
-        <div className="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center">
+        <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center">
           <span className="font-medium text-zinc-600 dark:text-zinc-400">{title}:</span>
-          <button 
+          <button
             onClick={() => downloadPdf(data, `${title || 'documento'}.pdf`)}
             className="flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm font-medium"
           >
@@ -121,7 +121,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
       displayValue = data ? 'Sim' : 'Não';
     }
     return (
-      <div className="flex justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+      <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
         <span className="font-medium text-zinc-600 dark:text-zinc-400">{title}:</span>
         <span className="text-zinc-900 dark:text-zinc-200 text-right break-all ml-4">{displayValue}</span>
       </div>
@@ -131,7 +131,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   // Arrays
   if (Array.isArray(data)) {
     if (data.length === 0) return <div className="text-zinc-500 italic py-2">Lista vazia</div>;
-    
+
     // Tenta renderizar como tabela se forem objetos simples
     const isSimpleObject = data.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
     if (isSimpleObject && data.length > 0) {
@@ -171,7 +171,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
                     let displayVal = String(val);
                     if (typeof val === 'object') displayVal = JSON.stringify(val);
                     if (typeof val === 'boolean') displayVal = val ? 'Sim' : 'Não';
-                    
+
                     return (
                       <td key={k} className="px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
                         {displayVal}
@@ -201,7 +201,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   // Objetos
   const allKeys = Object.keys(data);
   const filteredKeys = allKeys.filter(key => !IGNORED_KEYS.includes(key));
-  
+
   if (filteredKeys.length === 0) return null;
 
   return (
@@ -212,13 +212,13 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
           const val = (data as Record<string, unknown>)[key];
           return (
             <div key={key}>
-               {typeof val === 'object' && val !== null ? (
-                 <div className="py-2">
-                   <DataViewer data={val} title={formatKey(key)} level={level + 1} />
-                 </div>
-               ) : (
-                 <DataViewer data={val} title={formatKey(key)} level={level + 1} />
-               )}
+              {typeof val === 'object' && val !== null ? (
+                <div className="py-2">
+                  <DataViewer data={val} title={formatKey(key)} level={level + 1} />
+                </div>
+              ) : (
+                <DataViewer data={val} title={formatKey(key)} level={level + 1} />
+              )}
             </div>
           );
         })}
