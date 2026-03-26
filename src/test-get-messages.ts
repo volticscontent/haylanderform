@@ -9,7 +9,7 @@ async function test() {
         console.error("Failed:", res.error);
         return;
     }
-    const records = res.data?.messages?.records || res.data || [];
+    const records = (res.data?.messages?.records || (Array.isArray(res.data) ? res.data : [])) as any[];
     console.log(`Fetched ${records.length} messages`);
     if(records.length > 0) {
         console.log(records[0]);
