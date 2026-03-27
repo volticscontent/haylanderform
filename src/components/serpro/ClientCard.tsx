@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, CheckCircle, Clock, XCircle, Phone, Mail, FileText } from 'lucide-react'
 import { SerproClient } from '@/types/client'
-import WhatsAppAvatar from '@/components/WhatsAppAvatar'
+import { ChatAvatar } from '../chat/ChatAvatar'
 import ConsultationHistoryModal from './ConsultationHistoryModal'
 
 interface ClientCardProps {
@@ -44,9 +44,10 @@ export default function ClientCard({ client, className = '' }: ClientCardProps) 
     <>
       <div className={`bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm hover:shadow-md transition-shadow ${className}`}>
         <div className="flex items-start gap-3 mb-3">
-          <WhatsAppAvatar 
-            phone={client.telefone} 
-            alt={client.nome} 
+          <ChatAvatar 
+            chatId={client.telefone || ''} 
+            name={client.nome} 
+            size={40} 
             className="w-10 h-10 shrink-0 border border-zinc-200 dark:border-zinc-700" 
           />
           

@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { getConsultationsByCnpj } from '@/app/(admin)/atendimento/actions'
 
 import { DataViewer } from '@/components/serpro/DataViewer'
+import { ChatAvatar } from './ChatAvatar'
 
 interface SerproConsultation {
     id: number;
@@ -136,8 +137,12 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
              {/* Header */}
              <div className="flex justify-between items-center p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                    {lead?.nome_completo ? lead.nome_completo.substring(0, 2).toUpperCase() : <User className="w-5 h-5" />}
+                   <div className="shrink-0">
+                    <ChatAvatar 
+                      chatId={lead?.telefone || ''} 
+                      name={lead?.nome_completo || ''} 
+                      size={40}
+                    />
                   </div>
                   <div className="overflow-hidden">
                     <h2 className="text-base font-bold text-zinc-900 dark:text-white truncate max-w-[200px]">{lead?.nome_completo || 'Sem nome'}</h2>
@@ -202,8 +207,12 @@ export function LeadSheet({ lead, isOpen, onClose, loading, mode = 'overlay' }: 
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-4">
-             <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl">
-               {lead.nome_completo ? lead.nome_completo.substring(0, 2).toUpperCase() : <User className="w-6 h-6" />}
+             <div className="shrink-0">
+               <ChatAvatar 
+                 chatId={lead.telefone || ''} 
+                 name={lead.nome_completo || ''} 
+                 size={48}
+               />
              </div>
              <div>
                <h2 id="lead-sheet-title" className="text-xl font-bold text-zinc-900 dark:text-white">{lead.nome_completo || 'Sem nome'}</h2>
@@ -244,13 +253,16 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
     const [loadingConsultations, setLoadingConsultations] = useState(!!lead.cnpj);
     const [expandedConsultation, setExpandedConsultation] = useState<number | null>(null);
 
-    const fetchConsultations = useCallback(() => {
-        if (lead.cnpj) {
-            // Loading is handled by initial state, so we don't set it here to avoid sync setState in effect
-            console.log('[LeadSheet] Buscando consultas para:', lead.cnpj);
-            getConsultationsByCnpj(lead.cnpj)
+     const fetchConsultations = useCallback(() => {
+        const cnpj = lead.cnpj;
+        if (cnpj) {
+            const cleanCnpj = cnpj.replace(/\D/g, '');
+            console.log(`[LeadSheet] Buscando consultas para CNPJ: "${cnpj}" (Limpo: "${cleanCnpj}")`);
+            
+            setLoadingConsultations(true);
+            getConsultationsByCnpj(cleanCnpj)
                 .then(res => {
-                    console.log('[LeadSheet] Resultado busca:', res);
+                    console.log(`[LeadSheet] Resultado para ${cleanCnpj}:`, res.success ? `${res.data?.length} registros` : res.error);
                     if (res.success && res.data) {
                         setConsultations(res.data as SerproConsultation[]);
                     } else {
@@ -258,10 +270,14 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                     }
                 })
                 .catch(err => {
-                    console.error('[LeadSheet] Erro na busca:', err);
+                    console.error('[LeadSheet] Erro catastrófico na busca:', err);
                     setConsultations([]);
                 })
                 .finally(() => setLoadingConsultations(false));
+        } else {
+            console.warn('[LeadSheet] Sem CNPJ para buscar consultas');
+            setConsultations([]);
+            setLoadingConsultations(false);
         }
     }, [lead.cnpj]);
 
