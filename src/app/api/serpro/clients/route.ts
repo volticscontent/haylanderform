@@ -33,11 +33,12 @@ export async function GET(req: Request) {
         l.nome_completo, 
         l.telefone,
         l.email,
-        lv.procuracao_ativa, 
+        COALESCE(lv.procuracao_ativa, lv.procuracao, false) as procuracao_ativa, 
         lv.procuracao_validade 
       FROM LatestConsultations lc
       JOIN consultas_serpro c ON c.cnpj = lc.cnpj AND c.created_at = lc.last_consultation_date
-      LEFT JOIN leads_empresarial le ON REGEXP_REPLACE(le.cnpj, '\\D', '', 'g') = REGEXP_REPLACE(lc.cnpj, '\\D', '', 'g')
+      LEFT JOIN leads_empresarial le ON 
+        REGEXP_REPLACE(le.cnpj, '[^0-9]', '', 'g') = REGEXP_REPLACE(lc.cnpj, '[^0-9]', '', 'g')
       LEFT JOIN leads l ON le.lead_id = l.id
       LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
       ORDER BY lc.last_consultation_date DESC
