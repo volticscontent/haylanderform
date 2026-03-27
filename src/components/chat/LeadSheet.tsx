@@ -293,7 +293,8 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                          <InfoItem label="Motivo da Qualificação" value={lead.motivo_qualificacao} italic />
                     </div>
 
-                    <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-5 gap-4">
+                        <BadgeItem label="Procuração" value={lead.procuracao} type="success" />
                         <BadgeItem label="Protestos" value={lead.tem_protestos} />
                         <BadgeItem label="Exec. Fiscal" value={lead.tem_execucao_fiscal} />
                         <BadgeItem label="Dív. Ativa" value={lead.tem_divida_ativa} />
@@ -486,17 +487,23 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
     )
 }
 
-function BadgeItem({ label, value }: { label: string, value: string | boolean | null }) {
+function BadgeItem({ label, value, type = 'danger' }: { label: string, value: string | boolean | null, type?: 'danger' | 'success' }) {
     const isYes = value === 'Sim' || value === true || (typeof value === 'string' && value.toLowerCase() === 'sim');
     
     // Determine status for styling
     let statusColor = 'text-zinc-400 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900';
-    if (isYes) statusColor = 'text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10';
+    if (isYes) {
+        if (type === 'danger') {
+            statusColor = 'text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10';
+        } else {
+            statusColor = 'text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-900/10';
+        }
+    }
     
     return (
         <div className={`flex flex-col items-center justify-center p-2 rounded-lg border ${statusColor} text-center transition-all`}>
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-medium">{label}</span>
-            <span className={`text-xs font-bold`}>
+            <span className={`text-xs font-bold uppercase`}>
                 {isYes ? 'SIM' : 'NÃO'}
             </span>
         </div>
