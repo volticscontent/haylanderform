@@ -4,7 +4,7 @@ import { Client } from 'pg'
 import LeadList from './LeadList'
 
 async function getData(page: number = 1, limit: number = 50) {
-  if (!process.env.DATABASE_URL) return { data: [], total: 0 }
+  if (!process.env.DATABASE_URL) return { data: [], total: 0, error: 'DATABASE_URL não configurada' }
   const client = new Client({ connectionString: process.env.DATABASE_URL })
   try {
     await client.connect()
@@ -21,12 +21,11 @@ async function getData(page: number = 1, limit: number = 50) {
           l.calculo_parcelamento, l.tipo_divida,
           l.valor_divida_municipal, l.valor_divida_estadual, l.valor_divida_federal,
           l.valor_divida_pgfn AS valor_divida_ativa,
+          l.metadata,
           lp.observacoes, lp.data_controle_24h, lp.envio_disparo,
-          lp.servico AS servico_negociado, lp.servico AS servico_escolhido,
+          lp.servico,
           lp.procuracao, lp.status_atendimento, lp.cliente, lp.data_reuniao,
-          (lp.data_reuniao IS NOT NULL) AS reuniao_agendada,
-          NULL::text        AS cartao_cnpj,
-          NULL::timestamptz AS data_ultima_consulta
+          (lp.data_reuniao IS NOT NULL) AS reuniao_agendada
         FROM leads l
         LEFT JOIN leads_processo lp ON l.id = lp.lead_id
         ORDER BY l.atualizado_em DESC
@@ -41,10 +40,11 @@ async function getData(page: number = 1, limit: number = 50) {
       data_controle_24h:r.data_controle_24h instanceof Date ? r.data_controle_24h.toISOString():r.data_controle_24h,
       data_reuniao:     r.data_reuniao     instanceof Date ? r.data_reuniao.toISOString()     : r.data_reuniao,
     }))
-    return { data, total }
+    return { data, total, error: null }
   } catch (e) {
-    console.error('Lista DB error:', e)
-    return { data: [], total: 0 }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('Lista DB error:', msg)
+    return { data: [], total: 0, error: msg }
   } finally {
     await client.end()
   }
@@ -64,13 +64,23 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
   const { page: pageParam } = await searchParams
   const page = Number(pageParam) || 1
   const limit = 50
-  const { data, total } = await getData(page, limit)
+  const { data, total, error } = await getData(page, limit)
 
   return (
     <div className="space-y-6 h-full">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Base de Contatos</h1>
       </div>
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm font-mono">
+          <strong>Erro DB:</strong> {error}
+        </div>
+      )}
+      {!error && (
+        <div className="text-xs text-zinc-400 font-mono">
+          DB: {total} leads encontrados · DATABASE_URL: {process.env.DATABASE_URL ? '✓ configurada' : '✗ ausente'}
+        </div>
+      )}
       <LeadList 
         data={data} 
         pagination={{
