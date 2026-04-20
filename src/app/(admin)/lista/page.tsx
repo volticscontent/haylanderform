@@ -8,7 +8,7 @@ async function getData(page: number = 1, limit: number = 50) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) })
     const res = await backendGet('/api/leads/list', params)
     if (!res.ok) return { data: [], total: 0 }
-    return res.json() as Promise<{ data: unknown[]; total: number }>
+    return res.json() as Promise<{ data: any[]; total: number }>
   } catch (error) {
     console.error('Error fetching list data:', error)
     return { data: [], total: 0 }
