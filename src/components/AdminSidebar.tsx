@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, Send, FileText, AlertCircle, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Calendar, Workflow, GitBranch, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -15,12 +15,10 @@ interface AdminSidebarProps {
 // Mapa: nome do link → quais permissões dão acesso
 const LINK_PERMISSIONS: Record<string, string[]> = {
   'Dashboard': ['admin', 'vendas', 'atendimento', 'financeiro'],
-  'Atendimentos': ['admin', 'atendimento'],
   'Chat': ['admin', 'atendimento'],
   'Lista': ['admin', 'vendas', 'atendimento'],
-  'Disparo': ['admin', 'disparo'],
   'Serpro': ['admin', 'serpro'],
-  'Documentação': [], // todos podem ver
+  'Documentação': [],
   'Configurações': ['admin'],
 }
 
@@ -33,16 +31,13 @@ type NavItem = {
 
 const adminLinks: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Atendimentos', href: '/atendimentos', icon: Calendar },
   { name: 'Chat', href: '/atendimento', icon: MessageCircle },
   { name: 'Lista', href: '/lista', icon: Users },
-  { name: 'Disparo', href: '/disparo', icon: Send },
   {
     name: 'Serpro',
     icon: Globe,
     children: [
       { name: 'Consulta', href: '/serpro', icon: Globe },
-      { name: 'Carteira', href: '/serpro/carteira', icon: Users },
       { name: 'Documentos', href: '/serpro/documentos', icon: FileText },
     ]
   },
@@ -52,7 +47,6 @@ const adminLinks: NavItem[] = [
     icon: Settings,
     children: [
       { name: 'Geral', href: '/configuracoes', icon: Settings },
-      { name: 'Serviços', href: '/configuracoes#servicos', icon: Settings },
       { name: 'Colaboradores', href: '/configuracoes#colaboradores', icon: Users }
     ]
   },
@@ -85,7 +79,6 @@ const docsLinks: NavItem[] = [
     children: [
       { name: 'Diagrama e SQL', href: '/docs/diagrama-dados', icon: Database },
       { name: 'Arquitetura do Bot', href: '/docs/bot-architecture', icon: Book },
-      { name: 'Visualização Live', href: '/docs/bd', icon: Workflow },
     ]
   },
   {
@@ -108,17 +101,6 @@ const docsLinks: NavItem[] = [
       { name: 'Configuração', href: '/docs/serpro-api#configuracao-de-ambiente', icon: Globe },
       { name: 'Endpoints', href: '/docs/serpro-api#endpoints-da-api-interna', icon: Globe },
       { name: 'Resumo Técnico', href: '/docs/serpro-api#resumo-tecnico-serpro-integration', icon: Globe },
-    ]
-  },
-  {
-    name: 'API Disparo',
-    icon: Send,
-    children: [
-      { name: 'Visão Geral', href: '/docs/disparo-api#visao-geral', icon: Send },
-      { name: 'Endpoints', href: '/docs/disparo-api#endpoints', icon: Send },
-      { name: 'Fluxo (Planejado)', href: '/docs/disparo-api#fluxo-de-processamento-planejado', icon: Send },
-      { name: 'Regras de Negócio', href: '/docs/disparo-api#regras-de-negocio', icon: Send },
-      { name: 'Resumo Técnico', href: '/docs/disparo-api#resumo-tecnico-api-de-disparos', icon: Send },
     ]
   },
   {
