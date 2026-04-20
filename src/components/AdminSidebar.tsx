@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Send } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Send, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -32,6 +32,7 @@ type NavItem = {
 const adminLinks: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Chat', href: '/atendimento', icon: MessageCircle },
+  { name: 'Reuniões', href: '/reuniao', icon: Calendar },
   { name: 'Lista', href: '/lista', icon: Users },
   // { name: 'Disparo', href: '/disparo', icon: Send }, // em desenvolvimento
   {
