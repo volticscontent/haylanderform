@@ -9,54 +9,29 @@ async function getData(page: number = 1, limit: number = 50) {
   try {
     await client.connect()
     const offset = (page - 1) * limit
-
-    // Detecta quais colunas existem no schema atual
-    const colRes = await client.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'leads'
-    `)
-    const cols = new Set(colRes.rows.map((r: { column_name: string }) => r.column_name))
-
-    const hasLeadsProcesso = await client.query(`
-      SELECT 1 FROM information_schema.tables WHERE table_name = 'leads_processo'
-    `).then(r => r.rows.length > 0)
-
-    const valorDivida = cols.has('valor_divida_pgfn')
-      ? 'l.valor_divida_pgfn AS valor_divida_ativa'
-      : cols.has('valor_divida_ativa')
-        ? 'l.valor_divida_ativa'
-        : 'NULL::numeric AS valor_divida_ativa'
-
-    const joinClause = hasLeadsProcesso
-      ? `LEFT JOIN leads_processo lp ON l.id = lp.lead_id`
-      : ''
-
-    const processoFields = hasLeadsProcesso
-      ? `lp.observacoes, lp.data_controle_24h, lp.envio_disparo, lp.servico,
-         lp.procuracao, lp.status_atendimento, lp.cliente, lp.data_reuniao,
-         (lp.data_reuniao IS NOT NULL) AS reuniao_agendada,`
-      : `NULL::text AS observacoes, NULL::timestamptz AS data_controle_24h,
-         NULL::text AS envio_disparo, NULL::text AS servico,
-         NULL::boolean AS procuracao, NULL::text AS status_atendimento,
-         NULL::boolean AS cliente, NULL::timestamptz AS data_reuniao,
-         FALSE AS reuniao_agendada,`
-
     const [countRes, dataRes] = await Promise.all([
       client.query('SELECT COUNT(*) FROM leads'),
       client.query(`
         SELECT
           l.id, l.telefone, l.nome_completo, l.email, l.data_cadastro, l.atualizado_em,
           l.needs_attendant, l.attendant_requested_at,
-          l.razao_social, l.cnpj, l.tipo_negocio, l.faturamento_mensal,
-          l.situacao, l.qualificacao, l.motivo_qualificacao, l.interesse_ajuda,
-          l.pos_qualificacao, l.possui_socio, l.confirmacao_qualificacao,
-          l.calculo_parcelamento, l.tipo_divida,
-          l.valor_divida_municipal, l.valor_divida_estadual, l.valor_divida_federal,
-          ${valorDivida},
-          ${processoFields}
+          le.razao_social, le.cnpj, le.tipo_negocio, le.faturamento_mensal,
+          lq.situacao, lq.qualificacao, lq.motivo_qualificacao, lq.interesse_ajuda,
+          lq.pos_qualificacao, lq.possui_socio, lq.confirmacao_qualificacao,
+          lf.calculo_parcelamento, lf.tipo_divida,
+          lf.valor_divida_municipal, lf.valor_divida_estadual, lf.valor_divida_federal,
+          lf.valor_divida_ativa,
+          la.observacoes, la.data_controle_24h, la.envio_disparo,
+          COALESCE(lv.servico_negociado, lv.servico_escolhido) AS servico,
+          lv.procuracao, lv.status_atendimento, lv.cliente, lv.data_reuniao,
+          COALESCE(lv.reuniao_agendada, lv.data_reuniao IS NOT NULL) AS reuniao_agendada,
           NULL::jsonb AS metadata
         FROM leads l
-        ${joinClause}
+        LEFT JOIN leads_empresarial  le ON l.id = le.lead_id
+        LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
+        LEFT JOIN leads_financeiro   lf ON l.id = lf.lead_id
+        LEFT JOIN leads_vendas       lv ON l.id = lv.lead_id
+        LEFT JOIN leads_atendimento  la ON l.id = la.lead_id
         ORDER BY l.atualizado_em DESC
         LIMIT $1 OFFSET $2
       `, [limit, offset]),
