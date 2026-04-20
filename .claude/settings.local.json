@@ -68,7 +68,9 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git push *)",
-      "Bash(./node_modules/.bin/tsc)"
+      "Bash(./node_modules/.bin/tsc)",
+      "Bash(grep -r \"BOT_BACKEND_URL\" bot-backend/.env)",
+      "Bash(grep \"BOT_BACKEND\" .env)"
     ]
   }
 }
