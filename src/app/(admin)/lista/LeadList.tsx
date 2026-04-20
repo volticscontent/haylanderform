@@ -32,23 +32,21 @@ type LeadRecord = {
   valor_divida_municipal: string | null
   valor_divida_estadual: string | null
   valor_divida_federal: string | null
-  cartao_cnpj: string | null
   tipo_divida: string | null
   tipo_negocio: string | null
   faturamento_mensal: string | null
   possui_socio: boolean | null
   pos_qualificacao: boolean | null
-  servico_negociado: string | null
+  servico: string | null
   status_atendimento: string | null
-  data_ultima_consulta: string | null
   procuracao: boolean | null
   data_reuniao: string | null
   needs_attendant: boolean | null
   attendant_requested_at: string | null
-  servico_escolhido: string | null
   reuniao_agendada: boolean | null
   cliente: boolean | null
   confirmacao_qualificacao: boolean | null
+  metadata: Record<string, unknown> | null
 }
 
 function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
@@ -114,9 +112,11 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
     const value = formData[field]
 
     if (!isEditing) {
-      let displayValue = value
+      let displayValue: string | number | null | undefined
       if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
-      if (!value && value !== 0 && value !== false) displayValue = '-'
+      else if (typeof value === 'object' && value !== null) displayValue = JSON.stringify(value)
+      else displayValue = value as string | number | null | undefined
+      if (!displayValue && displayValue !== 0) displayValue = '-'
 
       return (
         <div className="space-y-1">
@@ -202,6 +202,24 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {lead.cnpj && (
+              <Link
+                href={`/serpro?cnpj=${lead.cnpj.replace(/\D/g, '')}`}
+                className="p-2 px-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2"
+                title="Consultar no Serpro"
+              >
+                <FileText className="w-4 h-4" /> Serpro
+              </Link>
+            )}
+            {lead.telefone && (
+              <Link
+                href={`/reuniao/${lead.telefone}`}
+                className="p-2 px-3 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
+                title="Agendar Reunião"
+              >
+                <Calendar className="w-4 h-4" /> Reunião
+              </Link>
+            )}
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
@@ -276,7 +294,6 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
                   <p className="text-zinc-900 dark:text-zinc-200">{lead.possui_socio ? 'Sim' : 'Não'}</p>
                 )}
               </div>
-              <EditableField label="Cartão CNPJ" field="cartao_cnpj" />
             </div>
           </section>
 
@@ -356,7 +373,7 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
                   <p className="text-zinc-900 dark:text-zinc-200">{lead.reuniao_agendada ? 'Sim' : 'Não'}</p>
                 )}
               </div>
-              <EditableField label="Serviço Negociado" field="servico_negociado" />
+              <EditableField label="Serviço" field="servico" />
               <div className="space-y-1">
                 <label className="text-xs text-zinc-500">Procuração?</label>
                 {isEditing ? (
@@ -369,17 +386,10 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
                     <option value="true">Sim</option>
                   </select>
                 ) : (
-                  <div className="flex flex-col gap-1">
-                    <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
-                    {lead.data_ultima_consulta && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                        <CheckCircle className="w-3 h-3" /> Validada via Serpro
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
                 )}
               </div>
-              <EditableField label="Serviço Escolhido" field="servico_escolhido" />
+              <EditableField label="Serviço" field="servico" />
               <EditableField label="Status Atendimento" field="status_atendimento" />
               <div className="space-y-1">
                 <label className="text-xs text-zinc-500">Cliente?</label>
@@ -532,16 +542,14 @@ export default function LeadList({
     { id: 'valor_divida_municipal', label: 'Dívida municipal' },
     { id: 'valor_divida_estadual', label: 'Dívida estadual' },
     { id: 'valor_divida_federal', label: 'Dívida federal' },
-    { id: 'cartao_cnpj', label: 'Cartão CNPJ' },
     { id: 'tipo_divida', label: 'Tipo de dívida' },
     { id: 'tipo_negocio', label: 'Tipo de negócio' },
     { id: 'faturamento_mensal', label: 'Faturamento mensal' },
     { id: 'possui_socio', label: 'Possui sócio' },
-    { id: 'servico_negociado', label: 'Serviço negociado' },
+    { id: 'servico', label: 'Serviço' },
     { id: 'procuracao', label: 'Procuração' },
     { id: 'status_atendimento', label: 'Status atendimento' },
     { id: 'data_reuniao', label: 'Data da reunião' },
-    { id: 'data_ultima_consulta', label: 'Última consulta Serpro' },
   ]
 
   // Estado de colunas da ficha visíveis
@@ -735,13 +743,11 @@ export default function LeadList({
                       <option value="valor_divida_municipal">Valor dívida municipal</option>
                       <option value="valor_divida_estadual">Valor dívida estadual</option>
                       <option value="valor_divida_federal">Valor dívida federal</option>
-                      <option value="cartao_cnpj">Cartão CNPJ</option>
                       <option value="tipo_divida">Tipo dívida</option>
                       <option value="tipo_negocio">Tipo negócio</option>
                       <option value="faturamento_mensal">Faturamento mensal</option>
                       <option value="possui_socio">Possui sócio</option>
-                      {/* Novas colunas do vendedor */}
-                      <option value="servico_escolhido">Serviço escolhido</option>
+                      <option value="servico">Serviço</option>
                       <option value="procuracao">Procuração</option>
                       <option value="reuniao_agendada">Reunião agendada</option>
                       <option value="cliente">Cliente</option>
@@ -1105,12 +1111,6 @@ export default function LeadList({
                         <div>
                           <div className="font-medium text-zinc-900 dark:text-zinc-200 flex flex-wrap items-center gap-2">
                             {row.nome_completo || 'Sem nome'}
-                            {row.data_ultima_consulta && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 uppercase tracking-tighter" title={`Consultado em: ${new Date(row.data_ultima_consulta).toLocaleString()}`}>
-                                <CheckCircle size={10} />
-                                Serpro OK
-                              </span>
-                            )}
                             {row.needs_attendant && (
                               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${row.attendant_requested_at && new Date(row.attendant_requested_at).getTime() < Date.now() - 3600000
                                 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
@@ -1152,11 +1152,6 @@ export default function LeadList({
                             💰 {row.calculo_parcelamento}
                           </div>
                         )}
-                        {row.data_ultima_consulta && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase mt-1">
-                            <CheckCircle className="w-2.5 h-2.5" /> Serpro OK
-                          </div>
-                        )}
                       </div>
                     </td>
                   )}
@@ -1193,11 +1188,6 @@ export default function LeadList({
                           {row.procuracao ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
                           {row.procuracao ? 'Sim' : 'Não'}
                         </span>
-                        {row.data_ultima_consulta && (
-                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase ml-1">
-                            Serpro OK
-                          </span>
-                        )}
                       </div>
                     </td>
                   )}
