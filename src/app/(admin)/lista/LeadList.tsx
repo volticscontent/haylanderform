@@ -52,11 +52,18 @@ type LeadRecord = {
 function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(initialEditMode)
-
-  // Utilizando os dados da prop `lead` diretamente e inicializando o estado
-  // A montagem de novo lead reseta esse estado por conta do atributo `key` no pai.
   const [formData, setFormData] = useState<LeadRecord>(lead as LeadRecord)
   const [saving, setSaving] = useState(false)
+  const [serproHistory, setSerproHistory] = useState<{ tipo_servico: string; status: number; created_at: string }[]>([])
+
+  useEffect(() => {
+    if (!lead?.cnpj) return
+    const cnpj = lead.cnpj.replace(/\D/g, '')
+    fetch(`/api/serpro/history?cnpj=${cnpj}`)
+      .then(r => r.json())
+      .then(d => setSerproHistory(d.history ?? []))
+      .catch(() => {})
+  }, [lead?.cnpj])
 
   if (!lead || !formData) return null
 
@@ -450,6 +457,30 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
               </div>
             </div>
           </section>
+
+          {/* Histórico Serpro */}
+          {lead.cnpj && (
+            <section>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600" /> Histórico Serpro
+              </h3>
+              {serproHistory.length === 0 ? (
+                <p className="text-xs text-zinc-400">Nenhuma consulta registrada para este CNPJ.</p>
+              ) : (
+                <div className="space-y-2">
+                  {serproHistory.map((h, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${h.status === 200 ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                        <span className="font-mono text-zinc-700 dark:text-zinc-300">{h.tipo_servico}</span>
+                      </div>
+                      <span className="text-zinc-400">{new Date(h.created_at).toLocaleString('pt-BR')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>
