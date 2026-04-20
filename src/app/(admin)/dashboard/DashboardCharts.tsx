@@ -44,7 +44,7 @@ type LeadDashboardRecord = {
   interesse_ajuda: string | null
   confirmacao_qualificacao?: boolean | null
   reuniao_agendada?: boolean | null
-  vendido?: boolean | null
+  cliente?: boolean | null
 }
 
 type DateRange = {
@@ -667,7 +667,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           return q.includes('qualificado') || q === 'mql' || q === 'sql' || s === 'qualificado' || d.confirmacao_qualificacao === true;
         }).length;
         const reuniao_agendada = filteredData.filter((d: LeadDashboardRecord) => d.reuniao_agendada === true).length;
-        const vendido = filteredData.filter((d: LeadDashboardRecord) => d.vendido === true).length;
+        const cliente = filteredData.filter((d: LeadDashboardRecord) => d.cliente === true).length;
 
         const stages = [
           { label: 'Leads', value: leads },
@@ -675,7 +675,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           { label: 'Interesse', value: interesse },
           { label: 'Qualificação', value: qualificacao },
           { label: 'Reunião agendada', value: reuniao_agendada },
-          { label: 'Vendido', value: vendido },
+          { label: 'Cliente', value: cliente },
         ];
 
         return (

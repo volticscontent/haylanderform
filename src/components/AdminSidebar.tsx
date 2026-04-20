@@ -37,7 +37,15 @@ const adminLinks: NavItem[] = [
   { name: 'Chat', href: '/atendimento', icon: MessageCircle },
   { name: 'Lista', href: '/lista', icon: Users },
   { name: 'Disparo', href: '/disparo', icon: Send },
-  { name: 'Serpro', href: '/serpro', icon: Globe },
+  {
+    name: 'Serpro',
+    icon: Globe,
+    children: [
+      { name: 'Consulta', href: '/serpro', icon: Globe },
+      { name: 'Carteira', href: '/serpro/carteira', icon: Users },
+      { name: 'Documentos', href: '/serpro/documentos', icon: FileText },
+    ]
+  },
   { name: 'Documentação', href: '/docs', icon: Book },
   {
     name: 'Configurações',

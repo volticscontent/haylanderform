@@ -4,14 +4,14 @@ import type { ColaboradorSession } from './dashboard-auth';
 
 // Mapa: caminho da rota → permissões que dão acesso
 const ROUTE_PERMISSIONS: Record<string, string[]> = {
-    '': ['admin', 'vendas', 'atendimento', 'financeiro'],
-    '': ['admin', 'atendimento'],
-    '': ['admin', 'atendimento'],
-    '': ['admin', 'vendas', 'atendimento'],
-    '': ['admin', 'disparo'],
-    '': ['admin', 'serpro'],
-    '': [], // todos podem ver
-    '': ['admin'],
+    '/dashboard':    ['admin', 'vendas', 'atendimento', 'financeiro'],
+    '/atendimentos': ['admin', 'atendimento'],
+    '/atendimento':  ['admin', 'atendimento'],
+    '/lista':        ['admin', 'vendas', 'atendimento'],
+    '/disparo':      ['admin', 'disparo'],
+    '/serpro':       ['admin', 'serpro'],
+    '/docs':         [],
+    '/configuracoes':['admin'],
 };
 
 /**

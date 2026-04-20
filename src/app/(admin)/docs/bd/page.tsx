@@ -6,22 +6,34 @@ import { Database, Server, HardDrive } from 'lucide-react';
 
 const postgresChart = `
 erDiagram
-    leads ||--|| leads_empresarial : "Dados PJ"
-    leads ||--|| leads_qualificacao : "Funil de Vendas"
-    leads ||--|| leads_financeiro : "Dívidas e Cálculos"
-    leads ||--|| leads_vendas : "Negociação"
-    leads ||--|| leads_atendimento : "Suporte"
+    leads ||--o| leads_empresarial : "Dados PJ"
+    leads ||--o| leads_qualificacao : "Funil de Vendas"
+    leads ||--o| leads_financeiro : "Dívidas"
+    leads ||--o| leads_vendas : "Negociação"
+    leads ||--o| leads_atendimento : "Suporte"
+    leads ||--o{ interpreter_memories : "Memória IA"
+    leads ||--o{ resource_tracking : "Recursos Entregues"
+    leads ||--o{ serpro_documentos : "Docs Serpro"
+    disparos ||--o{ disparo_logs : "Logs"
 
     leads {
         int id PK
-        string telefone UK "Chave Pix/ID"
+        string telefone UK
         string nome_completo
         string email
-        string senha_gov
         string cpf
-        date data_nascimento
-        string nome_mae
+        boolean needs_attendant
+        timestamp attendant_requested_at
         timestamp data_cadastro
+    }
+
+    leads_qualificacao {
+        int id PK
+        int lead_id FK
+        string situacao "nao_respondido, qualificado, cliente, desqualificado"
+        string qualificacao "MQL, SQL, ICP"
+        string motivo_qualificacao
+        boolean pos_qualificacao
     }
 
     leads_empresarial {
@@ -29,33 +41,17 @@ erDiagram
         int lead_id FK
         string cnpj
         string razao_social
-        string nome_fantasia
         string faturamento_mensal
-        string endereco
-        string numero
-        string complemento
-        string bairro
-        string cidade
-        string estado
-        string cep
-        jsonb dados_serpro "Dados da API do Governo"
-    }
-
-    leads_qualificacao {
-        int id PK
-        int lead_id FK
-        string situacao "aguardando, cliente, desqualificado"
-        string qualificacao "MQL, SQL, ICP"
-        string interesse_ajuda
-        string motivo_qualificacao
+        jsonb dados_serpro
     }
 
     leads_financeiro {
         int id PK
         int lead_id FK
         boolean tem_divida
-        string tipo_divida "Ativa, Federal, etc"
-        decimal valor_divida
+        string tipo_divida
+        decimal valor_divida_federal
+        decimal valor_divida_ativa
         string calculo_parcelamento
     }
 
@@ -63,16 +59,92 @@ erDiagram
         int id PK
         int lead_id FK
         string servico_negociado
-        date data_reuniao
+        timestamp data_reuniao
         boolean procuracao_ativa
+        boolean cliente
     }
 
     leads_atendimento {
         int id PK
         int lead_id FK
-        string observacoes
-        date data_controle_24h
         string atendente_id
+        string observacoes
+        timestamp data_controle_24h
+        timestamp data_followup
+    }
+
+    interpreter_memories {
+        int id PK
+        int lead_id FK
+        string phone
+        string content
+        string category
+        vector embedding
+        timestamp created_at
+    }
+
+    resource_tracking {
+        int id PK
+        int lead_id FK
+        string resource_type
+        string resource_key
+        string status
+        timestamp delivered_at
+    }
+
+    serpro_documentos {
+        uuid id PK
+        int lead_id FK
+        string cnpj
+        string tipo_servico
+        string r2_key
+        timestamp valido_ate
+    }
+
+    consultas_serpro {
+        int id PK
+        string cnpj
+        string tipo_servico
+        jsonb resultado
+        string source
+        timestamp created_at
+    }
+
+    disparos {
+        int id PK
+        string channel
+        string status
+        jsonb filters
+        timestamp schedule_at
+    }
+
+    disparo_logs {
+        int id PK
+        int disparo_id FK
+        string phone
+        string status
+    }
+
+    colaboradores {
+        int id PK
+        string nome
+        string email
+        string cargo
+        boolean ativo
+    }
+
+    services {
+        int id PK
+        string name
+        decimal value
+        string description
+    }
+
+    system_settings {
+        string key PK
+        string label
+        string value
+        string type
     }
 `;
 
@@ -137,24 +209,27 @@ export default function DatabaseDocsPage() {
                 <ul className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
                   <li className="flex gap-2">
                     <span className="w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0" />
-                    <span>
-                      <strong className="text-zinc-900 dark:text-zinc-200">leads (Core)</strong>: 
-                      Tabela central contendo a identidade única do usuário (Telefone/CPF).
-                    </span>
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">leads (Core)</strong>: Identidade única do cliente. Chave primária de todo o sistema.</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="w-2 h-2 mt-1.5 rounded-full bg-green-500 shrink-0" />
-                    <span>
-                      <strong className="text-zinc-900 dark:text-zinc-200">leads_empresarial</strong>: 
-                      Dados PJ, faturamento e integração Serpro.
-                    </span>
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">leads_qualificacao</strong>: <code>situacao</code> canônico do funil (MQL/SQL). Fonte de verdade para o bot e crons.</span>
                   </li>
                   <li className="flex gap-2">
                     <span className="w-2 h-2 mt-1.5 rounded-full bg-purple-500 shrink-0" />
-                    <span>
-                      <strong className="text-zinc-900 dark:text-zinc-200">leads_qualificacao</strong>: 
-                      Status do funil (MQL/SQL) e qualificação.
-                    </span>
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">leads_vendas</strong>: Procuração e-CAC, serviço escolhido, reunião e status de cliente.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-orange-500 shrink-0" />
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">resource_tracking</strong>: Rastreia vídeos e links entregues — base para o gate de Procuração.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-indigo-500 shrink-0" />
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">serpro_documentos</strong>: PDFs gerados (DAS, CND) armazenados no R2 com soft-delete.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-red-500 shrink-0" />
+                    <span><strong className="text-zinc-900 dark:text-zinc-200">disparos</strong>: Campanhas de WhatsApp em lote com status e logs por destinatário.</span>
                   </li>
                 </ul>
               </div>
@@ -185,7 +260,7 @@ export default function DatabaseDocsPage() {
                     <span className="w-2 h-2 mt-1.5 rounded-full bg-red-500 shrink-0" />
                     <span>
                       <strong className="text-zinc-900 dark:text-zinc-200">Memória de Conversa</strong>: 
-                      Armazena o contexto recente do chat para os agentes de IA (n8n/LangChain).
+                      Armazena o contexto recente do chat para os agentes de IA (OpenAI Function Calling).
                     </span>
                   </li>
                   <li className="flex gap-2">

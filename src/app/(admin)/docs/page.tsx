@@ -1,4 +1,5 @@
 import { docsContent } from '@/lib/docs-content'
+import { SerproHealthMonitor } from '@/components/serpro/SerproHealthMonitor'
 
 export default function DocsPage() {
   const content = docsContent.intro
@@ -13,6 +14,8 @@ export default function DocsPage() {
           Guia completo de referência para administração e desenvolvimento do sistema.
         </p>
       </div>
+
+      <SerproHealthMonitor />
 
       <div className="prose dark:prose-invert max-w-none">
         <div className="whitespace-pre-line text-zinc-600 dark:text-zinc-300">

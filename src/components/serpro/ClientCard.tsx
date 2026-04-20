@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, CheckCircle, Clock, XCircle, Phone, Mail, FileText } from 'lucide-react'
+import { Calendar, CheckCircle, Clock, XCircle, Phone, Mail, FileText, RefreshCw } from 'lucide-react'
 import { SerproClient } from '@/types/client'
 import { ChatAvatar } from '../chat/ChatAvatar'
 import ConsultationHistoryModal from './ConsultationHistoryModal'
@@ -11,9 +11,10 @@ import ConsultationHistoryModal from './ConsultationHistoryModal'
 interface ClientCardProps {
   client: SerproClient
   className?: string
+  onSelectCnpj?: (cnpj: string) => void
 }
 
-export default function ClientCard({ client, className = '' }: ClientCardProps) {
+export default function ClientCard({ client, className = '', onSelectCnpj }: ClientCardProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
 
   const formatDate = (date: string | Date | null | undefined) => {
@@ -26,7 +27,8 @@ export default function ClientCard({ client, className = '' }: ClientCardProps) 
   }
 
   const formatCnpj = (cnpj: string) => {
-    return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")
+    const digits = cnpj.replace(/\D/g, '');
+    return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") || cnpj;
   }
 
   const formatPhone = (phone: string) => {
@@ -64,7 +66,7 @@ export default function ClientCard({ client, className = '' }: ClientCardProps) 
               }`}>
                 {client.procuracao_ativa ? (
                   <>
-                    <CheckCircle className="w-3 h-3" />
+                    <CheckCircle className="w-3 h-3 text-emerald-500" />
                     <span className="hidden sm:inline">Com Procuração</span>
                     <span className="sm:hidden">Proc. OK</span>
                   </>
@@ -74,6 +76,12 @@ export default function ClientCard({ client, className = '' }: ClientCardProps) 
                     <span className="hidden sm:inline">Sem Procuração</span>
                     <span className="sm:hidden">S/ Proc.</span>
                   </>
+                )}
+                {client.data_ultima_consulta && (
+                   <span className="ml-1 pl-1 border-l border-zinc-200 dark:border-zinc-700 flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                     <CheckCircle className="w-2.5 h-2.5" />
+                     Validada
+                   </span>
                 )}
               </div>
             </div>
@@ -123,7 +131,16 @@ export default function ClientCard({ client, className = '' }: ClientCardProps) 
           )}
         </div>
 
-        <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+        <div className="mt-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+          {onSelectCnpj ? (
+            <button 
+              onClick={() => onSelectCnpj(client.cnpj)}
+              className="text-xs flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 font-medium transition-colors p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Re-consultar
+            </button>
+          ) : <div />}
           <button 
             onClick={() => setIsHistoryOpen(true)}
             className="text-xs flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"

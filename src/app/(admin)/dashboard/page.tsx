@@ -1,59 +1,16 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Client } from 'pg'
+import { backendGet } from '@/lib/backend-proxy'
 import DashboardCharts from './DashboardCharts'
 
 async function getData() {
-  if (!process.env.DATABASE_URL) {
-    return []
-  }
-
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-  })
-  
   try {
-    await client.connect()
-    const res = await client.query(`
-      SELECT 
-        l.id,
-        l.nome_completo,
-        l.telefone,
-        l.email,
-        le.cnpj,
-        lf.calculo_parcelamento,
-        l.data_cadastro,
-        l.atualizado_em,
-        la.envio_disparo,
-        lq.situacao,
-        lq.qualificacao,
-        lq.interesse_ajuda,
-        lq.pos_qualificacao as confirmacao_qualificacao,
-        (lv.data_reuniao IS NOT NULL) as reuniao_agendada,
-        (lv.servico_negociado IS NOT NULL) as vendido
-      FROM leads l
-      LEFT JOIN leads_empresarial le ON l.id = le.lead_id
-      LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
-      LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
-      LEFT JOIN leads_atendimento la ON l.id = la.lead_id
-      LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
-      ORDER BY l.atualizado_em DESC 
-      LIMIT 500
-    `)
-    
-    // Serialize dates for Client Component
-    const serialized = res.rows.map(row => ({
-      ...row,
-      data_cadastro: row.data_cadastro instanceof Date ? row.data_cadastro.toISOString() : row.data_cadastro,
-      atualizado_em: row.atualizado_em instanceof Date ? row.atualizado_em.toISOString() : row.atualizado_em
-    }))
-
-    return serialized
+    const res = await backendGet('/api/dashboard')
+    if (!res.ok) return []
+    return await res.json()
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
     return []
-  } finally {
-    await client.end()
   }
 }
 

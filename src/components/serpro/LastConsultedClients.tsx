@@ -6,48 +6,67 @@ import ClientCard from './ClientCard'
 
 interface LastConsultedClientsProps {
   source?: 'admin' | 'bot';
+  onSelectCnpj?: (cnpj: string) => void;
 }
 
-export default function LastConsultedClients({ source }: LastConsultedClientsProps) {
+export default function LastConsultedClients({ source, onSelectCnpj }: LastConsultedClientsProps) {
   const [clients, setClients] = useState<SerproClient[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  const fetchClients = async () => {
+    try {
+      setLoading(true)
+      setError(false)
+      const url = source ? `/api/serpro/clients?source=${source}` : '/api/serpro/clients';
+      const res = await fetch(url)
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Resposta inesperada da API");
+      }
+
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setClients(data)
+        } else {
+          console.error('Invalid data format received:', data)
+          setClients([])
+        }
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.error('Error fetching clients:', err)
+      setError(true)
+      setClients([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        setLoading(true)
-        // Use absolute URL or ensure it works client-side
-        const url = source ? `/api/serpro/clients?source=${source}` : '/api/serpro/clients';
-        const res = await fetch(url)
-        
-        // Handle HTML response (error page) instead of JSON
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") === -1) {
-          throw new Error("Received non-JSON response from API");
-        }
-
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data)) {
-            setClients(data)
-          } else {
-             console.error('Invalid data format received:', data)
-             setClients([])
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching clients:', error)
-        // Fail silently for the user, just don't show the list
-        setClients([])
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchClients()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source])
 
   if (loading) {
     return <div className="text-sm text-zinc-500 animate-pulse">Carregando últimas consultas...</div>
+  }
+
+  if (error) {
+    return (
+      <div className="mt-8 flex items-center gap-3 text-sm text-zinc-500">
+        <span>Backend indisponível — não foi possível carregar as últimas consultas.</span>
+        <button
+          onClick={fetchClients}
+          className="px-2 py-1 rounded border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-xs"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    )
   }
 
   if (clients.length === 0) {
@@ -61,7 +80,7 @@ export default function LastConsultedClients({ source }: LastConsultedClientsPro
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {clients.map((client) => (
-          <ClientCard key={client.id || client.cnpj} client={client} />
+          <ClientCard key={client.id || client.cnpj} client={client} onSelectCnpj={onSelectCnpj} />
         ))}
       </div>
     </div>

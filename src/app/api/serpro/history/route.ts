@@ -1,35 +1,19 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { cookies } from 'next/headers';
+import { verifyAdminSession } from '@/lib/dashboard-auth';
+import { backendGet } from '@/lib/backend-proxy';
 
 export async function GET(req: Request) {
+  const cookieStore = await cookies();
+  if (!await verifyAdminSession(cookieStore.get('admin_session')?.value)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(req.url);
-    const cnpj = searchParams.get('cnpj');
-
-    if (!cnpj) {
-      return NextResponse.json({ error: 'CNPJ is required' }, { status: 400 });
-    }
-
-    const cleanCnpj = cnpj.replace(/\D/g, '');
-
-    const query = `
-      SELECT 
-        id,
-        tipo_servico,
-        resultado,
-        status,
-        source,
-        created_at
-      FROM consultas_serpro
-      WHERE cnpj = $1
-      ORDER BY created_at DESC
-    `;
-    
-    const result = await pool.query(query, [cleanCnpj]);
-    
-    return NextResponse.json(result.rows);
+    const res = await backendGet('/api/serpro/history', searchParams);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
   } catch (error) {
-    console.error('Error fetching consultation history:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

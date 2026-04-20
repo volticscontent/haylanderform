@@ -47,7 +47,7 @@ type LeadRecord = {
   attendant_requested_at: string | null
   servico_escolhido: string | null
   reuniao_agendada: boolean | null
-  vendido: boolean | null
+  cliente: boolean | null
   confirmacao_qualificacao: boolean | null
 }
 
@@ -357,21 +357,43 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
                 )}
               </div>
               <EditableField label="Serviço Negociado" field="servico_negociado" />
-              <EditableField label="Serviço Escolhido" field="servico_escolhido" />
-              <EditableField label="Status Atendimento" field="status_atendimento" />
               <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Vendido?</label>
+                <label className="text-xs text-zinc-500">Procuração?</label>
                 {isEditing ? (
                   <select
-                    value={formData.vendido ? 'true' : 'false'}
-                    onChange={(e) => handleChange('vendido', e.target.value === 'true')}
+                    value={formData.procuracao ? 'true' : 'false'}
+                    onChange={(e) => handleChange('procuracao', e.target.value === 'true')}
                     className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
                   >
                     <option value="false">Não</option>
                     <option value="true">Sim</option>
                   </select>
                 ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.vendido ? 'Sim' : 'Não'}</p>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
+                    {lead.data_ultima_consulta && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                        <CheckCircle className="w-3 h-3" /> Validada via Serpro
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <EditableField label="Serviço Escolhido" field="servico_escolhido" />
+              <EditableField label="Status Atendimento" field="status_atendimento" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Cliente?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.cliente ? 'true' : 'false'}
+                    onChange={(e) => handleChange('cliente', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200">{lead.cliente ? 'Sim' : 'Não'}</p>
                 )}
               </div>
               <div className="space-y-1">
@@ -438,6 +460,11 @@ export default function LeadList({
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -470,6 +497,7 @@ export default function LeadList({
     { id: 'cliente', label: 'Cliente' },
     { id: 'contato', label: 'Contato' },
     { id: 'detalhes', label: 'Detalhes' },
+    { id: 'procuracao', label: 'Procuração' },
     { id: 'status_envio', label: 'Status Envio' },
     { id: 'atualizado', label: 'Atualizado' },
   ]
@@ -510,8 +538,10 @@ export default function LeadList({
     { id: 'faturamento_mensal', label: 'Faturamento mensal' },
     { id: 'possui_socio', label: 'Possui sócio' },
     { id: 'servico_negociado', label: 'Serviço negociado' },
+    { id: 'procuracao', label: 'Procuração' },
     { id: 'status_atendimento', label: 'Status atendimento' },
     { id: 'data_reuniao', label: 'Data da reunião' },
+    { id: 'data_ultima_consulta', label: 'Última consulta Serpro' },
   ]
 
   // Estado de colunas da ficha visíveis
@@ -712,8 +742,9 @@ export default function LeadList({
                       <option value="possui_socio">Possui sócio</option>
                       {/* Novas colunas do vendedor */}
                       <option value="servico_escolhido">Serviço escolhido</option>
+                      <option value="procuracao">Procuração</option>
                       <option value="reuniao_agendada">Reunião agendada</option>
-                      <option value="vendido">Vendido</option>
+                      <option value="cliente">Cliente</option>
                       <option value="data_reuniao">Data reunião</option>
                       <option value="confirmacao_qualificacao">Confirmação qualificação</option>
                     </select>
@@ -1023,7 +1054,12 @@ export default function LeadList({
 
       {/* Table */}
       <div className="overflow-auto flex-1">
-        <table className="w-full text-sm text-left text-zinc-600 dark:text-zinc-400">
+        {!isMounted ? (
+           <div className="flex items-center justify-center h-64">
+             <Clock className="w-8 h-8 animate-spin text-zinc-300" />
+           </div>
+        ) : (
+          <table className="w-full text-sm text-left text-zinc-600 dark:text-zinc-400">
           <thead className="text-xs uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 sticky top-0 z-10">
             <tr>
               {visibleColumns.includes('cliente') && (
@@ -1067,8 +1103,14 @@ export default function LeadList({
                           {row.nome_completo ? row.nome_completo.substring(0, 2).toUpperCase() : '??'}
                         </div>
                         <div>
-                          <div className="font-medium text-zinc-900 dark:text-zinc-200 flex items-center gap-2">
+                          <div className="font-medium text-zinc-900 dark:text-zinc-200 flex flex-wrap items-center gap-2">
                             {row.nome_completo || 'Sem nome'}
+                            {row.data_ultima_consulta && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 uppercase tracking-tighter" title={`Consultado em: ${new Date(row.data_ultima_consulta).toLocaleString()}`}>
+                                <CheckCircle size={10} />
+                                Serpro OK
+                              </span>
+                            )}
                             {row.needs_attendant && (
                               <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${row.attendant_requested_at && new Date(row.attendant_requested_at).getTime() < Date.now() - 3600000
                                 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
@@ -1110,6 +1152,11 @@ export default function LeadList({
                             💰 {row.calculo_parcelamento}
                           </div>
                         )}
+                        {row.data_ultima_consulta && (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-500 uppercase mt-1">
+                            <CheckCircle className="w-2.5 h-2.5" /> Serpro OK
+                          </div>
+                        )}
                       </div>
                     </td>
                   )}
@@ -1134,6 +1181,24 @@ export default function LeadList({
                   {visibleColumns.includes('atualizado') && (
                     <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-500">
                       {row.atualizado_em ? new Date(row.atualizado_em).toLocaleString('pt-BR') : '-'}
+                    </td>
+                  )}
+                  {visibleColumns.includes('procuracao') && (
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${row.procuracao
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300'
+                          : 'bg-zinc-50 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                          }`}>
+                          {row.procuracao ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                          {row.procuracao ? 'Sim' : 'Não'}
+                        </span>
+                        {row.data_ultima_consulta && (
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase ml-1">
+                            Serpro OK
+                          </span>
+                        )}
+                      </div>
                     </td>
                   )}
 
@@ -1223,6 +1288,7 @@ export default function LeadList({
             )}
           </tbody>
         </table>
+        )}
       </div>
 
       <div className="bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-800 p-3 flex justify-between items-center text-xs text-zinc-500">

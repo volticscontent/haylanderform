@@ -83,7 +83,7 @@ export interface LeadsVendasTable {
   procuracao_validade: Date | null;
   servico_escolhido: string | null;
   reuniao_agendada: boolean | null;
-  vendido: boolean | null;
+  cliente: boolean | null;
   created_at: Date | null;
   updated_at: Date | null;
 }
@@ -146,7 +146,7 @@ export interface LeadComplete extends LeadsTable {
   procuracao_validade?: Date | null;
   servico_escolhido?: string | null;
   reuniao_agendada?: boolean | null;
-  vendido?: boolean | null;
+  cliente?: boolean | null;
 
   // From leads_atendimento
   atendente_id?: string | null;

@@ -11,8 +11,7 @@ export const formatKey = (key: string) => {
 };
 
 export const isPdfBase64 = (str: string) => {
-  // Verifica assinatura de PDF (JVBERi0...) ou se parece um base64 longo e o campo tem nome de documento
-  return typeof str === 'string' && (str.startsWith('JVBERi0') || (str.length > 500 && /^[A-Za-z0-9+/=]+$/.test(str)));
+  return typeof str === 'string' && str.startsWith('JVBERi0');
 };
 
 export const downloadPdf = (base64: string, fileName: string) => {
@@ -43,7 +42,7 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
         if (value === null || value === undefined) return '';
         const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
         // Se tiver vírgula ou aspas, envolve em aspas e escapa aspas internas
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
           return `"${stringValue.replace(/"/g, '""')}"`;
         }
         return stringValue;
@@ -68,8 +67,7 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
 // Chaves técnicas que o contador não precisa ver
 const IGNORED_KEYS = [
   'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados',
-  'responseDateTime', 'idSistema', 'idServico', 'versaoSistema',
-  'tipo', 'numero', 'id'
+  'responseDateTime', 'idSistema', 'idServico', 'versaoSistema'
 ];
 
 // Componente recursivo para exibir dados
@@ -77,7 +75,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   if (data === null || data === undefined) return null;
 
   // Se for uma chave ignorada, não renderiza
-  if (title && IGNORED_KEYS.includes(title.toLowerCase()) || (title && IGNORED_KEYS.some(k => formatKey(k) === title))) {
+  if (title && (IGNORED_KEYS.includes(title.toLowerCase()) || IGNORED_KEYS.some(k => formatKey(k) === title))) {
     return null;
   }
 
@@ -117,13 +115,24 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   // Tipos primitivos
   if (typeof data !== 'object') {
     let displayValue = String(data);
+    let badgeClass = "";
+
     if (typeof data === 'boolean') {
       displayValue = data ? 'Sim' : 'Não';
+    } else if (title && /situa[çc][ãa]o/i.test(title)) {
+        // Lógica de cores para status
+        const val = displayValue.toUpperCase();
+        if (val === 'ATIVA' || val === 'HABILITADO') badgeClass = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded text-xs font-bold";
+        else if (val === 'BAIXADA' || val === 'CANCELADA' || val === 'INAPTA') badgeClass = "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded text-xs font-bold";
+        else if (val === 'SUSPENSA' || val === 'NULA' || val === 'PENDENTE') badgeClass = "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded text-xs font-bold";
     }
+
     return (
-      <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+      <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center min-h-[40px]">
         <span className="font-medium text-zinc-600 dark:text-zinc-400">{title}:</span>
-        <span className="text-zinc-900 dark:text-zinc-200 text-right break-all ml-4">{displayValue}</span>
+        <span className={`text-zinc-900 dark:text-zinc-200 text-right break-all ml-4 ${badgeClass}`}>
+          {displayValue}
+        </span>
       </div>
     );
   }
@@ -139,6 +148,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
       const keys = Object.keys(data[0]).filter(k => !IGNORED_KEYS.includes(k));
 
       if (keys.length === 0) return null;
+
 
       return (
         <div className="mt-2 overflow-x-auto">

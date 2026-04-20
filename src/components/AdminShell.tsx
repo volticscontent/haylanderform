@@ -4,6 +4,8 @@ import AdminSidebar from '@/components/AdminSidebar'
 import { LogOut, Menu, User } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { AdminProvider, useAdmin } from '@/contexts/AdminContext'
+import { ToastProvider } from '@/contexts/ToastContext'
+import { Toaster } from '@/components/ui/Toaster'
 
 function AdminShellContent({
   children,
@@ -41,7 +43,7 @@ function AdminShellContent({
       `}>
         <div className={isChatPage ? 'h-full' : 'sm:p-8 p-4'}>
           {isLoggedIn && !isChatPage && (
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center gap-4 mb-6">
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -90,14 +92,17 @@ export default function AdminShell({
 }) {
   return (
     <AdminProvider>
-      <AdminShellContent
-        isLoggedIn={isLoggedIn}
-        onLogout={onLogout}
-        nomeColaborador={nomeColaborador}
-        permissoes={permissoes}
-      >
-        {children}
-      </AdminShellContent>
+      <ToastProvider>
+        <AdminShellContent
+          isLoggedIn={isLoggedIn}
+          onLogout={onLogout}
+          nomeColaborador={nomeColaborador}
+          permissoes={permissoes}
+        >
+          {children}
+        </AdminShellContent>
+        <Toaster />
+      </ToastProvider>
     </AdminProvider>
   )
 }
