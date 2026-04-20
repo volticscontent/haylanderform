@@ -81,11 +81,6 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
           <strong>Erro DB:</strong> {error}
         </div>
       )}
-      {!error && (
-        <div className="text-xs text-zinc-400 font-mono">
-          DB: {total} leads encontrados · DATABASE_URL: {process.env.DATABASE_URL ? '✓ configurada' : '✗ ausente'}
-        </div>
-      )}
       <LeadList 
         data={data} 
         pagination={{
