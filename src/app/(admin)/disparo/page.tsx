@@ -9,54 +9,27 @@ async function getData() {
   try {
     await client.connect()
     const res = await client.query(`
-      SELECT 
-        l.id,
-        l.telefone, 
-        l.nome_completo, 
-        l.email,
-        l.atualizado_em,
-        l.data_cadastro,
-        
-        -- leads_empresarial
-        le.razao_social,
-        le.cnpj, 
-        le.cartao_cnpj,
-        le.tipo_negocio,
-        le.faturamento_mensal,
-        
-        -- leads_atendimento
-        la.observacoes,
-        la.data_controle_24h,
-        la.envio_disparo,
-        la.data_ultima_consulta,
-        
-        -- leads_financeiro
-        lf.calculo_parcelamento, 
-        lf.valor_divida_ativa,
-        lf.valor_divida_municipal,
-        lf.valor_divida_estadual,
-        lf.valor_divida_federal,
-        lf.tipo_divida,
-        
-        -- leads_qualificacao
-        lq.situacao,
-        lq.qualificacao,
-        lq.motivo_qualificacao,
-        lq.interesse_ajuda,
-        lq.possui_socio,
-        lq.pos_qualificacao,
-        
-        -- leads_vendas
-        lv.servico_negociado,
-        lv.procuracao
-
+      SELECT
+        l.id, l.telefone, l.nome_completo, l.email, l.atualizado_em, l.data_cadastro,
+        -- empresa
+        l.razao_social, l.cnpj, l.tipo_negocio, l.faturamento_mensal,
+        -- qualificação
+        l.situacao, l.qualificacao, l.motivo_qualificacao, l.interesse_ajuda,
+        l.possui_socio, l.pos_qualificacao,
+        -- financeiro
+        l.calculo_parcelamento, l.tipo_divida,
+        l.valor_divida_municipal, l.valor_divida_estadual, l.valor_divida_federal,
+        l.valor_divida_pgfn AS valor_divida_ativa,
+        -- processo
+        lp.observacoes, lp.data_controle_24h, lp.envio_disparo,
+        lp.servico AS servico_negociado,
+        lp.procuracao,
+        -- campos removidos → NULL para não quebrar o componente
+        NULL::text        AS cartao_cnpj,
+        NULL::timestamptz AS data_ultima_consulta
       FROM leads l
-      LEFT JOIN leads_empresarial le ON l.id = le.lead_id
-      LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
-      LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
-      LEFT JOIN leads_atendimento la ON l.id = la.lead_id
-      LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
-      ORDER BY l.atualizado_em DESC 
+      LEFT JOIN leads_processo lp ON l.id = lp.lead_id
+      ORDER BY l.atualizado_em DESC
       LIMIT 500
     `)
     
@@ -65,8 +38,7 @@ async function getData() {
       ...row,
       data_cadastro: row.data_cadastro instanceof Date ? row.data_cadastro.toISOString() : row.data_cadastro,
       atualizado_em: row.atualizado_em instanceof Date ? row.atualizado_em.toISOString() : row.atualizado_em,
-      data_controle_24h: row.data_controle_24h instanceof Date ? row.data_controle_24h.toISOString() : row.data_controle_24h,
-      data_ultima_consulta: row.data_ultima_consulta instanceof Date ? row.data_ultima_consulta.toISOString() : row.data_ultima_consulta
+      data_controle_24h: row.data_controle_24h instanceof Date ? row.data_controle_24h.toISOString() : row.data_controle_24h
     }))
 
     return serialized

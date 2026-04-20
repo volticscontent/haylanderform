@@ -58,7 +58,7 @@ export type LeadSheetData = {
   parcelamento_ativo: string | null
   servico_escolhido: string | null
   reuniao_agendada: boolean | null
-  vendido: boolean | null
+  cliente: boolean | null
   data_reuniao: string | null
   confirmacao_qualificacao: boolean | null
   needs_attendant: boolean | null
@@ -381,7 +381,7 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
                     
                     <div className="grid grid-cols-2 gap-4 md:col-span-2">
                         <BadgeItem label="Reunião Agendada" value={lead.reuniao_agendada} />
-                        <BadgeItem label="Vendido" value={lead.vendido} />
+                        <BadgeItem label="Cliente" value={lead.cliente} />
                     </div>
 
                     <InfoItem icon={<Calendar className="w-3 h-3" />} label="Data Reunião" value={lead.data_reuniao} />

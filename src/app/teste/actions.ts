@@ -1,100 +1,57 @@
 'use server';
 
-import { getUser, updateUser } from '@/lib/server-tools';
+import { backendPost, backendGet, backendPut } from '@/lib/backend-proxy';
 
 export async function sendMessageAction(message: string, userPhone: string, targetAgent?: string) {
   try {
-    const sender = `${userPhone}@s.whatsapp.net`;
-    const pushName = 'Test User';
-
-    console.log(`[Test Chat] Mensagem de ${userPhone}: ${message} (Target: ${targetAgent || 'Auto'})`);
-
-    // 1. Determinar o Estado do Usuário (Routing Logic)
+    const res = await backendGet(`/api/leads/user/${encodeURIComponent(userPhone)}`);
     let userState: 'lead' | 'qualified' | 'customer' = 'lead';
+    let agentName = 'Apolo (SDR)';
 
-    // Consultar Banco de Dados
-    const userJson = await getUser(userPhone);
-    let user: Record<string, unknown> | null = null;
-
-    try {
-      if (userJson) {
-        const parsed = JSON.parse(userJson);
-        if (parsed.status !== 'error' && parsed.status !== 'not_found') {
-          user = parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao parsear usuario:', e);
-    }
-
-    if (!user) {
-      // Novo usuário: Criar e mandar para Apolo
-      console.log('[Test Chat] Novo usuário detectado. Criando registro...');
-      await updateUser({ telefone: userPhone, nome_completo: pushName, situacao: 'aguardando_qualificação' });
-      userState = 'lead';
+    if (res.ok) {
+      const user = await res.json() as Record<string, unknown>;
+      if (user.situacao === 'cliente') userState = 'customer';
+      else if (user.qualificacao) userState = 'qualified';
     } else {
-      // Usuário existente: Verificar regras
-      if (user.situacao === 'cliente') {
-        userState = 'customer';
-      } else if (user.qualificacao) {
-        userState = 'qualified';
-      } else {
-        userState = 'lead';
-      }
+      await backendPost('/api/leads/update-fields', {
+        telefone: userPhone,
+        updates: { nome_completo: 'Test User', situacao: 'aguardando_qualificação' },
+      });
     }
 
-    let responseText = '[Erro de Simulação] A lógica de IA foi movida para o servidor "bot-backend", impedindo simulação realista neste painel offline.';
-    let agentName = 'Sistema';
+    const forced = targetAgent && targetAgent !== 'auto' ? targetAgent.toLowerCase() : null;
+    const state = forced || userState;
+    if (state === 'vendedor' || state === 'qualified') agentName = 'Vendedor (Icaro)';
+    else if (state === 'atendente' || state === 'customer') agentName = 'Atendente (Apolo Customer)';
 
-    // 2. Despachar para o Agente Correto (Ou Forçado)
-    if (targetAgent && targetAgent !== 'auto') {
-      switch (targetAgent.toLowerCase()) {
-        case 'vendedor':
-          agentName = 'Vendedor (Icaro)';
-          break;
-        case 'atendente':
-          agentName = 'Atendente (Apolo Customer)';
-          break;
-        case 'apolo':
-        default:
-          agentName = 'Apolo (SDR)';
-          break;
-      }
-    } else {
-      switch (userState) {
-        case 'qualified':
-          agentName = 'Vendedor (Icaro)';
-          break;
-        case 'customer':
-          agentName = 'Atendente (Apolo Customer)';
-          break;
-        case 'lead':
-        default:
-          agentName = 'Apolo (SDR)';
-          break;
-      }
-    }
-
-    // Simulando delay de api
-    await new Promise(r => setTimeout(r, 1000));
-
+    await new Promise((r) => setTimeout(r, 1000));
     return {
-      response: `[Agente ${agentName}] Esta é uma simulação offline. O Motor de IA real está rodando no bot-backend. Mensagem recebida: "${message}"`,
+      response: `[Agente ${agentName}] Esta é uma simulação offline. Mensagem recebida: "${message}"`,
       agent: agentName,
-      userState
+      userState,
     };
-
-  } catch (error: unknown) {
-    console.error('Erro no Test Chat:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { error: errorMessage };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 export async function getUserDataAction(phone: string) {
-  return await getUser(phone);
+  try {
+    const res = await backendGet(`/api/leads/user/${encodeURIComponent(phone)}`);
+    if (!res.ok) return JSON.stringify({ status: 'not_found' });
+    const data = await res.json();
+    return JSON.stringify(data);
+  } catch {
+    return JSON.stringify({ status: 'error' });
+  }
 }
 
-export async function updateUserDataAction(data: Parameters<typeof updateUser>[0]) {
-  return await updateUser(data);
+export async function updateUserDataAction(data: Record<string, unknown>) {
+  try {
+    const { telefone, ...updates } = data;
+    const res = await backendPut('/api/leads/update-fields', { telefone, updates });
+    return res.json();
+  } catch {
+    return JSON.stringify({ status: 'error' });
+  }
 }

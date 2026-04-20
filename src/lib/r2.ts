@@ -130,6 +130,19 @@ export async function uploadFileToR2(
   }
 }
 
+export async function getPresignedDownloadUrl(key: string, expiresIn = 900): Promise<string> {
+    if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
+
+    const command = new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+        ResponseContentDisposition: 'inline',
+        ResponseContentType: 'application/pdf',
+    });
+
+    return getSignedUrl(r2, command, { expiresIn });
+}
+
 export async function getPresignedUploadUrl(fileName: string, contentType: string): Promise<{ uploadUrl: string, publicUrl: string }> {
     if (!R2_BUCKET_NAME) throw new Error('R2_BUCKET_NAME not configured');
 

@@ -225,10 +225,10 @@ export function ChatInterface() {
       });
 
       // Deduplicate chats based on ID
-      const uniqueChats = Array.from(new Map(mappedChats.map((c: Chat) => [c.id, c])).values());
+      const uniqueChats: Chat[] = Array.from(new Map(mappedChats.map((c: Chat) => [c.id, c])).values()) as Chat[];
 
       // Sort by timestamp descending (future/recent first)
-      uniqueChats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      uniqueChats.sort((a: Chat, b: Chat) => (b.timestamp || 0) - (a.timestamp || 0));
 
       setChats(uniqueChats);
     }
@@ -425,7 +425,7 @@ export function ChatInterface() {
       } else {
         setMessages(prev => prev.map(m =>
           m.id === tempId
-            ? { ...m, content: `❌ Falha ao iniciar bot ${botName}: ${res.error}`, status: 'error' }
+            ? { ...m, content: `❌ Falha ao iniciar bot ${botName}`, status: 'error' }
             : m
         ));
       }

@@ -1,0 +1,19 @@
+name: serpro_integra_contador
+description: "Pacote Interno Dart para sincronização e acesso à API Integra Contador (Serpro), padronizado com os DTOs do Node.js backend."
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  # Pacote oficial base referenciado pela arquitetura (do MarlonSantosDev)
+  serpro_integra_contador_api: ^2.0.13
+  
+  # Ferramentas auxiliares comuns para DTOs e parsing
+  json_annotation: ^4.8.1
+
+dev_dependencies:
+  json_serializable: ^6.7.1
+  build_runner: ^2.4.6
+  lints: ^2.1.0

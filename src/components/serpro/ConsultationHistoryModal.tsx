@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { X, Search, FileText, Bot, User } from 'lucide-react';
@@ -32,13 +32,7 @@ export default function ConsultationHistoryModal({
   const [loading, setLoading] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
 
-  useEffect(() => {
-    if (isOpen && cnpj) {
-      fetchHistory();
-    }
-  }, [isOpen, cnpj]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/serpro/history?cnpj=${cnpj}`);
@@ -54,7 +48,13 @@ export default function ConsultationHistoryModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [cnpj]);
+
+  useEffect(() => {
+    if (isOpen && cnpj) {
+      fetchHistory();
+    }
+  }, [isOpen, cnpj, fetchHistory]);
 
   if (!isOpen) return null;
 

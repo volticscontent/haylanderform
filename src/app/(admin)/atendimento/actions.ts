@@ -1,682 +1,87 @@
 'use server';
 
-import { evolutionFindChats, evolutionFindMessages, evolutionSendTextMessage, evolutionSendMediaMessage, evolutionSendWhatsAppAudio, evolutionGetBase64FromMediaMessage, evolutionFetchProfilePicture } from "@/lib/evolution";
-import pool from "@/lib/db";
-import { generatePhoneVariations } from "@/lib/phone-utils";
-
-interface Lead {
-  id: number;
-  telefone: string;
-  nome_completo: string | null;
-  situacao: string | null;
-  data_reuniao: string | null;
-  needs_attendant: boolean | null;
-  attendant_requested_at: string | null;
-}
-
-interface Chat {
-  id: string;
-  remoteJid?: string;
-  pushName?: string | null;
-  unreadCount?: number;
-  profilePicUrl?: string | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lastMessage?: any;
-  conversationTimestamp?: number;
-  [key: string]: unknown;
-}
-
-interface Message {
-  key?: {
-    remoteJid: string;
-    fromMe: boolean;
-    id: string;
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  message?: any;
-  base64?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
+import { backendGet, backendPost } from '@/lib/backend-proxy';
+import { generatePhoneVariations } from '@/lib/phone-utils';
 
 export async function triggerBot(chatId: string, botName: string) {
-  try {
-    console.log(`Triggering bot ${botName} for chat ${chatId}`);
-
-    // TODO: Implement actual bot triggering logic here
-    // This could be a webhook call, an Evolution API call to start a Typebot, etc.
-    // Example: await evolutionStartTypebot(chatId, botName);
-
-    // For now, we'll simulate a delay and success
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    return { success: true, message: `Bot ${botName} iniciado com sucesso` };
-  } catch (error) {
-    console.error(`Error triggering bot ${botName}:`, error);
-    return { success: false, error: `Falha ao iniciar bot ${botName}` };
-  }
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  return { success: true, message: `Bot ${botName} iniciado com sucesso` };
 }
 
 export async function getChats() {
   try {
-    let chatsArray: any[] = [];
-    try {
-      const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'teste';
-      const instanceRes = await pool.query(`SELECT id FROM "Instance" WHERE name = $1 LIMIT 1`, [instanceName]);
-      const instanceId = instanceRes.rows[0]?.id;
-
-      if (instanceId) {
-        const chatsQuery = await pool.query(`
-          SELECT 
-            c."remoteJid" as id, 
-            c."remoteJid" as "remoteJid",
-            c."pushName", 
-            c."profilePicUrl",
-            ch."unreadMessages" as "unreadCount",
-            m."message",
-            m.key,
-            m."messageTimestamp"
-          FROM "Contact" c
-          INNER JOIN "Chat" ch ON c."remoteJid" = ch."remoteJid" AND c."instanceId" = ch."instanceId"
-          LEFT JOIN LATERAL (
-              SELECT "message", "messageTimestamp", "key" 
-              FROM "Message" 
-              WHERE "remoteJid" = c."remoteJid" AND "instanceId" = c."instanceId"
-              ORDER BY "messageTimestamp" DESC LIMIT 1
-          ) m ON true
-          WHERE c."instanceId" = $1 AND c."remoteJid" NOT LIKE '%@lid'
-          ORDER BY m."messageTimestamp" DESC NULLS LAST
-          LIMIT 300
-        `, [instanceId]);
-
-        chatsArray = chatsQuery.rows.map(row => ({
-          id: row.id,
-          remoteJid: row.remoteJid,
-          pushName: row.pushName,
-          profilePicUrl: row.profilePicUrl,
-          unreadCount: row.unreadCount,
-          lastMessage: row.message ? {
-            key: row.key,
-            message: row.message,
-            messageTimestamp: row.messageTimestamp
-          } : null
-        }));
-      }
-    } catch (e) {
-      console.error("Falha ao puxar do Evolution DB, executando fallback");
-      const chatsFallback = await evolutionFindChats();
-      chatsArray = Array.isArray(chatsFallback) ? chatsFallback : [];
-    }
-
-    // Filter out LID (Linked Devices) ghost chats entirely from the final array
-    chatsArray = chatsArray.filter(chat => {
-      const jid = chat.remoteJid || chat.id || '';
-      return !String(jid).includes('@lid');
-    });
-
-    // Mapeamento de contatos otimizado (O(1) memory load)
-    const registeredMap = new Map();
-    const matchedLeadIds = new Set<number>();
-    let allLeads: Lead[] = [];
-
-    try {
-      // 1. Extrair os telefones das 300 conversas carregadas
-      const chatPhones = new Set<string>();
-      chatsArray.forEach(chat => {
-        const jid = chat.remoteJid || chat.id || chat?.lastMessage?.key?.remoteJid || '';
-        const phone = String(jid).split('@')[0].replace(/\D/g, '');
-        if (phone) chatPhones.add(phone);
-      });
-
-      // 2. Gerar variações (com/sem 9, DDI) para dar o match exato
-      let uniquePhoneVariationsToQuery: string[] = [];
-      if (chatPhones.size > 0) {
-        const phoneVariationsToQuery = Array.from(chatPhones).flatMap(p => generatePhoneVariations(p));
-        uniquePhoneVariationsToQuery = Array.from(new Set(phoneVariationsToQuery));
-      }
-
-      // 3. Montar a query para buscar APENAS quem tá na tela de chat OU quem tem reunião marcada
-      let whereClause = 'WHERE lv.data_reuniao IS NOT NULL';
-      const queryParams: any[] = [];
-      
-      if (uniquePhoneVariationsToQuery.length > 0) {
-        whereClause = `WHERE REGEXP_REPLACE(l.telefone, '\\D', '', 'g') = ANY($1) OR lv.data_reuniao IS NOT NULL`;
-        queryParams.push(uniquePhoneVariationsToQuery);
-      }
-
-      const { rows: leads } = await pool.query<Lead>(`
-          SELECT 
-            l.id, 
-            l.telefone, 
-            l.nome_completo, 
-            l.needs_attendant,
-            l.attendant_requested_at,
-            lq.situacao,
-            lv.data_reuniao
-          FROM leads l
-          LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
-          LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
-          ${whereClause}
-        `, queryParams);
-      allLeads = leads;
-
-      leads.forEach((lead) => {
-        if (lead.telefone) {
-          const leadData = {
-            id: lead.id,
-            name: lead.nome_completo,
-            status: lead.situacao,
-            data_reuniao: lead.data_reuniao,
-            needs_attendant: lead.needs_attendant,
-            attendant_requested_at: lead.attendant_requested_at
-          };
-
-          const variations = generatePhoneVariations(lead.telefone);
-          variations.forEach(v => registeredMap.set(v, leadData));
-        }
-      });
-    } catch (dbError) {
-      console.error("Database error fetching leads:", dbError);
-      // Continue without registration info if DB fails
-    }
-
-    // Enrich chats with lastMessage and registration status
-    const enrichedChats = await Promise.all(chatsArray.map(async (chat) => {
-      // Evolution API v2 armazena o número real (mesmo para LIDs) no campo senderPn, participant, ou no próprio JID, muitas vezes dentro de lastMessage
-      let phone = '';
-      let computedRemoteJid = '';
-      try {
-        computedRemoteJid = chat?.remoteJid || chat?.id || chat?.lastMessage?.key?.remoteJid;
-        let senderPnVal = chat?.senderPn;
-        let participantVal = chat?.participant;
-        let lastMsgKey = chat?.lastMessage?.key;
-
-        // Se a raiz tem o message e key injetado pelo SQL, extrai dele
-        if (!lastMsgKey && chat?.key) {
-          lastMsgKey = chat.key;
-        }
-
-        if (!lastMsgKey?.fromMe) {
-          senderPnVal = senderPnVal || chat?.lastMessage?.senderPn || lastMsgKey?.senderPn;
-          participantVal = participantVal || chat?.lastMessage?.participant || lastMsgKey?.participant;
-        }
-
-        if (participantVal && String(participantVal).includes('@lid')) {
-          participantVal = null;
-        }
-
-        if (senderPnVal) {
-          phone = String(senderPnVal).replace(/\D/g, '');
-        } else if (participantVal) {
-          phone = String(participantVal).split('@')[0].replace(/\D/g, '');
-        } else if (computedRemoteJid && !String(computedRemoteJid).includes('@lid')) {
-          phone = String(computedRemoteJid).split('@')[0].replace(/\D/g, '');
-        } else if (chat?.key?.remoteJid && !String(chat.key.remoteJid).includes('@lid')) {
-          phone = String(chat.key.remoteJid).split('@')[0].replace(/\D/g, '');
-        } else if (computedRemoteJid && String(computedRemoteJid).includes('@lid')) {
-          // Força extração de números caso sobre apenas LID 
-          phone = String(computedRemoteJid).replace(/\D/g, '');
-        }
-      } catch (e: any) {
-        console.error("Falha ao processar JID do chat:", chat, e.message);
-        phone = '';
-      }
-
-      // Try to find exact match or variations
-      let leadInfo = registeredMap.get(phone);
-
-      if (!leadInfo && phone) {
-        // If direct match failed, try generating variations of the chat phone
-        // This handles cases where database has "5531..." but chat is "31..." or vice-versa
-        // and our initial map population might have missed some edge cases
-        const chatPhoneVariations = generatePhoneVariations(phone);
-        for (const variant of chatPhoneVariations) {
-          const found = registeredMap.get(variant);
-          if (found) {
-            leadInfo = found;
-            break;
-          }
-        }
-      }
-
-      if (leadInfo) {
-        matchedLeadIds.add(leadInfo.id);
-      }
-
-      const finalJid = phone ? `${phone}@s.whatsapp.net` : (computedRemoteJid || chat?.id || 'unknown');
-      let finalPushName = chat?.pushName || chat?.name;
-
-      // Se não tem nome ou é o nome do bot ("Você"), busca alternativas. 
-      // O SQL novo já traz pushName preenchido de 'Contact', então isso resolve 99% dos casos.
-      if (!finalPushName || finalPushName === 'Você') {
-        let lastMsgPushName = chat?.lastMessage?.pushName;
-        let lastMsgFromMe = chat?.lastMessage?.key?.fromMe;
-        if (chat?.key) lastMsgFromMe = chat.key.fromMe; // Suporte SQL raiz
-
-        finalPushName = !lastMsgFromMe ? (lastMsgPushName || 'Desconhecido') : 'Desconhecido';
-      }
-
-      const enrichedChat = {
-        ...chat,
-        id: finalJid,
-        remoteJid: finalJid,
-        evolutionJid: computedRemoteJid || chat?.id, // ID Intacto pro backend Evolution (mantém o lid se necessário)
-        senderPhone: phone,
-        pushName: finalPushName,
-        isRegistered: !!leadInfo,
-        leadId: leadInfo?.id || undefined,
-        leadName: leadInfo?.name || undefined,
-        leadStatus: leadInfo?.status || undefined,
-        // Ensure date is serialized to string to prevent React rendering errors
-        leadDataReuniao: leadInfo?.data_reuniao ? new Date(leadInfo.data_reuniao).toISOString() : undefined,
-        leadNeedsAttendant: leadInfo?.needs_attendant || false,
-        leadAttendantRequestedAt: leadInfo?.attendant_requested_at ? new Date(leadInfo.attendant_requested_at).toISOString() : undefined
-      };
-
-      // A Evolution API já retorna lastMessage no findChats — não precisamos buscar individualmente
-      // Isso evita 162+ requests paralelas que causam timeout
-
-      if (String(computedRemoteJid).includes('@lid') || String(chat?.id).includes('@lid') || String(phone).includes('@lid')) {
-        return null;
-      }
-
-      return enrichedChat;
-    }));
-
-    // Post-filter to remove ANY chat that still couldn't resolve its lid or is a ghost
-    const cleanEnrichedChats = enrichedChats.filter(c => c !== null);
-
-    // Deduplicate by final remoteJid to ensure we don't have multiple clones of the same contact
-    const uniqueEnrichedChats = Array.from(
-      new Map(cleanEnrichedChats.map(item => [item!.id, item])).values() // item is not null here
-    );
-
-    // Find leads with appointments that were not matched to any chat
-    const virtualChats = allLeads
-      .filter((lead) => lead.data_reuniao && !matchedLeadIds.has(lead.id) && lead.telefone)
-      .map((lead) => {
-        const phone = lead.telefone.replace(/\D/g, '');
-        const jid = `${phone}@s.whatsapp.net`;
-        return {
-          id: jid,
-          remoteJid: jid,
-          name: lead.nome_completo || phone,
-          pushName: lead.nome_completo,
-          profilePicUrl: null,
-          unreadCount: 0,
-          lastMessage: null,
-          conversationTimestamp: Math.floor(new Date(lead.data_reuniao!).getTime() / 1000), // Use meeting time
-          isRegistered: true,
-          leadId: lead.id,
-          leadName: lead.nome_completo,
-          leadStatus: lead.situacao,
-          leadDataReuniao: lead.data_reuniao,
-          leadNeedsAttendant: lead.needs_attendant || false,
-          leadAttendantRequestedAt: lead.attendant_requested_at ? new Date(lead.attendant_requested_at).toISOString() : undefined,
-          isVirtual: true
-        };
-      });
-
-    return { success: true, data: [...uniqueEnrichedChats, ...virtualChats] };
-  } catch (error) {
-    console.error("Error fetching chats:", error);
-    return { success: false, error: "Failed to fetch chats" };
+    const res = await backendGet('/api/atendimento/chats');
+    return res.json();
+  } catch (err) {
+    return { success: false, error: 'Failed to fetch chats' };
   }
 }
 
 export async function getContactProfilePicture(jid: string) {
   try {
-    // Remove o suffix se houver pra enviar apenas numericos para a API
     const phone = jid.split('@')[0];
-    const url = await evolutionFetchProfilePicture(phone);
-    return { success: true, url };
-  } catch (error) {
-    console.error("Error fetching profile picture:", error);
+    const params = new URLSearchParams({ jid: phone });
+    const res = await backendGet('/api/atendimento/profile-pic', params);
+    return res.json();
+  } catch {
     return { success: false, url: null };
   }
 }
 
 export async function getLeadByPhone(phone: string) {
   try {
-    console.log(`[getLeadByPhone] Searching for phone: ${phone}`);
     const cleanPhone = phone.replace(/\D/g, '');
-    console.log(`[getLeadByPhone] Clean phone: ${cleanPhone}`);
-
-    const baseQuery = `
-            SELECT 
-                l.id,
-                l.telefone, 
-                l.nome_completo, 
-                l.email,
-                l.data_cadastro,
-                l.atualizado_em,
-                
-                -- leads_empresarial
-                le.razao_social,
-                le.cnpj, 
-                le.cartao_cnpj,
-                le.tipo_negocio,
-                le.faturamento_mensal,
-                le.endereco,
-                le.numero,
-                le.complemento,
-                le.bairro,
-                le.cidade,
-                le.estado,
-                le.cep,
-                le.dados_serpro,
-
-                -- leads_atendimento
-                la.observacoes,
-                la.data_controle_24h,
-                la.envio_disparo,
-                la.data_ultima_consulta,
-                la.atendente_id,
-
-                -- leads_financeiro
-                lf.calculo_parcelamento, 
-                lf.valor_divida_ativa,
-                lf.valor_divida_municipal,
-                lf.valor_divida_estadual,
-                lf.valor_divida_federal,
-                lf.tipo_divida,
-                lf.tem_divida,
-                lf.tempo_divida,
-
-                -- leads_qualificacao
-                lq.situacao,
-                lq.qualificacao,
-                lq.motivo_qualificacao,
-                lq.interesse_ajuda,
-                lq.pos_qualificacao,
-                lq.possui_socio,
-
-                -- leads_vendas
-                lv.servico_negociado,
-                lv.status_atendimento,
-                lv.data_reuniao,
-                lv.procuracao,
-                lv.procuracao_ativa,
-                lv.procuracao_validade
-
-            FROM leads l
-            LEFT JOIN leads_empresarial le ON l.id = le.lead_id
-            LEFT JOIN leads_qualificacao lq ON l.id = lq.lead_id
-            LEFT JOIN leads_financeiro lf ON l.id = lf.lead_id
-            LEFT JOIN leads_vendas lv ON l.id = lv.lead_id
-            LEFT JOIN leads_atendimento la ON l.id = la.lead_id
-        `;
-
-    // Try exact match first
-    let result = await pool.query(`${baseQuery} WHERE l.telefone = $1`, [cleanPhone]);
-    console.log(`[getLeadByPhone] Exact match result: ${result.rows.length}`);
-
-    if (result.rows.length === 0) {
-      // Try variations
-      const variations = generatePhoneVariations(cleanPhone);
-      if (variations.length > 0) {
-        // Build OR clause for variations
-        const placeholders = variations.map((_, i) => `$${i + 1}`).join(', ');
-
-        // Use IN clause for variations
-        result = await pool.query(`${baseQuery} WHERE l.telefone IN (${placeholders}) LIMIT 1`, variations);
-      }
-    }
-
-    if (result.rows.length > 0) {
-      const lead = result.rows[0];
-      const dadosSerpro = lead.dados_serpro || {};
-
-      // Helper to check nested properties safely
-      const getSerproValue = (key: string) => {
-        return dadosSerpro[key] || null;
-      };
-
-      // Ensure dates are serialized to strings
-      const serializedLead = {
-        ...lead,
-        // Map potentially missing fields from dados_serpro
-        tem_protestos: lead.tem_protestos || (getSerproValue('protestos') ? 'Sim' : null),
-        tem_execucao_fiscal: lead.tem_execucao_fiscal || (getSerproValue('execucao_fiscal') ? 'Sim' : null),
-        tem_divida_ativa: lead.tem_divida_ativa || (getSerproValue('divida_ativa') ? 'Sim' : null),
-        tem_parcelamento: lead.tem_parcelamento || (getSerproValue('parcelamento') ? 'Sim' : null),
-
-        // Extra Serpro fields
-        porte_empresa: lead.porte_empresa || getSerproValue('porte_empresa') || null,
-        score_serasa: lead.score_serasa || getSerproValue('score_serasa') || null,
-        idades_socios: lead.idades_socios || getSerproValue('idades_socios') || null,
-        motivo_divida: lead.motivo_divida || getSerproValue('motivo_divida') || null,
-        tem_cartorios: lead.tem_cartorios || (getSerproValue('cartorios') ? 'Sim' : null),
-        parcelamento_ativo: lead.parcelamento_ativo || (getSerproValue('parcelamento_ativo') ? 'Sim' : null),
-
-        data_cadastro: lead.data_cadastro ? new Date(lead.data_cadastro).toISOString() : null,
-        atualizado_em: lead.atualizado_em ? new Date(lead.atualizado_em).toISOString() : null,
-        data_controle_24h: lead.data_controle_24h ? new Date(lead.data_controle_24h).toISOString() : null,
-        envio_disparo: lead.envio_disparo,
-        data_ultima_consulta: lead.data_ultima_consulta ? new Date(lead.data_ultima_consulta).toISOString() : null,
-        data_reuniao: lead.data_reuniao ? new Date(lead.data_reuniao).toISOString() : null,
-        procuracao_validade: lead.procuracao_validade ? new Date(lead.procuracao_validade).toISOString() : null,
-      };
-      return { success: true, data: serializedLead };
-    }
-
-    return { success: false, error: 'Lead não encontrado' };
-  } catch (error) {
-    console.error("Error fetching lead:", error);
-    return { success: false, error: "Failed to fetch lead" };
+    const res = await backendGet(`/api/atendimento/lead/${encodeURIComponent(cleanPhone)}`);
+    return res.json();
+  } catch {
+    return { success: false, error: 'Failed to fetch lead' };
   }
 }
 
 export async function registerLead(name: string, phone: string) {
   try {
-    const cleanPhone = phone.replace(/\D/g, '');
-    // Check if already exists
-    const { rows: existing } = await pool.query('SELECT id FROM leads WHERE telefone = $1', [cleanPhone]);
-    if (existing.length > 0) {
-      return { success: false, error: 'Usuário já cadastrado' };
-    }
-
-    const { rows } = await pool.query(
-      'INSERT INTO leads (nome_completo, telefone, data_cadastro) VALUES ($1, $2, NOW()) RETURNING id',
-      [name, cleanPhone]
-    );
-    return { success: true, data: rows[0] };
-  } catch (error) {
-    console.error('Error registering lead:', error);
+    const res = await backendPost('/api/atendimento/leads/register', { name, phone });
+    return res.json();
+  } catch {
     return { success: false, error: 'Falha ao cadastrar' };
+  }
+}
+
+export async function massRegisterLeads(leads: { name: string; phone: string }[]) {
+  try {
+    const res = await backendPost('/api/atendimento/leads/mass-register', { leads });
+    return res.json();
+  } catch {
+    return { success: false, error: 'Falha no cadastro em massa' };
   }
 }
 
 export async function getConsultationsByCnpj(cnpj: string) {
   try {
-    console.log(`[getConsultationsByCnpj] Buscando consultas para CNPJ bruto: "${cnpj}"`);
     const cleanCnpj = cnpj.replace(/\D/g, '');
-    console.log(`[getConsultationsByCnpj] CNPJ limpo: "${cleanCnpj}"`);
-
-    const query = `
-            SELECT 
-                id,
-                cnpj,
-                tipo_servico,
-                resultado,
-                status,
-                created_at
-            FROM consultas_serpro
-            WHERE cnpj = $1
-            ORDER BY created_at DESC
-        `;
-
-    const { rows } = await pool.query(query, [cleanCnpj]);
-    console.log(`[getConsultationsByCnpj] Encontradas ${rows.length} consultas.`);
-
-    const serializedRows = rows.map(row => ({
-      ...row,
-      created_at: row.created_at ? new Date(row.created_at).toISOString() : null
-    }));
-
-    return { success: true, data: serializedRows };
-  } catch (error) {
-    console.error('[getConsultationsByCnpj] Error fetching consultations:', error);
+    const res = await backendGet(`/api/atendimento/consultations/${encodeURIComponent(cleanCnpj)}`);
+    return res.json();
+  } catch {
     return { success: false, error: 'Falha ao buscar consultas' };
-  }
-}
-
-export async function massRegisterLeads(leads: { name: string, phone: string }[]) {
-  try {
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const results = [];
-      for (const lead of leads) {
-        const cleanPhone = lead.phone.replace(/\D/g, '');
-        // Skip if exists
-        const { rows: existing } = await client.query('SELECT id FROM leads WHERE telefone = $1', [cleanPhone]);
-        if (existing.length > 0) continue;
-
-        const { rows } = await client.query(
-          'INSERT INTO leads (nome_completo, telefone, data_cadastro) VALUES ($1, $2, NOW()) RETURNING id',
-          [lead.name, cleanPhone]
-        );
-        results.push(rows[0]);
-      }
-      await client.query('COMMIT');
-      return { success: true, count: results.length };
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error mass registering:', error);
-    return { success: false, error: 'Falha no cadastro em massa' };
   }
 }
 
 export async function getMessages(jid: string, page: number = 1) {
   try {
-    const jids = jid.split(',').filter(Boolean);
-    const jidsWithLids = new Set(jids);
-
-    // Tentar descobrir LIDs associados a esses números normais na base da Evolution ("Message" table)
-    try {
-      if (jids.length > 0) {
-        const queryParams = jids.map((_, i) => `$${i + 1}`).join(',');
-        const { rows } = await pool.query(`
-          SELECT DISTINCT key->>'remoteJid' as lid
-          FROM "Message"
-          WHERE key->>'remoteJidAlt' = ANY(ARRAY[${queryParams}])
-             OR key->>'senderPn' = ANY(ARRAY[${queryParams}])
-        `, jids);
-        
-        for (const row of rows) {
-          if (row.lid) jidsWithLids.add(row.lid);
-        }
-      }
-    } catch (dbErr) {
-      console.error('Error resolving LIDs in getMessages:', dbErr);
-    }
-
-    let allRecords: Message[] = [];
-
-    // Fetch 50 messages per page to ensure bot messages aren't lost in pagination
-    for (const singleJid of Array.from(jidsWithLids)) {
-      try {
-        const response = await evolutionFindMessages(singleJid, 50, page);
-        const records = (response?.messages?.records || (Array.isArray(response) ? response : [])) as Message[];
-        allRecords = [...allRecords, ...records];
-      } catch (e) {
-        console.error(`Error fetching messages for JID ${singleJid}:`, e);
-      }
-    }
-
-    // Deduplicate by message ID and sort by messageTimestamp desc
-    const uniqueRecordsMap = new Map<string, Message>();
-    for (const r of allRecords) {
-      const msgId = r.key?.id || r.keyId || r.id;
-      if (msgId && !uniqueRecordsMap.has(msgId)) {
-        uniqueRecordsMap.set(msgId, r);
-      }
-    }
-    
-    let records = Array.from(uniqueRecordsMap.values());
-    records.sort((a, b) => {
-      const aTime = typeof a.messageTimestamp === 'number' ? a.messageTimestamp : (a.messageTimestamp instanceof Date ? Math.floor(a.messageTimestamp.getTime() / 1000) : (Number(a.messageTimestamp) || 0));
-      const bTime = typeof b.messageTimestamp === 'number' ? b.messageTimestamp : (b.messageTimestamp instanceof Date ? Math.floor(b.messageTimestamp.getTime() / 1000) : (Number(b.messageTimestamp) || 0));
-      return bTime - aTime;
-    });
-
-    console.log(`[getMessages ServerAction] Fetched ${records.length} unique messages for JIDs [${jids.join(', ')}] on page ${page}. First ID: ${records[0]?.key?.id}`);
-
-    // Enrich media messages with base64
-    if (Array.isArray(records)) {
-      records = await Promise.all(records.map(async (msg) => {
-        const content = msg.message || msg;
-
-        // Check for any media type that might need base64
-        const mediaMsg = content.audioMessage ||
-          content.imageMessage ||
-          content.videoMessage ||
-          content.documentMessage ||
-          content.stickerMessage ||
-          content.viewOnceMessage?.message?.audioMessage ||
-          content.viewOnceMessage?.message?.imageMessage ||
-          content.viewOnceMessage?.message?.videoMessage ||
-          content.viewOnceMessageV2?.message?.audioMessage ||
-          content.viewOnceMessageV2?.message?.imageMessage ||
-          content.viewOnceMessageV2?.message?.videoMessage ||
-          content.ephemeralMessage?.message?.audioMessage ||
-          content.ephemeralMessage?.message?.imageMessage ||
-          content.ephemeralMessage?.message?.videoMessage ||
-          content.documentWithCaptionMessage?.message?.audioMessage ||
-          content.documentWithCaptionMessage?.message?.imageMessage ||
-          content.documentWithCaptionMessage?.message?.videoMessage ||
-          content.documentWithCaptionMessage?.message?.documentMessage;
-
-        if (mediaMsg && !msg.base64) {
-          try {
-            // We pass the full message object as expected by Evolution API
-            const base64Data = await evolutionGetBase64FromMediaMessage(msg);
-            if (base64Data?.base64) {
-              return { ...msg, base64: base64Data.base64 };
-            }
-          } catch (e) {
-            console.error(`Failed to fetch base64 for message ${msg.key?.id}`, e);
-          }
-        }
-        return msg;
-      }));
-    }
-
-    // Reconstruct response to match what frontend expects
-    // Frontend looks for res.data.messages.records or res.data as array
-    return { success: true, data: { messages: { records } } };
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    return { success: false, error: "Failed to fetch messages" };
+    const params = new URLSearchParams({ jid, page: String(page) });
+    const res = await backendGet('/api/atendimento/messages', params);
+    return res.json();
+  } catch {
+    return { success: false, error: 'Failed to fetch messages' };
   }
 }
 
 export async function sendMessage(jid: string, text: string) {
   try {
-    const result = await evolutionSendTextMessage(jid, text);
-    
-    // Notifica via WebSocket para que outros atendentes vejam a mensagem em tempo real
-    try {
-      const { notifySocketServer } = await import("@/lib/socket");
-      notifySocketServer("haylander-chat-updates", {
-        chatId: jid,
-        fromMe: true,
-        message: { conversation: text },
-        id: `msg-${Date.now()}`,
-        messageTimestamp: Math.floor(Date.now() / 1000)
-      }).catch(() => {});
-    } catch (e) {}
-    
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error sending message:", error);
-    return { success: false, error: "Failed to send message" };
+    const res = await backendPost('/api/atendimento/send-message', { jid, text });
+    return res.json();
+  } catch {
+    return { success: false, error: 'Failed to send message' };
   }
 }
 
@@ -685,45 +90,18 @@ export async function sendMedia(jid: string, formData: FormData) {
     const file = formData.get('file') as File;
     const type = formData.get('type') as 'image' | 'video' | 'audio' | 'document';
     const caption = formData.get('caption') as string || undefined;
-
-    if (!file) throw new Error("No file provided");
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64 = buffer.toString('base64');
-
-    // Check if it's a voice note (audio recorded by user)
     const isVoiceNote = formData.get('isVoiceNote') === 'true';
 
-    let result;
-    if (isVoiceNote && type === 'audio') {
-      result = await evolutionSendWhatsAppAudio(jid, base64);
-    } else {
-      result = await evolutionSendMediaMessage(
-        jid,
-        base64,
-        type,
-        caption,
-        file.name,
-        file.type
-      );
-    }
-    
-    // Notifica via WebSocket para que outros atendentes vejam a mensagem em tempo real
-    try {
-      const { notifySocketServer } = await import("@/lib/socket");
-      notifySocketServer("haylander-chat-updates", {
-        chatId: jid,
-        fromMe: true,
-        message: { conversation: caption || `[Midia enviada: ${file.name}]` },
-        id: `msg-${Date.now()}`,
-        messageTimestamp: Math.floor(Date.now() / 1000)
-      }).catch(() => {});
-    } catch (e) {}
+    if (!file) throw new Error('No file provided');
 
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error sending media:", error);
-    return { success: false, error: "Failed to send media" };
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const base64 = buffer.toString('base64');
+
+    const res = await backendPost('/api/atendimento/send-media', {
+      jid, base64, type, caption, fileName: file.name, mimeType: file.type, isVoiceNote,
+    });
+    return res.json();
+  } catch {
+    return { success: false, error: 'Failed to send media' };
   }
 }
