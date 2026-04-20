@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Calendar } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Send } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -33,6 +33,7 @@ const adminLinks: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Chat', href: '/atendimento', icon: MessageCircle },
   { name: 'Lista', href: '/lista', icon: Users },
+  // { name: 'Disparo', href: '/disparo', icon: Send }, // em desenvolvimento
   {
     name: 'Serpro',
     icon: Globe,
@@ -47,7 +48,8 @@ const adminLinks: NavItem[] = [
     icon: Settings,
     children: [
       { name: 'Geral', href: '/configuracoes', icon: Settings },
-      { name: 'Colaboradores', href: '/configuracoes#colaboradores', icon: Users }
+      { name: 'Serviços', href: '/configuracoes/servico', icon: Settings },
+      { name: 'Colaboradores', href: '/configuracoes/colaboradores', icon: Users },
     ]
   },
 ]
@@ -112,17 +114,6 @@ const docsLinks: NavItem[] = [
       { name: 'CRUD Individual', href: '/docs/list-api#endpoints-individuais-crud', icon: Users },
       { name: 'Filtros', href: '/docs/list-api#estrutura-de-filtros-where', icon: Users },
       { name: 'Resumo Técnico', href: '/docs/list-api#resumo-tecnico-list-api', icon: Users },
-    ]
-  },
-  {
-    name: 'Agendamento',
-    icon: Book,
-    children: [
-      { name: 'Visão Geral', href: '/docs/meeting#visao-geral', icon: Book },
-      { name: 'Fluxo', href: '/docs/meeting#fluxo-de-agendamento', icon: Book },
-      { name: 'Painel Admin', href: '/docs/meeting#painel-administrativo', icon: Calendar },
-      { name: 'Detalhes Técnicos', href: '/docs/meeting#detalhes-tecnicos', icon: Book },
-      { name: 'Resumo Técnico', href: '/docs/meeting#resumo-tecnico-meeting-module', icon: Book },
     ]
   },
 ]
