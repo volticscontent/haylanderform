@@ -1,0 +1,208 @@
+{
+  "main": {
+    "id": "fe7133180abc1097",
+    "type": "split",
+    "children": [
+      {
+        "id": "26f5699edd9eac66",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b4557131fd7affdf",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c02111460907cc3d",
+    "type": "split",
+    "children": [
+      {
+        "id": "986325508c9c42fa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "dca955bdce1fae38",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de arquivos"
+            }
+          },
+          {
+            "id": "59a53eca3efa0af4",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "b83d38cabcfa2227",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "9985ae48862fdcdb",
+    "type": "split",
+    "children": [
+      {
+        "id": "c6fe39eaf11de745",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "38ca1ddeb21a154a",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Links inversos"
+            }
+          },
+          {
+            "id": "56785ae72a5a7dac",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links de saída"
+            }
+          },
+          {
+            "id": "1aef94ff21c0fa02",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "07993dbe1e9476a8",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "d0f32411ea25aa90",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Sumário"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "b4557131fd7affdf",
+  "lastOpenFiles": [
+    "wiki/log.md.tmp.22016.1776801194727",
+    "wiki/index.md.tmp.22016.1776801186790",
+    "wiki/architecture/queues.md",
+    "wiki/architecture/queues.md.tmp.22016.1776801181816",
+    "wiki/features/integra-contador.md.tmp.22016.1776801157317",
+    "wiki/overview.md.tmp.22016.1776801154151",
+    "wiki/overview.md.tmp.22016.1776801151402",
+    "wiki/overview.md.tmp.22016.1776801151360",
+    "wiki/workflows/lead-qualification.md",
+    "wiki/features/integra-contador.md",
+    "wiki/index.md",
+    "wiki/overview.md.tmp.6920.1776790427819",
+    "wiki/overview.md.tmp.6920.1776790424635",
+    "wiki/features/integra-contador.md.tmp.6920.1776790420552",
+    "wiki/log.md.tmp.6920.1776790413094",
+    "wiki/security/serpro-certificates.md",
+    "wiki/decisions/ADR-002-gpt4o-mini.md",
+    "wiki/decisions/ADR-001-bff-pattern.md",
+    "wiki/integrations/redis.md",
+    "wiki/integrations/evolution-api.md",
+    "wiki/integrations/serpro.md",
+    "wiki/architecture/frontend.md",
+    "wiki/architecture/bot.md",
+    "wiki/log.md",
+    "wiki/features/apolo-audit.md",
+    "wiki/overview.md"
+  ]
+}
