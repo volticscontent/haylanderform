@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { Chat } from './types';
 import { formatChatListDate } from './dateUtils';
-import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar, AlertCircle } from 'lucide-react';
+import { CheckSquare, Square, UserPlus, Search, MessageSquare, UserX, Clock, ExternalLink, Menu, Calendar, AlertCircle, Check, CheckCheck } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { SchedulingModal } from './SchedulingModal';
 import { ChatAvatar } from './ChatAvatar';
@@ -316,9 +316,20 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                     </div>
 
                     <div className="flex justify-between items-center h-5">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[85%]">
-                        {chat.lastMessage}
-                      </p>
+                      <div className="flex items-center gap-1 min-w-0">
+                        {chat.lastMessageFromMe && (
+                          chat.lastMessageStatus === 'READ' || chat.lastMessageStatus === 'read' || chat.lastMessageStatus === '5' ? (
+                            <CheckCheck size={14} className="text-emerald-500 shrink-0" />
+                          ) : chat.lastMessageStatus === 'DELIVERY_ACK' || chat.lastMessageStatus === 'delivered' || chat.lastMessageStatus === '4' ? (
+                            <CheckCheck size={14} className="text-zinc-400 shrink-0" />
+                          ) : (
+                            <Check size={14} className="text-zinc-400 shrink-0" />
+                          )
+                        )}
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                          {chat.lastMessage}
+                        </p>
+                      </div>
                       {chat.unreadCount ? (
                         <span className="bg-emerald-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full">
                           {chat.unreadCount}

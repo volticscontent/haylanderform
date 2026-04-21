@@ -5,7 +5,7 @@ import { SerproClient } from '@/types/client'
 import ClientCard from './ClientCard'
 
 interface LastConsultedClientsProps {
-  source?: 'admin' | 'bot';
+  source?: 'admin' | 'bot' | 'test';
   onSelectCnpj?: (cnpj: string) => void;
 }
 

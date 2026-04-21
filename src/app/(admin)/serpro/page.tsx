@@ -30,7 +30,7 @@ export default function SerproPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SerproResponse | null>(null);
   const [error, setError] = useState('');
-  const [historyTab, setHistoryTab] = useState<'admin' | 'bot'>('admin');
+  const [historyTab, setHistoryTab] = useState<'admin' | 'bot' | 'test'>('admin');
   const [service, setService] = useState<keyof typeof SERVICE_CONFIG>('CCMEI_DADOS');
   const [showYearInfo, setShowYearInfo] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState('Consultando...');
@@ -58,7 +58,7 @@ export default function SerproPage() {
     } else if (SERVICES_WITH_YEAR.includes(service)) {
       setAno(currentYear.toString());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service]);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function SerproPage() {
       setError('CNPJ inválido. Verifique o número informado.');
       return;
     }
-    
+
     setLoading(true);
     setLoadingLabel('Consultando...');
     setError('');
@@ -124,12 +124,12 @@ export default function SerproPage() {
       const res = await fetch('/api/serpro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          cnpj, 
-          service, 
-          ano, 
-          mes: mes || undefined, 
-          numeroRecibo: numeroRecibo || undefined, 
+        body: JSON.stringify({
+          cnpj,
+          service,
+          ano,
+          mes: mes || undefined,
+          numeroRecibo: numeroRecibo || undefined,
           protocoloRelatorio: service === 'SIT_FISCAL_RELATORIO' ? (numeroRecibo || undefined) : undefined,
           codigoReceita: codigoReceita || undefined,
           categoria: service === 'DCTFWEB' ? categoria : undefined
@@ -193,22 +193,21 @@ export default function SerproPage() {
             </select>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 relative">
+          <div className="bg-gray-100 dark:bg-gray-900/20 p-4 rounded-lg border border-gray-100 dark:border-gray-800 relative">
             <div className="flex items-start justify-between mb-2">
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {SERVICE_CONFIG[service]?.descricao || 'Serviço Selecionado'}
               </h3>
               {SERVICE_CONFIG[service] && (
-                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                  (SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Consultar' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${(SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Consultar' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                   (SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Emitir' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200' :
-                  'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                }`}>
+                    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                  }`}>
                   {(SERVICE_CONFIG[service] as ServiceConfigItem).tipo}
                 </span>
               )}
             </div>
-            <div className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
+            <div className="space-y-1 text-sm text-gray-800 dark:text-gray-200">
               <p><span className="font-medium">Finalidade:</span> {(SERVICE_CONFIG[service] as ServiceConfigItem)?.finalidade || 'Não informada'}</p>
               <p><span className="font-medium">Como usar:</span> {(SERVICE_CONFIG[service] as ServiceConfigItem)?.uso || 'Consulte a documentação'}</p>
             </div>
@@ -220,13 +219,13 @@ export default function SerproPage() {
                 <div>
                   <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
                     Ano de Referência
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowYearInfo(!showYearInfo)}
                       className="text-zinc-400 hover:text-blue-500 transition-colors"
                       title="O que é Ano-Calendário?"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
                     </button>
                   </label>
                   <input
@@ -260,11 +259,10 @@ export default function SerproPage() {
                     key={y}
                     type="button"
                     onClick={() => setAno(y.toString())}
-                    className={`text-xs px-2 py-1 rounded border transition-all ${
-                      ano === y.toString() 
-                        ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300' 
-                        : 'bg-zinc-100 border-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:border-zinc-400'
-                    }`}
+                    className={`text-xs px-2 py-1 rounded border transition-all ${ano === y.toString()
+                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300'
+                      : 'bg-zinc-100 border-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:border-zinc-400'
+                      }`}
                   >
                     {y}
                   </button>
@@ -275,13 +273,13 @@ export default function SerproPage() {
               {(showYearInfo || service === 'DASN_SIMEI') && (
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
                   <div className="flex gap-2 text-amber-800 dark:text-amber-300">
-                    <svg className="shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <svg className="shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                     <div className="text-xs space-y-1">
                       <p className="font-semibold">
                         {service === 'DASN_SIMEI' ? 'Atenção para a DASN (Declaração Anual):' : 'Sobre o Ano-Calendário:'}
                       </p>
                       <p>
-                        {service === 'DASN_SIMEI' 
+                        {service === 'DASN_SIMEI'
                           ? `Em ${new Date().getFullYear()}, você declara os dados do ano que fechou (${new Date().getFullYear() - 1}). Por isso, sugerimos automaticamente ${new Date().getFullYear() - 1}.`
                           : `O Ano-Calendário ${ano} refere-se ao período em que os impostos foram gerados ou as atividades ocorreram.`}
                       </p>
@@ -399,17 +397,22 @@ export default function SerproPage() {
 
       <div className="space-y-4">
         <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800">
-          {(['admin', 'bot'] as const).map((tab) => (
+          {([
+            { key: 'admin', label: 'Minhas Consultas' },
+            { key: 'bot', label: 'Consultas do Bot' },
+            { key: 'test', label: 'Consultas de Teste' },
+          ] as const).map(({ key, label }) => (
             <button
-              key={tab}
-              onClick={() => setHistoryTab(tab)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                historyTab === tab
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
+              key={key}
+              onClick={() => setHistoryTab(key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${historyTab === key
+                ? key === 'test'
+                  ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                  : 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                }`}
             >
-              {tab === 'admin' ? 'Minhas Consultas' : 'Consultas do Bot'}
+              {label}
             </button>
           ))}
         </div>

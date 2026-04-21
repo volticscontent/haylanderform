@@ -20,11 +20,13 @@ export function ChatAvatar({ chatId, name, fallbackImage, className = '', size =
     const [fetchedUrl, setFetchedUrl] = useState<string | null>(null);
     const [initials, setInitials] = useState<string>('');
     const [isVisible, setIsVisible] = useState(false);
+    const [imgError, setImgError] = useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     // Reseta a imagem buscada ao trocar de chat
     useEffect(() => {
         setFetchedUrl(null);
+        setImgError(false);
     }, [chatId]);
 
     const imageUrl = useMemo(() => {
@@ -114,13 +116,14 @@ export function ChatAvatar({ chatId, name, fallbackImage, className = '', size =
             className={`rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-500 font-bold overflow-hidden relative shrink-0 border border-zinc-100 dark:border-zinc-700 ${className}`}
             style={{ width: size, height: size }}
         >
-            {imageUrl ? (
+            {imageUrl && !imgError ? (
                 <Image
                     src={imageUrl}
                     alt={name || 'Avatar'}
                     fill
                     className="object-cover"
                     unoptimized
+                    onError={() => setImgError(true)}
                 />
             ) : (
                 <span className="text-sm">{initials}</span>

@@ -16,7 +16,7 @@ export default function ConfiguracoesPage() {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editorOpen, setEditorOpen] = useState(false);
-    const [currentEditingFile, setCurrentEditingFile] = useState<{key: string, label: string} | null>(null);
+    const [currentEditingFile, setCurrentEditingFile] = useState<{ key: string, label: string } | null>(null);
 
     const loadSettings = useCallback(async () => {
         const res = await getSystemSettings();
@@ -69,13 +69,13 @@ export default function ConfiguracoesPage() {
         if (!setting) return;
 
         const currentBots = setting.allowed_bots || [];
-        const newBots = checked 
+        const newBots = checked
             ? [...currentBots, botId]
             : currentBots.filter(b => b !== botId);
-        
+
         // Optimistic update
         setSettings(prev => prev.map(s => s.key === key ? { ...s, allowed_bots: newBots } : s));
-        
+
         const res = await updateSettingBots(key, newBots);
         if (!res.success) {
             setMessage({ type: 'error', text: 'Erro ao atualizar permissões do bot' });
@@ -142,9 +142,9 @@ export default function ConfiguracoesPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {mediaSettings.map(setting => (
-                        <MediaCard 
-                            key={setting.key} 
-                            setting={setting} 
+                        <MediaCard
+                            key={setting.key}
+                            setting={setting}
                             onUpdate={loadSettings}
                             onBotChange={handleBotChange}
                             onDelete={() => handleDelete(setting.key)}
@@ -157,62 +157,17 @@ export default function ConfiguracoesPage() {
                 </div>
             </section>
 
-            {/* Parameters Section */}
-            <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-                    Parâmetros Gerais
-                </h2>
-                <div className="space-y-4">
-                    {paramSettings.map(setting => (
-                        <div key={setting.key} className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
-                            <div className="flex justify-between items-start">
-                                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                    {setting.label}
-                                </label>
-                                <div className="flex items-center gap-4">
-                                    <BotSelector setting={setting} onBotChange={handleBotChange} />
-                                    <button 
-                                        onClick={() => handleDelete(setting.key)}
-                                        className="text-zinc-400 hover:text-red-500 transition-colors p-1"
-                                        title="Excluir configuração"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                            {setting.type === 'textarea' ? (
-                                <textarea
-                                    value={setting.value || ''}
-                                    onChange={(e) => setSettings(prev => prev.map(s => s.key === setting.key ? { ...s, value: e.target.value } : s))}
-                                    onBlur={(e) => handleValueChange(setting.key, e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    rows={4}
-                                />
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={setting.value || ''}
-                                    onChange={(e) => setSettings(prev => prev.map(s => s.key === setting.key ? { ...s, value: e.target.value } : s))}
-                                    onBlur={(e) => handleValueChange(setting.key, e.target.value)}
-                                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <NewSettingModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+            <NewSettingModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
                 onSuccess={() => {
                     loadSettings();
                     setMessage({ type: 'success', text: 'Configuração criada com sucesso!' });
-                }} 
+                }}
             />
 
             {editorOpen && currentEditingFile && (
-                <FileEditorModal 
+                <FileEditorModal
                     isOpen={editorOpen}
                     onClose={() => setEditorOpen(false)}
                     fileKey={currentEditingFile.key}
@@ -235,7 +190,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
         try {
             // 1. Get Presigned URL
             const urlRes = await getUploadUrl(setting.key, file.name, file.type);
-            
+
             if (!urlRes.success || !urlRes.uploadUrl || !urlRes.publicUrl) {
                 throw new Error('Falha ao obter URL de upload');
             }
@@ -255,7 +210,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
 
             // 3. Update database with public URL
             const updateRes = await updateSystemSetting(setting.key, urlRes.publicUrl);
-            
+
             if (updateRes.success) {
                 onUpdate();
             } else {
@@ -281,7 +236,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
                 <span className="font-medium text-sm text-zinc-700 dark:text-zinc-200">{setting.label}</span>
                 <div className="flex items-center gap-1">
                     {isTextFile && (
-                        <button 
+                        <button
                             onClick={onEdit}
                             className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500"
                             title="Editar conteúdo"
@@ -289,7 +244,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
                             <Edit2 className="w-4 h-4" />
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-500"
@@ -297,7 +252,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
                     >
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     </button>
-                    <button 
+                    <button
                         onClick={onDelete}
                         className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 rounded-lg transition-colors"
                         title="Excluir"
@@ -305,14 +260,14 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
                         <Trash2 className="w-4 h-4" />
                     </button>
                 </div>
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
                     onChange={handleUpload}
                 />
             </div>
-            
+
             <div className="flex-1 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center min-h-[200px] p-4">
                 {setting.value ? (
                     <>
@@ -363,20 +318,20 @@ function BotSelector({ setting, onBotChange }: { setting: SystemSetting, onBotCh
             <div className="flex flex-wrap gap-2">
                 {AVAILABLE_BOTS.map(bot => {
                     const checked = setting.allowed_bots === null || setting.allowed_bots.includes(bot.id);
-                    
+
                     return (
-                        <label 
-                            key={bot.id} 
+                        <label
+                            key={bot.id}
                             className={`
                                 cursor-pointer px-2 py-1 rounded-md text-[10px] font-medium border transition-all select-none flex items-center gap-1.5
-                                ${checked 
-                                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800' 
+                                ${checked
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
                                     : 'bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                 }
                             `}
                         >
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 className="hidden"
                                 checked={checked}
                                 onChange={(e) => onBotChange(setting.key, bot.id, e.target.checked)}
@@ -472,7 +427,7 @@ function FileEditorModal({ isOpen, onClose, fileKey, fileLabel }: { isOpen: bool
                     </div>
                 ) : (
                     <div className="flex-1 relative group">
-                         <textarea 
+                        <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             className="absolute inset-0 w-full h-full p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all leading-relaxed"
@@ -486,13 +441,13 @@ function FileEditorModal({ isOpen, onClose, fileKey, fileLabel }: { isOpen: bool
                         {content.length} caracteres
                     </span>
                     <div className="flex gap-2">
-                        <button 
+                        <button
                             onClick={onClose}
                             className="px-4 py-2 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 rounded-lg transition-colors text-sm font-medium"
                         >
                             Cancelar
                         </button>
-                        <button 
+                        <button
                             onClick={handleSave}
                             disabled={saving || loading}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -531,13 +486,13 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
         setLoading(true);
 
         const res = await createSystemSetting({ key, label, type, value: type === 'media' ? '' : value });
-        
+
         if (res.success) {
             if (type === 'media' && file) {
                 try {
                     // 1. Get Presigned URL
                     const urlRes = await getUploadUrl(key, file.name, file.type);
-                    
+
                     if (!urlRes.success || !urlRes.uploadUrl || !urlRes.publicUrl) {
                         throw new Error('Falha ao obter URL de upload');
                     }
@@ -557,7 +512,7 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
 
                     // 3. Update database with public URL
                     const updateRes = await updateSystemSetting(key, urlRes.publicUrl);
-                    
+
                     if (!updateRes.success) {
                         throw new Error('Falha ao salvar URL no banco de dados');
                     }
@@ -594,8 +549,8 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tipo</label>
-                        <select 
-                            value={type} 
+                        <select
+                            value={type}
                             onChange={(e) => setType(e.target.value)}
                             className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm"
                         >
@@ -607,8 +562,8 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
 
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Chave (Key)</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             required
                             value={key}
                             onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
@@ -628,8 +583,8 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
 
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Rótulo (Label)</label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             required
                             value={label}
                             onChange={(e) => setLabel(e.target.value)}
@@ -642,15 +597,15 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Valor Inicial</label>
                             {type === 'textarea' ? (
-                                <textarea 
+                                <textarea
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
                                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm"
                                     rows={3}
                                 />
                             ) : (
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
                                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm"
@@ -662,8 +617,8 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                     {type === 'media' && (
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Arquivo</label>
-                            <input 
-                                type="file" 
+                            <input
+                                type="file"
                                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                                 className="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/20 dark:file:text-blue-400"
                             />
@@ -671,15 +626,15 @@ function NewSettingModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onCl
                     )}
 
                     <div className="flex justify-end gap-2 pt-2">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
                         >
                             Cancelar
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={loading}
                             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-2"
                         >

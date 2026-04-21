@@ -15,6 +15,8 @@ export interface Chat {
   leadDataReuniao?: string;
   leadNeedsAttendant?: boolean;
   leadAttendantRequestedAt?: string;
+  lastMessageFromMe?: boolean;
+  lastMessageStatus?: string;
 }
 
 export interface Message {
