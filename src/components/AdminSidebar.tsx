@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Send, Calendar } from 'lucide-react'
+import { LayoutDashboard, Users, Globe, FileText, X, Book, ArrowLeft, Database, ChevronDown, ChevronRight, MessageCircle, Moon, Sun, Workflow, GitBranch, Settings, Send, Calendar, Bot, Mail, Building2, DollarSign } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface AdminSidebarProps {
@@ -18,6 +18,7 @@ const LINK_PERMISSIONS: Record<string, string[]> = {
   'Chat': ['admin', 'atendimento'],
   'Lista': ['admin', 'vendas', 'atendimento'],
   'Serpro': ['admin', 'serpro'],
+  'Integra Contador': ['admin', 'serpro'],
   'Documentação': [],
   'Configurações': ['admin'],
 }
@@ -41,6 +42,18 @@ const adminLinks: NavItem[] = [
     children: [
       { name: 'Consulta', href: '/serpro', icon: Globe },
       { name: 'Documentos', href: '/serpro/documentos', icon: FileText },
+    ]
+  },
+  {
+    name: 'Integra Contador',
+    icon: Bot,
+    children: [
+      { name: 'Dashboard', href: '/integra/dashboard', icon: LayoutDashboard },
+      { name: 'Empresas', href: '/integra/empresas', icon: Building2 },
+      { name: 'Robôs', href: '/integra/robos', icon: Bot },
+      { name: 'Guias', href: '/integra/guias', icon: FileText },
+      { name: 'Caixa Postal', href: '/integra/caixa-postal', icon: Mail },
+      { name: 'Billing', href: '/integra/billing', icon: DollarSign },
     ]
   },
   { name: 'Documentação', href: '/docs', icon: Book },
