@@ -159,47 +159,47 @@ CREATE TABLE integra_caixa_postal (
 ## 📋 Fase 2 — Robôs BullMQ
 
 ### Workers
-- [ ] Criar `bot-backend/src/queues/integra/job-pgmei.ts` — Busca todas `integra_empresas` com MEI ativo e serviço PGMEI habilitado. Para cada uma, chama `consultarServico('PGMEI', cnpj)`. Persiste em `integra_guias`. Registra em `integra_execucao_itens`.
-- [ ] Criar `bot-backend/src/queues/integra/job-cnd.ts` — Consulta CND para empresas habilitadas. Salva em tabela `integra_cnd` (adicionar migration).
-- [ ] Criar `bot-backend/src/queues/integra/job-caixa-postal.ts` — Consulta `CAIXAPOSTAL` para todas as empresas ativas. Upsert em `integra_caixa_postal`.
-- [ ] Registrar os workers no scheduler do `bot-backend/src/cron/index.ts` lendo configuração de `integra_robos`.
+- [x] Criar `bot-backend/src/queues/integra/job-pgmei.ts` — Busca todas `integra_empresas` com MEI ativo e serviço PGMEI habilitado. Para cada uma, chama `consultarServico('PGMEI', cnpj)`. Persiste em `integra_guias`. Registra em `integra_execucao_itens`.
+- [x] Criar `bot-backend/src/queues/integra/job-cnd.ts` — Consulta CND para empresas habilitadas. Salva em tabela `integra_cnd` (adicionar migration).
+- [x] Criar `bot-backend/src/queues/integra/job-caixa-postal.ts` — Consulta `CAIXAPOSTAL` para todas as empresas ativas. Upsert em `integra_caixa_postal`.
+- [x] Registrar os workers no scheduler do `bot-backend/src/cron/index.ts` lendo configuração de `integra_robos`.
 
 ### Controle de Concorrência
-- [ ] Limitar processamento a 3 empresas simultâneas por job (evitar throttle do Serpro).
-- [ ] Implementar retry com backoff exponencial em caso de 401 (re-autenticar) ou 500.
+- [x] Limitar processamento a 3 empresas simultâneas por job (evitar throttle do Serpro).
+- [x] Implementar retry com backoff exponencial em caso de 401 (re-autenticar) ou 500.
 
 ---
 
 ## 📋 Fase 3 — Dashboard e Telas Operacionais
 
 ### Dashboard `/integra/dashboard`
-- [ ] Criar `src/app/(admin)/integra/dashboard/page.tsx` com:
+- [x] Criar `src/app/(admin)/integra/dashboard/page.tsx` com:
   - Cards: total empresas ativas, guias geradas no mês, guias pendentes, guias vencidas.
   - Tabela de status dos robôs (última execução, próxima, % sucesso).
   - Alertas: empresas com certificado a vencer em < 30 dias.
-- [ ] Criar `bot-backend/src/routes/integra/dashboard.ts` — endpoint `GET /integra/dashboard/summary` com dados agregados.
+- [x] Criar `bot-backend/src/routes/integra/dashboard.ts` — endpoint `GET /integra/dashboard/summary` com dados agregados.
 
 ### Tela de Guias `/integra/guias`
-- [ ] Listagem de `integra_guias` com filtros por empresa, competência, tipo, status.
-- [ ] Botão de download do PDF (URL pré-assinada do R2).
-- [ ] Ação "Gerar manualmente" para empresa selecionada (chama job pontual via POST).
+- [x] Listagem de `integra_guias` com filtros por empresa, competência, tipo, status.
+- [x] Botão de download do PDF (URL pré-assinada do R2).
+- [x] Ação "Gerar manualmente" para empresa selecionada (chama job pontual via POST).
 
 ### Caixa Postal `/integra/caixa-postal`
-- [ ] Listagem de `integra_caixa_postal` com filtro por empresa e status lida/não-lida.
-- [ ] Ação "Marcar como lida" e "Sincronizar agora" (trigger manual do job).
+- [x] Listagem de `integra_caixa_postal` com filtro por empresa e status lida/não-lida.
+- [x] Ação "Marcar como lida" e "Sincronizar agora" (trigger manual do job).
 
 ### Configuração dos Robôs `/integra/robos`
-- [ ] Listagem dos robôs com toggle ativo/inativo, campo dia do mês, histórico das últimas 5 execuções.
-- [ ] Botão "Executar agora" por robô.
+- [x] Listagem dos robôs com toggle ativo/inativo, campo dia do mês, histórico das últimas 5 execuções.
+- [x] Botão "Executar agora" por robô.
 
 ---
 
 ## 📋 Fase 4 — Relatório de Cobrança (Billing Tracker)
 
-- [ ] Adicionar coluna `custo_estimado` em `integra_execucao_itens` (já prevista na migration acima).
-- [ ] Criar tabela de preços do Serpro (`integra_precos`) — tipo + faixa de consumo → valor unitário.
-- [ ] Endpoint `GET /integra/billing?mes=YYYY-MM` que agrega consumo + custo estimado por empresa/serviço.
-- [ ] Tela `/integra/billing` com tabela detalhada e totais por período.
+- [x] Adicionar coluna `custo_estimado` em `integra_execucao_itens` (já prevista na migration acima).
+- [x] Criar tabela de preços do Serpro (`integra_precos`) — tipo + faixa de consumo → valor unitário.
+- [x] Endpoint `GET /integra/billing?mes=YYYY-MM` que agrega consumo + custo estimado por empresa/serviço.
+- [x] Tela `/integra/billing` com tabela detalhada e totais por período.
 
 ---
 
