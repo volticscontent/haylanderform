@@ -62,7 +62,7 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
     fetch(`/api/serpro/history?cnpj=${cnpj}`)
       .then(r => r.json())
       .then(d => setSerproHistory(d.history ?? []))
-      .catch(() => {})
+      .catch(() => { })
   }, [lead?.cnpj])
 
   if (!lead || !formData) return null
@@ -189,9 +189,9 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
       />
 
       {/* Sidebar */}
-      <div className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 h-full shadow-2xl p-0 overflow-hidden flex flex-col border-l border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-right duration-300">
+      <div className="relative w-ful max-w-2xl bg-white dark:bg-zinc-900 h-full shadow-2xl p-0 overflow-hidden flex flex-col border-l border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+        <div className="flex flex-col col-1 gap-3 items-start p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl">
               {lead.nome_completo ? lead.nome_completo.substring(0, 2).toUpperCase() : <User className="w-6 h-6" />}
@@ -221,7 +221,7 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
             {lead.telefone && (
               <Link
                 href={`/reuniao/${lead.telefone}`}
-                className="p-2 px-3 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2"
+                className="p-2 px-3 rounded-md bg-purple-600 text-white hover:bg-gray-700 transition-colors text-sm font-medium flex items-center gap-2"
                 title="Agendar Reunião"
               >
                 <Calendar className="w-4 h-4" /> Reunião
@@ -252,12 +252,6 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
                 </button>
               </>
             )}
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
         </div>
 
@@ -483,7 +477,7 @@ function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }
           )}
         </div>
       </div>
-    </div>
+    </div >
   )
 }
 
@@ -1092,223 +1086,223 @@ export default function LeadList({
       {/* Table */}
       <div className="overflow-auto flex-1">
         {!isMounted ? (
-           <div className="flex items-center justify-center h-64">
-             <Clock className="w-8 h-8 animate-spin text-zinc-300" />
-           </div>
+          <div className="flex items-center justify-center h-64">
+            <Clock className="w-8 h-8 animate-spin text-zinc-300" />
+          </div>
         ) : (
           <table className="w-full text-sm text-left text-zinc-600 dark:text-zinc-400">
-          <thead className="text-xs uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 sticky top-0 z-10">
-            <tr>
-              {visibleColumns.includes('cliente') && (
-                <th className="px-6 py-3 font-semibold">Cliente</th>
-              )}
-              {visibleColumns.includes('contato') && (
-                <th className="px-6 py-3 font-semibold">Contato</th>
-              )}
-              {visibleColumns.includes('detalhes') && (
-                <th className="px-6 py-3 font-semibold">Detalhes</th>
-              )}
-              {visibleColumns.includes('status_envio') && (
-                <th className="px-6 py-3 font-semibold">Status Envio</th>
-              )}
-              {visibleColumns.includes('atualizado') && (
-                <th className="px-6 py-3 font-semibold">Atualizado</th>
-              )}
-              {FIELD_COLUMNS.filter(f => visibleFieldColumns.includes(f.id)).map((f) => (
-                <th key={String(f.id)} className="px-6 py-3 font-semibold">{f.label}</th>
-              ))}
-              <th className="px-6 py-3 font-semibold text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {filteredData.length === 0 ? (
+            <thead className="text-xs uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 sticky top-0 z-10">
               <tr>
-                <td colSpan={visibleColumns.length + visibleFieldColumns.length + 1} className="px-6 py-12 text-center">
-                  <div className="flex flex-col items-center justify-center text-zinc-500">
-                    <Search className="w-8 h-8 mb-2 opacity-20" />
-                    <p>Nenhum registro encontrado para sua busca.</p>
-                  </div>
-                </td>
+                {visibleColumns.includes('cliente') && (
+                  <th className="px-6 py-3 font-semibold">Cliente</th>
+                )}
+                {visibleColumns.includes('contato') && (
+                  <th className="px-6 py-3 font-semibold">Contato</th>
+                )}
+                {visibleColumns.includes('detalhes') && (
+                  <th className="px-6 py-3 font-semibold">Detalhes</th>
+                )}
+                {visibleColumns.includes('status_envio') && (
+                  <th className="px-6 py-3 font-semibold">Status Envio</th>
+                )}
+                {visibleColumns.includes('atualizado') && (
+                  <th className="px-6 py-3 font-semibold">Atualizado</th>
+                )}
+                {FIELD_COLUMNS.filter(f => visibleFieldColumns.includes(f.id)).map((f) => (
+                  <th key={String(f.id)} className="px-6 py-3 font-semibold">{f.label}</th>
+                ))}
+                <th className="px-6 py-3 font-semibold text-right">Ações</th>
               </tr>
-            ) : (
-              filteredData.map((row, idx) => (
-                <tr key={`${row.telefone}-${idx}`} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                  {visibleColumns.includes('cliente') && (
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                          {row.nome_completo ? row.nome_completo.substring(0, 2).toUpperCase() : '??'}
-                        </div>
-                        <div>
-                          <div className="font-medium text-zinc-900 dark:text-zinc-200 flex flex-wrap items-center gap-2">
-                            {row.nome_completo || 'Sem nome'}
-                            {row.needs_attendant && (
-                              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${row.attendant_requested_at && new Date(row.attendant_requested_at).getTime() < Date.now() - 3600000
-                                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                                }`} title={row.attendant_requested_at ? `Solicitado em: ${new Date(row.attendant_requested_at).toLocaleString()}` : 'Solicitação de atendente'}>
-                                <AlertCircle size={10} />
-                                Ajuda
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-zinc-500 font-mono">{row.cnpj || 'CNPJ não informado'}</div>
-                        </div>
-                      </div>
-                    </td>
-                  )}
-                  {visibleColumns.includes('contato') && (
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
-                        <Phone className="w-3 h-3" />
-                        <span>{row.telefone}</span>
-                      </div>
-                    </td>
-                  )}
-                  {visibleColumns.includes('detalhes') && (
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-zinc-500">Interesse:</span>
-                          {row.interesse_ajuda === 'Sim' ? (
-                            <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" /> Sim
-                            </span>
-                          ) : (
-                            <span className="text-zinc-400">Não/Indefinido</span>
-                          )}
-                        </div>
-                        {row.calculo_parcelamento && (
-                          <div className="text-xs text-zinc-500 truncate max-w-[150px]" title={row.calculo_parcelamento}>
-                            💰 {row.calculo_parcelamento}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                  {visibleColumns.includes('status_envio') && (
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${['a1', 'a2', 'a3'].includes(row.envio_disparo || '')
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
-                        : (row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido')
-                          ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                          : row.envio_disparo === 'error'
-                            ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-                        }`}>
-                        {['a1', 'a2', 'a3'].includes(row.envio_disparo || '') && <Clock className="w-3 h-3" />}
-                        {(row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
-                        {(!row.envio_disparo || row.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
-                        {row.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
-                        {row.envio_disparo || 'Pendente'}
-                      </span>
-                    </td>
-                  )}
-                  {visibleColumns.includes('atualizado') && (
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-500">
-                      {row.atualizado_em ? new Date(row.atualizado_em).toLocaleString('pt-BR') : '-'}
-                    </td>
-                  )}
-                  {visibleColumns.includes('procuracao') && (
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${row.procuracao
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300'
-                          : 'bg-zinc-50 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-                          }`}>
-                          {row.procuracao ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                          {row.procuracao ? 'Sim' : 'Não'}
-                        </span>
-                      </div>
-                    </td>
-                  )}
-
-                  {FIELD_COLUMNS.filter(f => visibleFieldColumns.includes(f.id)).map((f) => {
-                    const raw = row[f.id]
-                    const isBoolean = typeof raw === 'boolean' || raw === 'true' || raw === 'false'
-                    let displayStr: string
-                    if (raw === null || typeof raw === 'undefined') {
-                      displayStr = '-'
-                    } else if (isBoolean) {
-                      displayStr = (raw === true || raw === 'true') ? 'Sim' : 'Não'
-                    } else if (DATE_COLUMNS.includes(String(f.id))) {
-                      try {
-                        displayStr = new Date(String(raw)).toLocaleString('pt-BR')
-                      } catch {
-                        displayStr = String(raw)
-                      }
-                    } else {
-                      displayStr = String(raw)
-                    }
-                    return (
-                      <td key={String(f.id)} className="px-6 py-4 text-xs text-zinc-700 dark:text-zinc-200 whitespace-nowrap">
-                        {displayStr}
-                      </td>
-                    )
-                  })}
-
-                  <td className="px-6 py-4 text-right relative">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => {
-                          setStartInEditMode(true)
-                          setSelectedLead(row)
-                        }}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-                        title="Editar"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-
-                      <div className="relative inline-block text-left">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setOpenMenuId(openMenuId === row.telefone ? null : row.telefone)
-                          }}
-                          className={`p-1.5 rounded-md transition-colors ${openMenuId === row.telefone ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {openMenuId === row.telefone && (
-                          <div
-                            ref={menuRef}
-                            className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 z-50 focus:outline-none animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
-                          >
-                            <div className="p-1" role="menu" aria-orientation="vertical">
-                              <button
-                                onClick={() => {
-                                  setStartInEditMode(false)
-                                  setSelectedLead(row)
-                                  setOpenMenuId(null)
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                                role="menuitem"
-                              >
-                                <Eye className="w-4 h-4 text-zinc-400" />
-                                Visualizar ficha
-                              </button>
-                              <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
-                              <button
-                                onClick={() => handleDelete(row.telefone)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                role="menuitem"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Apagar
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+            </thead>
+            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={visibleColumns.length + visibleFieldColumns.length + 1} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center text-zinc-500">
+                      <Search className="w-8 h-8 mb-2 opacity-20" />
+                      <p>Nenhum registro encontrado para sua busca.</p>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredData.map((row, idx) => (
+                  <tr key={`${row.telefone}-${idx}`} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                    {visibleColumns.includes('cliente') && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                            {row.nome_completo ? row.nome_completo.substring(0, 2).toUpperCase() : '??'}
+                          </div>
+                          <div>
+                            <div className="font-medium text-zinc-900 dark:text-zinc-200 flex flex-wrap items-center gap-2">
+                              {row.nome_completo || 'Sem nome'}
+                              {row.needs_attendant && (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${row.attendant_requested_at && new Date(row.attendant_requested_at).getTime() < Date.now() - 3600000
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                  : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                  }`} title={row.attendant_requested_at ? `Solicitado em: ${new Date(row.attendant_requested_at).toLocaleString()}` : 'Solicitação de atendente'}>
+                                  <AlertCircle size={10} />
+                                  Ajuda
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-zinc-500 font-mono">{row.cnpj || 'CNPJ não informado'}</div>
+                          </div>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('contato') && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+                          <Phone className="w-3 h-3" />
+                          <span>{row.telefone}</span>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('detalhes') && (
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-zinc-500">Interesse:</span>
+                            {row.interesse_ajuda === 'Sim' ? (
+                              <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" /> Sim
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">Não/Indefinido</span>
+                            )}
+                          </div>
+                          {row.calculo_parcelamento && (
+                            <div className="text-xs text-zinc-500 truncate max-w-[150px]" title={row.calculo_parcelamento}>
+                              💰 {row.calculo_parcelamento}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.includes('status_envio') && (
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${['a1', 'a2', 'a3'].includes(row.envio_disparo || '')
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
+                          : (row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido')
+                            ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
+                            : row.envio_disparo === 'error'
+                              ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                              : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
+                          }`}>
+                          {['a1', 'a2', 'a3'].includes(row.envio_disparo || '') && <Clock className="w-3 h-3" />}
+                          {(row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
+                          {(!row.envio_disparo || row.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
+                          {row.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
+                          {row.envio_disparo || 'Pendente'}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('atualizado') && (
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-zinc-500">
+                        {row.atualizado_em ? new Date(row.atualizado_em).toLocaleString('pt-BR') : '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('procuracao') && (
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${row.procuracao
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300'
+                            : 'bg-zinc-50 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                            }`}>
+                            {row.procuracao ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                            {row.procuracao ? 'Sim' : 'Não'}
+                          </span>
+                        </div>
+                      </td>
+                    )}
+
+                    {FIELD_COLUMNS.filter(f => visibleFieldColumns.includes(f.id)).map((f) => {
+                      const raw = row[f.id]
+                      const isBoolean = typeof raw === 'boolean' || raw === 'true' || raw === 'false'
+                      let displayStr: string
+                      if (raw === null || typeof raw === 'undefined') {
+                        displayStr = '-'
+                      } else if (isBoolean) {
+                        displayStr = (raw === true || raw === 'true') ? 'Sim' : 'Não'
+                      } else if (DATE_COLUMNS.includes(String(f.id))) {
+                        try {
+                          displayStr = new Date(String(raw)).toLocaleString('pt-BR')
+                        } catch {
+                          displayStr = String(raw)
+                        }
+                      } else {
+                        displayStr = String(raw)
+                      }
+                      return (
+                        <td key={String(f.id)} className="px-6 py-4 text-xs text-zinc-700 dark:text-zinc-200 whitespace-nowrap">
+                          {displayStr}
+                        </td>
+                      )
+                    })}
+
+                    <td className="px-6 py-4 text-right relative">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setStartInEditMode(true)
+                            setSelectedLead(row)
+                          }}
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setOpenMenuId(openMenuId === row.telefone ? null : row.telefone)
+                            }}
+                            className={`p-1.5 rounded-md transition-colors ${openMenuId === row.telefone ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {openMenuId === row.telefone && (
+                            <div
+                              ref={menuRef}
+                              className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 z-50 focus:outline-none animate-in fade-in zoom-in-95 duration-100 overflow-hidden"
+                            >
+                              <div className="p-1" role="menu" aria-orientation="vertical">
+                                <button
+                                  onClick={() => {
+                                    setStartInEditMode(false)
+                                    setSelectedLead(row)
+                                    setOpenMenuId(null)
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                  role="menuitem"
+                                >
+                                  <Eye className="w-4 h-4 text-zinc-400" />
+                                  Visualizar ficha
+                                </button>
+                                <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
+                                <button
+                                  onClick={() => handleDelete(row.telefone)}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  role="menuitem"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Apagar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         )}
       </div>
 

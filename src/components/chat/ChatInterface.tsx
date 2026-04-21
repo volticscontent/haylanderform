@@ -216,11 +216,13 @@ export function ChatInterface() {
           unreadCount: c.unreadCount || 0,
           lastMessage: extractMessagePreview(c.lastMessage || c),
           timestamp: c.lastMessage?.messageTimestamp || c.conversationTimestamp || (c.updatedAt ? Math.floor(new Date(c.updatedAt).getTime() / 1000) : Math.floor(Date.now() / 1000)),
-          isRegistered: c.isRegistered,
+          isRegistered: c.isRegistered ?? !!c.leadId,
           leadId: c.leadId,
           leadName: c.leadName,
           leadStatus: c.leadStatus,
-          leadDataReuniao: c.leadDataReuniao
+          leadDataReuniao: c.leadDataReuniao,
+          lastMessageFromMe: c.lastMessage?.key?.fromMe ?? c.lastMessage?.fromMe,
+          lastMessageStatus: c.lastMessage?.status
         };
       });
 
@@ -296,7 +298,9 @@ export function ChatInterface() {
       if (selectedChatIdRef.current && (incomingChatId === selectedChatIdRef.current || data.altChatId === selectedChatIdRef.current)) {
         setMessages(prev => {
           if (prev.some(m => m.id === normalizedMsg.id)) return prev; // deduplicate
-          return [...prev, normalizedMsg];
+          const updated = [...prev, normalizedMsg];
+          try { sessionStorage.setItem(`chat_msgs_${selectedChatIdRef.current}`, JSON.stringify(updated)); } catch { /* ignore */ }
+          return updated;
         });
       }
 
@@ -321,10 +325,18 @@ export function ChatInterface() {
     };
   }, [loadChats]);
 
+  const getCacheKey = (jid: string) => `chat_msgs_${jid.split(',')[0]}`;
+
   const loadMessages = useCallback(async (jid: string, pageNum = 1, silent = false) => {
     try {
-      if (pageNum === 1 && !silent) setLoadingMessages(true);
-      else if (pageNum > 1) setLoadingMore(true);
+      if (pageNum === 1 && !silent) {
+        // Restore from cache immediately so navigation doesn't blank the chat
+        try {
+          const cached = sessionStorage.getItem(getCacheKey(jid));
+          if (cached) setMessages(JSON.parse(cached));
+        } catch { /* ignore */ }
+        setLoadingMessages(true);
+      } else if (pageNum > 1) setLoadingMore(true);
 
       const res = await getMessages(jid, pageNum);
 
@@ -340,8 +352,11 @@ export function ChatInterface() {
 
         if (pageNum === 1) {
           setMessages(uniqueMappedMessages);
+          // Cache page-1 messages so they survive navigation
+          try {
+            sessionStorage.setItem(getCacheKey(jid), JSON.stringify(uniqueMappedMessages));
+          } catch { /* ignore quota errors */ }
         } else {
-          // Filter out duplicates based on ID
           setMessages(prev => {
             const existingIds = new Set(prev.map(msg => msg.id));
             const newUniqueMessages = uniqueMappedMessages.filter((msg: Message) => !existingIds.has(msg.id));
@@ -361,6 +376,35 @@ export function ChatInterface() {
   useEffect(() => {
     loadChats();
   }, [loadChats]);
+
+  // Verify registration and badges from DB whenever a chat is selected
+  useEffect(() => {
+    if (!selectedChatId) return;
+    let cancelled = false;
+    const phone = selectedChatId.split('@')[0];
+    getLeadByPhone(phone).then(result => {
+      if (cancelled) return;
+      setChats(prev => prev.map(c => {
+        if (c.id !== selectedChatId) return c;
+        if (result.success && result.data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const lead = result.data as any;
+          return {
+            ...c,
+            isRegistered: true,
+            leadId: lead.id,
+            leadName: lead.nome_completo ?? c.leadName,
+            leadStatus: lead.status_atendimento ?? c.leadStatus,
+            leadDataReuniao: lead.data_reuniao ?? c.leadDataReuniao,
+            leadNeedsAttendant: !!lead.needs_attendant,
+            leadAttendantRequestedAt: lead.attendant_requested_at ?? null,
+          };
+        }
+        return { ...c, isRegistered: false, leadId: undefined };
+      }));
+    }).catch(() => {/* ignore network errors */});
+    return () => { cancelled = true; };
+  }, [selectedChatId]);
 
   const loadedChatIdRef = React.useRef<string | null>(null);
 

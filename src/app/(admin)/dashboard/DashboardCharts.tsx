@@ -107,7 +107,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       const totalLeads = dataset.length
       const interested = dataset.filter(d => {
         const val = String(d.interesse_ajuda || '').toLowerCase();
-        return val === 'sim' || val === 'true' || !!d.situacao;
+        return val === 'sim' || val === 'true';
       }).length
 
       return {
@@ -122,16 +122,11 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
         }).length,
 
         sentMessages: dataset.filter(d => {
-          const status = d.envio_disparo
-          // Sent if status is 'concluido' (case insensitive)
-          // or if it's not pending/error/null and explicitly marked as sent in some way?
-          // User said: "Se a1, a2, a3 estão ativados que dizer que tem envios pendentes se estiver como concluido ai sim você não precisa marcar envio pendente mais envio concluido"
-          // So 'concluido' is the key.
-          return status && (status.toLowerCase() === 'concluido' || (!['Pendente', 'error', 'a1', 'a2', 'a3'].includes(status)))
+          return String(d.envio_disparo || '').toLowerCase() === 'concluido'
         }).length,
 
         interested,
-        notInterested: dataset.filter(d => d.interesse_ajuda === 'Não').length,
+        notInterested: dataset.filter(d => String(d.interesse_ajuda || '').toLowerCase() === 'não').length,
         conversionRate: totalLeads > 0 ? (interested / totalLeads) * 100 : 0
       }
     }
@@ -245,6 +240,36 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     }))
   }, [filteredData])
 
+  // 2c. Leads por Dia (para gráfico de linhas com filtro multi-dia)
+  const leadsPorDia = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return []
+    const start = parseISO(dateRange.start)
+    const end = parseISO(dateRange.end)
+    const days = differenceInDays(end, start) + 1
+    const counts: Record<string, number> = {}
+
+    filteredData.forEach(rec => {
+      const raw = rec.data_cadastro ?? rec.atualizado_em
+      if (!raw) return
+      const date = typeof raw === 'string' ? parseISO(raw) : new Date(raw)
+      const key = format(date, 'dd/MM')
+      counts[key] = (counts[key] || 0) + 1
+    })
+
+    return Array.from({ length: days }, (_, i) => {
+      const day = subDays(end, days - 1 - i)
+      const key = format(day, 'dd/MM')
+      return { name: key, value: counts[key] || 0 }
+    })
+  }, [filteredData, dateRange])
+
+  const isMultiDay = !!(
+    dateRange.start && dateRange.end &&
+    differenceInDays(parseISO(dateRange.end), parseISO(dateRange.start)) > 0
+  )
+  const lineChartData = isMultiDay ? leadsPorDia : leadsPorHora
+  const lineChartTitle = isMultiDay ? 'Leads por Dia' : 'Leads por Horário do Dia'
+
   return (
     <div className="space-y-6">
       {/* Header / Analytics Controls */}
@@ -255,7 +280,9 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-indigo-500" />
-                <span className="truncate">Distribuição por {columnLabels[filterColumn]}</span>
+                <span className="truncate">
+                  {chartType === 'line' ? lineChartTitle : `Distribuição por ${columnLabels[filterColumn]}`}
+                </span>
               </h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Visualizando {filteredData.length} registros
@@ -462,7 +489,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   </Bar>
                 </BarChart>
               ) : (
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={lineChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} className="dark:opacity-10" />
                   <XAxis
                     dataKey="name"
@@ -485,7 +512,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
                             <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
                             <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                              {payload[0].value} registros
+                              {payload[0].value} leads
                             </p>
                           </div>
                         );
@@ -494,12 +521,12 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     }}
                   />
                   <Line
-                    type="monotone"
+                    type="linear"
                     dataKey="value"
                     stroke="#6366f1"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }}
                   />
                 </LineChart>
               )}
@@ -563,7 +590,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   {/* Comparison Badge */}
                   {summaryMetrics.previous && (
                     <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0))
-                        ? 'bg-green-50 text-green-500 dark:bg-gray-500/50 dark:text--400'
+                        ? 'bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400'
                         : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
                           ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                           : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
