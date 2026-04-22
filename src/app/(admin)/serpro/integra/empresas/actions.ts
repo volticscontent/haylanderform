@@ -3,6 +3,15 @@
 import { revalidatePath } from 'next/cache';
 import { backendGet, backendPost, backendPut, backendDelete } from '@/lib/backend-proxy';
 
+export type LeadParaImportar = {
+  id: number;
+  nome_completo: string;
+  cnpj: string;
+  email: string | null;
+  telefone: string | null;
+  procuracao_ativa: boolean;
+};
+
 export type IntegraEmpresa = {
   id: number;
   cnpj: string;
@@ -34,7 +43,7 @@ export async function criarEmpresa(data: {
 }) {
   const res = await backendPost('/api/integra/empresas', data);
   const body = await res.json();
-  if (res.ok) revalidatePath('/(admin)/integra/empresas', 'page');
+  if (res.ok) revalidatePath('/(admin)/serpro/integra/empresas', 'page');
   return { ok: res.ok, data: body };
 }
 
@@ -51,7 +60,7 @@ export async function atualizarEmpresa(id: number, updates: Partial<IntegraEmpre
     }
   );
   const body = await res.json();
-  if (res.ok) revalidatePath('/(admin)/integra/empresas', 'page');
+  if (res.ok) revalidatePath('/(admin)/serpro/integra/empresas', 'page');
   return { ok: res.ok, data: body };
 }
 
@@ -63,10 +72,25 @@ export async function excluirEmpresa(id: number) {
       headers: process.env.BOT_BACKEND_SECRET ? { 'x-api-key': process.env.BOT_BACKEND_SECRET } : {},
     }
   );
-  if (res.ok) revalidatePath('/(admin)/integra/empresas', 'page');
+  if (res.ok) revalidatePath('/(admin)/serpro/integra/empresas', 'page');
   return { ok: res.ok };
 }
 
 export async function toggleAtivo(id: number, ativo: boolean) {
   return atualizarEmpresa(id, { ativo });
+}
+
+export async function listarLeadsParaImportar(): Promise<LeadParaImportar[]> {
+  const res = await backendGet('/api/integra/leads-para-importar');
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function importarLeadComoEmpresa(lead: LeadParaImportar) {
+  return criarEmpresa({
+    cnpj: lead.cnpj,
+    razao_social: lead.nome_completo,
+    regime_tributario: 'mei',
+    lead_id: lead.id,
+  });
 }

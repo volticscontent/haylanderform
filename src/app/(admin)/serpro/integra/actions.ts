@@ -73,7 +73,7 @@ export async function listarRobos(): Promise<IntegraRobo[]> {
 
 export async function executarRobo(tipo: string) {
   const res = await backendPost(`/api/integra/robos/${tipo}/executar`, {});
-  revalidatePath('/(admin)/integra/robos', 'page');
+  revalidatePath('/(admin)/serpro/integra/robos', 'page');
   return { ok: res.ok, data: await res.json() };
 }
 
@@ -87,7 +87,7 @@ export async function atualizarRobo(tipo: string, updates: { ativo?: boolean; di
     },
     body: JSON.stringify(updates),
   });
-  revalidatePath('/(admin)/integra/robos', 'page');
+  revalidatePath('/(admin)/serpro/integra/robos', 'page');
   return { ok: res.ok, data: await res.json() };
 }
 
@@ -121,7 +121,7 @@ export async function marcarLida(id: number) {
     method: 'PATCH',
     headers: process.env.BOT_BACKEND_SECRET ? { 'x-api-key': process.env.BOT_BACKEND_SECRET } : {},
   });
-  revalidatePath('/(admin)/integra/caixa-postal', 'page');
+  revalidatePath('/(admin)/serpro/integra/caixa-postal', 'page');
   return { ok: res.ok };
 }
 
@@ -180,6 +180,6 @@ export async function atualizarPreco(tipo_robo: string, preco_unitario: number) 
     },
     body: JSON.stringify({ preco_unitario }),
   });
-  revalidatePath('/(admin)/integra/billing', 'page');
+  revalidatePath('/(admin)/serpro/integra/billing', 'page');
   return { ok: res.ok, data: await res.json() };
 }

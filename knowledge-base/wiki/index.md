@@ -7,7 +7,8 @@ updated: 2026-04-20
 # Knowledge Base — Índice Master
 
 Ver [overview.md](overview.md) para visão geral da arquitetura.
-Ver [log.md](log.md) para histórico de operações.
+Ver [log.md](log.md) para histórico de operações (Nossa referência de tempo linear).
+Ver [tracking.canvas](tracking.canvas) para o Canvas visual de acompanhamento do que precisa ser documentado/construído.
 
 ---
 
@@ -25,6 +26,7 @@ Ver [log.md](log.md) para histórico de operações.
 |---|---|---|
 | [apolo-audit.md](features/apolo-audit.md) | Auditoria completa do Bot Apolo (14 dimensões) | current |
 | [integra-contador.md](features/integra-contador.md) | Módulo 4 — Integra Contador (robôs, guias, caixa postal) | current |
+| [empresa-bot-registration.md](features/empresa-bot-registration.md) | Cadastro e Orquestração de Bot para Empresas (RAG, Automação) | planned |
 
 ## Integrations
 
@@ -52,6 +54,8 @@ Ver [log.md](log.md) para histórico de operações.
 |---|---|
 | [ADR-001-bff-pattern.md](decisions/ADR-001-bff-pattern.md) | Frontend como cliente leve (BFF) |
 | [ADR-002-gpt4o-mini.md](decisions/ADR-002-gpt4o-mini.md) | gpt-4o-mini como modelo padrão |
+| [ADR-0001-serpro-integra-bugs.md](decisions/ADR-0001-serpro-integra-bugs.md) | 6 bugs críticos Integra Contador (2026-04-22) |
+| [ADR-0002-serpro-clients-interface.md](decisions/ADR-0002-serpro-clients-interface.md) | Redesign /serpro/clients para incluir leads com procuração (2026-04-22) |
 
 ## Migrations (Audit Reports)
 

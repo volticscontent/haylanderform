@@ -17,14 +17,14 @@ export async function GET(req: Request) {
   try {
     await client.connect();
     const { rows } = await client.query(
-      `SELECT id, cnpj, tipo_servico, status, created_at
+      `SELECT id, cnpj, tipo_servico, status, created_at, resultado, source
        FROM consultas_serpro
        WHERE REPLACE(cnpj, '.', '') = $1
           OR REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '/', ''), '-', '') = $1
        ORDER BY created_at DESC LIMIT 20`,
       [cnpj]
     );
-    return NextResponse.json({ history: rows });
+    return NextResponse.json(rows);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   } finally {

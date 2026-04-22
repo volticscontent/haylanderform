@@ -533,7 +533,7 @@ export default function LeadList({
     { id: 'contato', label: 'Contato' },
     { id: 'detalhes', label: 'Detalhes' },
     { id: 'procuracao', label: 'Procuração' },
-    { id: 'status_envio', label: 'Status Envio' },
+    { id: 'empresa', label: 'Empresa' },
     { id: 'atualizado', label: 'Atualizado' },
   ]
   const DEFAULT_COLUMNS = AVAILABLE_COLUMNS.map(c => c.id)
@@ -1102,8 +1102,8 @@ export default function LeadList({
                 {visibleColumns.includes('detalhes') && (
                   <th className="px-6 py-3 font-semibold">Detalhes</th>
                 )}
-                {visibleColumns.includes('status_envio') && (
-                  <th className="px-6 py-3 font-semibold">Status Envio</th>
+                {visibleColumns.includes('empresa') && (
+                  <th className="px-6 py-3 font-semibold">Empresa</th>
                 )}
                 {visibleColumns.includes('atualizado') && (
                   <th className="px-6 py-3 font-semibold">Atualizado</th>
@@ -1180,22 +1180,19 @@ export default function LeadList({
                         </div>
                       </td>
                     )}
-                    {visibleColumns.includes('status_envio') && (
+                    {visibleColumns.includes('empresa') && (
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${['a1', 'a2', 'a3'].includes(row.envio_disparo || '')
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
-                          : (row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido')
-                            ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-                            : row.envio_disparo === 'error'
-                              ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-                              : 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-                          }`}>
-                          {['a1', 'a2', 'a3'].includes(row.envio_disparo || '') && <Clock className="w-3 h-3" />}
-                          {(row.envio_disparo === 'concluido' || row.envio_disparo === 'Concluido') && <CheckCircle className="w-3 h-3" />}
-                          {(!row.envio_disparo || row.envio_disparo === 'Pendente') && <Clock className="w-3 h-3" />}
-                          {row.envio_disparo === 'error' && <AlertCircle className="w-3 h-3" />}
-                          {row.envio_disparo || 'Pendente'}
-                        </span>
+                        {row.cnpj ? (
+                          <Link
+                            href={`/serpro?cnpj=${row.cnpj.replace(/\\D/g, '')}`}
+                            className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium line-clamp-2"
+                            title="Consultar no Serpro"
+                          >
+                            {row.razao_social || 'Sem nome da empresa'}
+                          </Link>
+                        ) : (
+                          <span className="text-zinc-500 text-sm line-clamp-2">{row.razao_social || '-'}</span>
+                        )}
                       </td>
                     )}
                     {visibleColumns.includes('atualizado') && (

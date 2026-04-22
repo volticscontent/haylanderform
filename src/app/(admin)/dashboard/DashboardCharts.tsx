@@ -279,7 +279,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-500" />
+                <BarChart3 className="w-5 h-5 text-black" />
                 <span className="truncate">
                   {chartType === 'line' ? lineChartTitle : `Distribuição por ${columnLabels[filterColumn]}`}
                 </span>
@@ -295,8 +295,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
                   className={`w-full flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange.start || dateRange.end
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
-                      : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
+                    : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
                     }`}
                 >
                   <CalendarIcon className="w-4 h-4" />
@@ -416,8 +416,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <button
                   onClick={() => setChartType('bar')}
                   className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${chartType === 'bar'
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                     }`}
                 >
                   Barras
@@ -425,8 +425,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <button
                   onClick={() => setChartType('line')}
                   className={`flex-1 sm:flex-none px-3 sm:px-2 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-all h-full flex items-center justify-center ${chartType === 'line'
-                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
-                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                     }`}
                 >
                   Linhas
@@ -590,10 +590,10 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   {/* Comparison Badge */}
                   {summaryMetrics.previous && (
                     <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0))
-                        ? 'bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400'
-                        : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
-                          ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                          : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                      ? 'bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400'
+                      : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
+                        ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                        : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                       }`}>
                       {(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) ? (
                         <ArrowUpRight className="w-3 h-3" />

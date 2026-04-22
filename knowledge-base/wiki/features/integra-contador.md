@@ -54,11 +54,14 @@ Cron `0 * * * *` — a cada hora no `:00`, verifica `integra_robos` filtrando po
 
 | Rota Admin | Descrição |
 |---|---|
-| `/integra/empresas` | CRUD empresas com toggle ativo |
-| `/integra/dashboard` | Cards resumo + alertas certificados + status robôs |
-| `/integra/robos` | Toggle ativo, edição dia/hora, botão executar |
-| `/integra/guias` | Tabela DAS/DARF por empresa |
-| `/integra/caixa-postal` | Mensagens Receita Federal, marcar lida, sincronizar |
+| `/serpro/integra/empresas` | CRUD empresas com toggle ativo |
+| `/serpro/integra/dashboard` | Cards resumo + alertas certificados + status robôs |
+| `/serpro/integra/robos` | Toggle ativo, edição dia/hora, botão executar |
+| `/serpro/integra/guias` | Tabela DAS/DARF por empresa |
+| `/serpro/integra/caixa-postal` | Mensagens Receita Federal, marcar lida, sincronizar |
+| `/serpro/integra/billing` | Tabela mensal de serviços tarifados |
+
+> **Nota de UI:** No menu lateral (`AdminSidebar.tsx`), todos os recursos do Integra Contador estão agrupados sob uma única aba unificada de dropdown chamada **Serpro / Integra**, juntamente com as consultas diretas do Serpro.
 
 ## Fase 4 — Billing Tracker ✅
 

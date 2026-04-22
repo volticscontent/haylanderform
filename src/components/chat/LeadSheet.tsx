@@ -3,7 +3,7 @@
 import {
   X, User, Phone, Mail, Building, CheckCircle, DollarSign, FileText,
   Calendar, Clock, AlertCircle, Globe, ChevronDown, ChevronUp, RefreshCw,
-  Briefcase, TrendingUp, Users
+  Briefcase, TrendingUp, Users, Bot
 } from 'lucide-react'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { getConsultationsByCnpj } from '@/app/(admin)/atendimento/actions'
@@ -378,6 +378,26 @@ function SheetHeader({ lead, onClose }: { lead: LeadSheetData; onClose: () => vo
           )}
         </div>
       </div>
+      <button 
+        onClick={async () => {
+          if (!lead.telefone) return;
+          try {
+            const res = await fetch(`/api/integra/analyze-chat/${lead.telefone.replace(/\D/g, '')}`);
+            const data = await res.json();
+            if (data.status === 'success') {
+              alert(`🤖 Análise Inteligente Concluída:\n${JSON.stringify(data.extracted_form, null, 2)}\n(Mensagens lidas: ${data.analyzed_messages})`);
+            } else {
+              alert(`Erro: ${data.error}`);
+            }
+          } catch (e) {
+            alert('Falha ao acionar a IA extratora');
+          }
+        }}
+        title="Analisar Chat com IA"
+        className="p-1.5 rounded-full hover:bg-indigo-100 text-indigo-500 transition-colors shrink-0"
+      >
+        <Bot className="w-5 h-5" />
+      </button>
       <button onClick={onClose} className="p-1.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 transition-colors shrink-0">
         <X className="w-5 h-5" />
       </button>
