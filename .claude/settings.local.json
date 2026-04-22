@@ -70,7 +70,9 @@
       "Bash(git push *)",
       "Bash(./node_modules/.bin/tsc)",
       "Bash(grep -r \"BOT_BACKEND_URL\" bot-backend/.env)",
-      "Bash(grep \"BOT_BACKEND\" .env)"
+      "Bash(grep \"BOT_BACKEND\" .env)",
+      "Bash(PGPASSWORD='3ad3550763e84d5864a7' psql *)",
+      "Skill(schedule)"
     ]
   }
 }

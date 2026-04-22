@@ -38,9 +38,13 @@ export default function ConsultationHistoryModal({
       const res = await fetch(`/api/serpro/history?cnpj=${cnpj}`);
       if (res.ok) {
         const data = await res.json();
-        setHistory(data);
-        if (data.length > 0) {
-          setSelectedConsultation(data[0]);
+        if (Array.isArray(data)) {
+          setHistory(data);
+          if (data.length > 0) {
+            setSelectedConsultation(data[0]);
+          }
+        } else {
+          setHistory([]);
         }
       }
     } catch (error) {
@@ -98,7 +102,7 @@ export default function ConsultationHistoryModal({
               </div>
             ) : (
               <div className="overflow-y-auto flex-1">
-                {history.map((item) => (
+                {Array.isArray(history) && history.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setSelectedConsultation(item)}

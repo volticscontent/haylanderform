@@ -2,6 +2,14 @@
 
 <!-- Append-only. Newest entries at top. Format: ## [YYYY-MM-DD] type | Description -->
 
+## [2026-04-22] fix | 6 bugs críticos corrigidos no Módulo Integra Contador
+Workers CAIXA_POSTAL (chave errada), CND (fluxo 2 passos ausente), SIT_FISCAL (serviço inválido), PGMEI (código morto guias), routes sem try-catch, robos.ts coluna id inexistente.
+ADR: decisions/ADR-0001-serpro-integra-bugs.md
+
+## [2026-04-22] fix | Interface /serpro/clients redesenhada
+Endpoint agora mostra leads com procuração ativa mesmo sem consulta prévia.
+ADR: decisions/ADR-0002-serpro-clients-interface.md
+
 ## [2026-04-20] init | Knowledge Base Inicializado
 Estrutura criada conforme método Karpathy (CLAUDE.md).
 Diretórios: raw/, git/, wiki/ (architecture, features, integrations, security, workflows, decisions, migrations, outputs).

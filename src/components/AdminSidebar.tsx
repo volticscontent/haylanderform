@@ -37,23 +37,17 @@ const adminLinks: NavItem[] = [
   { name: 'Lista', href: '/lista', icon: Users },
   // { name: 'Disparo', href: '/disparo', icon: Send }, // em desenvolvimento
   {
-    name: 'Serpro',
+    name: 'Serpro / Integra',
     icon: Globe,
     children: [
-      { name: 'Consulta', href: '/serpro', icon: Globe },
+      { name: 'Consulta Simples', href: '/serpro', icon: Globe },
       { name: 'Documentos', href: '/serpro/documentos', icon: FileText },
-    ]
-  },
-  {
-    name: 'Integra Contador',
-    icon: Bot,
-    children: [
-      { name: 'Dashboard', href: '/integra/dashboard', icon: LayoutDashboard },
-      { name: 'Empresas', href: '/integra/empresas', icon: Building2 },
-      { name: 'Robôs', href: '/integra/robos', icon: Bot },
-      { name: 'Guias', href: '/integra/guias', icon: FileText },
-      { name: 'Caixa Postal', href: '/integra/caixa-postal', icon: Mail },
-      { name: 'Billing', href: '/integra/billing', icon: DollarSign },
+      { name: 'Dashboard Integra', href: '/serpro/integra/dashboard', icon: LayoutDashboard },
+      { name: 'Empresas Integra', href: '/serpro/integra/empresas', icon: Building2 },
+      { name: 'Robôs Integra', href: '/serpro/integra/robos', icon: Bot },
+      { name: 'Guias Integra', href: '/serpro/integra/guias', icon: FileText },
+      { name: 'Caixa Postal', href: '/serpro/integra/caixa-postal', icon: Mail },
+      { name: 'Billing', href: '/serpro/integra/billing', icon: DollarSign },
     ]
   },
   { name: 'Documentação', href: '/docs', icon: Book },
@@ -344,7 +338,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                   <button
                     onClick={() => handleToggle(link.name)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10'
+                      ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
                       : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
                       }`}
                   >
@@ -385,7 +379,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                             }
                           }}
                           className={`flex items-center gap-3 pl-11 pr-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${isChildActive
-                            ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10'
+                            ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
                             : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
                             }`}
                         >

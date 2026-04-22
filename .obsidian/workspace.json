@@ -1,27 +1,20 @@
 {
   "main": {
-    "id": "fe7133180abc1097",
+    "id": "2fb9f1fb943e1d40",
     "type": "split",
     "children": [
       {
-        "id": "474ced34e8502165",
+        "id": "8095522f988584be",
         "type": "tabs",
         "children": [
           {
-            "id": "6b696ef7a6b929c8",
+            "id": "4e329b15ce9a285b",
             "type": "leaf",
             "state": {
-              "type": "canvas",
-              "state": {
-                "file": "wiki/tracking.canvas",
-                "viewState": {
-                  "x": 392.4954008851967,
-                  "y": 758.3991765637886,
-                  "zoom": -0.9151377386878179
-                }
-              },
-              "icon": "lucide-layout-dashboard",
-              "title": "tracking"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
             }
           }
         ]
@@ -30,15 +23,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "c02111460907cc3d",
+    "id": "0df1589d7f2364ef",
     "type": "split",
     "children": [
       {
-        "id": "986325508c9c42fa",
+        "id": "57d1137510964ac2",
         "type": "tabs",
         "children": [
           {
-            "id": "dca955bdce1fae38",
+            "id": "101f5c1ca1c80124",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -51,12 +44,12 @@
             }
           },
           {
-            "id": "59a53eca3efa0af4",
+            "id": "87e07a0bb9f6f519",
             "type": "leaf",
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:mtls",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -68,7 +61,7 @@
             }
           },
           {
-            "id": "b83d38cabcfa2227",
+            "id": "dcd872eef06e5062",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -81,22 +74,23 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 300
   },
   "right": {
-    "id": "9985ae48862fdcdb",
+    "id": "14be5df30e6b2bdc",
     "type": "split",
     "children": [
       {
-        "id": "c6fe39eaf11de745",
+        "id": "a7c89720a8f5fe0e",
         "type": "tabs",
         "children": [
           {
-            "id": "38ca1ddeb21a154a",
+            "id": "54bfa0643d19b4e8",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
+                "file": "CLAUDE.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -106,24 +100,25 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Links inversos"
+              "title": "Links inversos para CLAUDE"
             }
           },
           {
-            "id": "56785ae72a5a7dac",
+            "id": "d02479f020221c3b",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "CLAUDE.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Links de saída"
+              "title": "Links de saída para CLAUDE"
             }
           },
           {
-            "id": "1aef94ff21c0fa02",
+            "id": "ac3b1edc76900866",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -138,7 +133,7 @@
             }
           },
           {
-            "id": "07993dbe1e9476a8",
+            "id": "b13861bb20810151",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -152,17 +147,18 @@
             }
           },
           {
-            "id": "d0f32411ea25aa90",
+            "id": "5fc4ad395d69a2ea",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
+                "file": "CLAUDE.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Sumário"
+              "title": "Sumário de CLAUDE"
             }
           }
         ]
@@ -183,39 +179,29 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "6b696ef7a6b929c8",
+  "active": "4e329b15ce9a285b",
   "lastOpenFiles": [
-    "wiki/decisions/ADR-0003-apolo-state-machine.md",
-    "wiki/tracking.canvas",
-    "wiki/tracking.md",
-    "wiki/log.md",
-    "wiki/index.md",
-    "wiki/workflows/lead-qualification.md",
-    "wiki/integrations/serpro.md",
-    "wiki/decisions/ADR-0002-serpro-clients-interface.md",
-    "Sem título.canvas",
-    "wiki/security/serpro-certificates.md",
-    "wiki/overview.md",
-    "wiki/integrations/evolution-api.md",
-    "wiki/integrations/redis.md",
-    "wiki/features/empresa-bot-registration.md",
-    "wiki/features/integra-contador.md",
-    "wiki/features/apolo-audit.md",
-    "wiki/decisions/ADR-002-gpt4o-mini.md",
-    "wiki/decisions/ADR-0001-serpro-integra-bugs.md",
-    "wiki/decisions/ADR-001-bff-pattern.md",
-    "wiki/log.md.tmp.22016.1776801194727",
-    "wiki/index.md.tmp.22016.1776801186790",
-    "wiki/architecture/queues.md",
-    "wiki/architecture/queues.md.tmp.22016.1776801181816",
-    "wiki/features/integra-contador.md.tmp.22016.1776801157317",
-    "wiki/overview.md.tmp.22016.1776801154151",
-    "wiki/overview.md.tmp.22016.1776801151402",
-    "wiki/overview.md.tmp.22016.1776801151360",
-    "wiki/overview.md.tmp.6920.1776790427819",
-    "wiki/overview.md.tmp.6920.1776790424635",
-    "wiki/features/integra-contador.md.tmp.6920.1776790420552",
-    "wiki/architecture/frontend.md",
-    "wiki/architecture/bot.md"
+    "knowledge-base/wiki/tracking.canvas",
+    "knowledge-base/wiki/tracking.md",
+    "knowledge-base/wiki/features/empresa-bot-registration.md",
+    "src/app/(admin)/serpro/integra/empresas/EmpresasClient.tsx.tmp.19360.1776849810941",
+    "src/app/(admin)/serpro/integra/empresas/page.tsx.tmp.19360.1776849752120",
+    "src/app/(admin)/serpro/integra/empresas/actions.ts.tmp.19360.1776849747850",
+    "src/app/(admin)/serpro/integra/empresas/actions.ts.tmp.19360.1776849742018",
+    "bot-backend/src/routes/integra/empresas.ts.tmp.19360.1776849709121",
+    "knowledge-base/wiki/workflows/lead-qualification.md",
+    "bot-backend/src/index.ts.tmp.19360.1776849140058",
+    "knowledge-base/wiki/index.md.tmp.19360.1776848884436",
+    "knowledge-base/wiki/log.md.tmp.19360.1776848871302",
+    "knowledge-base/wiki/decisions/ADR-0002-serpro-clients-interface.md",
+    "knowledge-base/wiki/decisions/ADR-0002-serpro-clients-interface.md.tmp.19360.1776848838975",
+    "knowledge-base/wiki/decisions/ADR-0001-serpro-integra-bugs.md",
+    "knowledge-base/wiki/decisions/ADR-0001-serpro-integra-bugs.md.tmp.19360.1776848819569",
+    "CLAUDE.md",
+    "Karpathy.obsidian.md",
+    "knowledge-base/wiki/decisions/ADR-002-gpt4o-mini.md",
+    "knowledge-base/wiki/integrations/evolution-api.md",
+    "knowledge-base/wiki/integrations/redis.md",
+    "knowledge-base/wiki/decisions/ADR-001-bff-pattern.md"
   ]
 }

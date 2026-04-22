@@ -152,16 +152,22 @@ export default function SerproPage() {
   };
 
   return (
-    <div className="space-y-6 h-full p-6">
+    <div className="space-y-6 h-full p-6 animate-in slide-in-from-bottom-4 duration-500 fade-in">
       <div className="flex justify-between items-start">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Consulta SERPRO</h1>
+        <div>
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 tracking-tight">Consulta SERPRO</h1>
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1.5">Inteligência Fiscal Automatizada</p>
+        </div>
         <div className="w-[300px]">
           <SerproHealthMonitor />
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800">
-        <div className="max-w-md space-y-4">
+      <div className="relative bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl p-7 rounded-2xl shadow-2xl shadow-blue-500/5 dark:shadow-blue-900/20 border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden">
+        {/* Decorative background glow */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w space-y-5 relative z-10">
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
               CNPJ
@@ -172,7 +178,7 @@ export default function SerproPage() {
               onChange={(e) => setCnpj(e.target.value)}
               placeholder="00.000.000/0000-00"
               maxLength={18}
-              className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 placeholder:text-zinc-400 font-mono text-sm shadow-sm"
             />
           </div>
 
@@ -183,7 +189,7 @@ export default function SerproPage() {
             <select
               value={service}
               onChange={(e) => setService(e.target.value as keyof typeof SERVICE_CONFIG)}
-              className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm font-medium shadow-sm cursor-pointer appearance-none"
             >
               {Object.entries(SERVICE_CONFIG).map(([key, config]) => (
                 <option key={key} value={key}>
@@ -193,7 +199,7 @@ export default function SerproPage() {
             </select>
           </div>
 
-          <div className="bg-gray-100 dark:bg-gray-900/20 p-4 rounded-lg border border-gray-100 dark:border-gray-800 relative">
+          <div className="bg-gray-100/50 dark:bg-gray-500/10 p-4 rounded-lg border border-gray-100 dark:border-white/10 relative">
             <div className="flex items-start justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {SERVICE_CONFIG[service]?.descricao || 'Serviço Selecionado'}
@@ -310,7 +316,7 @@ export default function SerproPage() {
           )}
 
           {(service === 'SIT_FISCAL_RELATORIO' || service === 'PGDASD') && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-black/50 rounded-lg">
               <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
                 Número do Recibo / Protocolo (Obrigatório)
               </label>
@@ -319,7 +325,7 @@ export default function SerproPage() {
                 value={numeroRecibo}
                 onChange={(e) => setNumeroRecibo(e.target.value)}
                 placeholder="Insira o protocolo aqui"
-                className="w-full p-2 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full p-2 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
               />
               <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
                 Este serviço exige o número do recibo ou protocolo da solicitação prévia.
@@ -341,7 +347,7 @@ export default function SerproPage() {
                   value={codigoReceita}
                   onChange={(e) => setCodigoReceita(e.target.value)}
                   placeholder="Opcional"
-                  className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
                 />
               </div>
             </div>
@@ -350,18 +356,18 @@ export default function SerproPage() {
           <button
             onClick={handleConsultar}
             disabled={loading || !cnpj}
-            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded transition-colors flex items-center justify-center"
+            className="w-full py-3.5 px-6 font-bold text-[15px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 dark:from-white dark:to-zinc-200 dark:text-black dark:hover:from-zinc-200 dark:hover:to-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-white/10 rounded-xl transition-all duration-300 active:scale-[0.98] flex items-center justify-center mt-6"
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 {loadingLabel}
               </>
             ) : (
-              'Consultar'
+              'Executar Consulta Segura'
             )}
           </button>
         </div>
@@ -441,9 +447,9 @@ export default function SerproPage() {
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Mensagens do Sistema</h3>
                   <div className="space-y-2">
                     {mensagens.map((m, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-black/50">
                         <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 min-w-[120px]">{m.codigo || 'AVISO'}</div>
-                        <div className="text-sm text-blue-800 dark:text-blue-200">{m.texto || '-'}</div>
+                        <div className="text-sm text-black/50 dark:text-blue-200">{m.texto || '-'}</div>
                       </div>
                     ))}
                   </div>

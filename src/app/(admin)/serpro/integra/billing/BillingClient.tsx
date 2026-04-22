@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { DollarSign, ChevronLeft, ChevronRight, Loader2, Save } from 'lucide-react'
 import { atualizarPreco, BillingData } from '../actions'
@@ -162,7 +162,7 @@ export default function BillingClient({ data, mesAtual }: { data: BillingData | 
                 </thead>
                 <tbody>
                   {Object.entries(porEmpresa).map(([empId, emp]) => (
-                    <>
+                    <React.Fragment key={empId}>
                       {emp.servicos.map((s, i) => (
                         <tr key={`${empId}-${s.robo_tipo}`} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                           {i === 0 ? (
@@ -182,7 +182,7 @@ export default function BillingClient({ data, mesAtual }: { data: BillingData | 
                         <td className="px-4 py-2 text-xs text-zinc-400 text-right" colSpan={3}>Total {emp.razao_social}</td>
                         <td className="px-4 py-2 text-sm font-bold text-zinc-900 dark:text-white">{fmt(emp.totalEmpresa)}</td>
                       </tr>
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

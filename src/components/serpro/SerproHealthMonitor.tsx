@@ -21,7 +21,7 @@ export function SerproHealthMonitor() {
       const startTime = Date.now();
       const res = await fetch('/api/serpro/health');
       const result = await res.json();
-      
+
       if (res.ok) {
         setData({
           status: 'success',
@@ -52,20 +52,20 @@ export function SerproHealthMonitor() {
 
   return (
     <div className="flex justify-end">
-      <button 
+      <button
         onClick={checkHealth}
         title={data.status === 'error' ? data.message : `Atualizar (Última: ${new Date(data.timestamp).toLocaleTimeString()})`}
-        className="group flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        className="group flex items-center gap-2 text-xs font-medium text-zinc-500 dark:text-white hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
       >
         <div className="relative flex h-2 w-2 items-center justify-center shrink-0">
           <span className={`absolute inline-flex h-full w-full rounded-full opacity-40 transition-colors duration-500 ${data.status === 'success' ? 'bg-emerald-500' : data.status === 'error' ? 'animate-ping bg-red-500' : 'animate-pulse bg-blue-500'}`} />
           <span className={`relative inline-flex rounded-full h-1.5 w-1.5 transition-colors duration-500 ${data.status === 'success' ? 'bg-emerald-500' : data.status === 'error' ? 'bg-red-500' : 'bg-blue-500'}`} />
         </div>
-        
+
         <span>Serpro</span>
-        
+
         {data.status === 'success' && data.latency && (
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono transition-opacity group-hover:opacity-100 opacity-60">
+          <span className="text-[10px] text-zinc-400 dark:text-white/70 font-mono transition-opacity group-hover:opacity-100 opacity-60">
             {data.latency}ms
           </span>
         )}

@@ -17,22 +17,45 @@ export async function GET(req: Request) {
     const { rows } = await client.query(`
       SELECT
         l.id,
-        COALESCE(l.nome_completo, le.razao_social, cs.cnpj) AS nome,
+        COALESCE(l.nome_completo, cs.cnpj) AS nome,
         cs.cnpj,
         l.telefone,
         l.email,
+        (SELECT resultado FROM consultas_serpro WHERE cnpj = cs.cnpj ORDER BY created_at DESC LIMIT 1) AS resultado,
         MAX(cs.created_at) AS data_ultima_consulta,
-        COALESCE(MAX(lv.procuracao_ativa::int)::boolean, FALSE) AS procuracao_ativa,
-        MAX(lv.procuracao_validade::text)::date AS procuracao_validade
+        COALESCE(bool_or(lp.procuracao_ativa), bool_or(lp.procuracao), FALSE) AS procuracao_ativa,
+        MAX(lp.procuracao_validade::text)::date AS procuracao_validade
       FROM consultas_serpro cs
-      LEFT JOIN leads_empresarial le ON le.cnpj = cs.cnpj
-      LEFT JOIN leads l ON l.id = le.lead_id
-      LEFT JOIN leads_vendas lv ON lv.lead_id = l.id
-      GROUP BY l.id, l.nome_completo, le.razao_social, cs.cnpj, l.telefone, l.email
+      LEFT JOIN leads l ON REGEXP_REPLACE(l.cnpj, '[^0-9]', '', 'g') = cs.cnpj
+      LEFT JOIN leads_processo lp ON lp.lead_id = l.id
+      GROUP BY l.id, l.nome_completo, cs.cnpj, l.telefone, l.email
       ORDER BY MAX(cs.created_at) DESC
-      LIMIT 20
+      LIMIT 30
     `);
-    return NextResponse.json(rows);
+
+    // Parse names from SERPRO JSON if user is not fully registered
+    const formattedRows = rows.map((row) => {
+      let nome = row.nome || 'CNPJ sem cadastro';
+      if (!row.id && row.resultado) {
+        try {
+          const resData = row.resultado;
+          if (resData.dados && typeof resData.dados === 'string') {
+             const parsed = JSON.parse(resData.dados);
+             const emp = parsed.empresario;
+             nome = String(parsed.nomeEmpresarial || emp?.nomeCivil || nome);
+          } else if (resData.ni) {
+             nome = String(resData.nome || nome);
+          }
+        } catch {}
+      }
+      return {
+        ...row,
+        nome,
+        resultado: undefined // do not send to frontend list
+      };
+    });
+
+    return NextResponse.json(formattedRows);
   } catch (e) {
     console.error('serpro/clients error:', e);
     return NextResponse.json([]);
