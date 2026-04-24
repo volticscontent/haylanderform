@@ -2,7 +2,7 @@
 title: Integração Serpro — Integra Contador
 type: integration
 tags: [serpro, mtls, oauth, pgmei, cnd, caixa-postal]
-updated: 2026-04-20
+updated: 2026-04-23
 status: current
 ---
 
@@ -93,3 +93,27 @@ Cron roda a cada hora `:00`. Dispara robôs onde:
 - `integra_robos.ativo = true`
 - `dia_execucao = dia_atual_do_mes`
 - `hora_execucao = hora_atual`
+
+## Armadilhas Conhecidas (2026-04-23)
+
+### 1. SITFIS/CND exige CPF obrigatório
+`SIT_FISCAL_SOLICITAR`, `SIT_FISCAL_RELATORIO` e `CND` são CPF-based no Integra Contador. Sempre passar `options.cpf` (CPF do empresário). Sem CPF → throw explícito desde 2026-04-23.
+
+### 2. CND é fluxo de 2 etapas
+```
+1. SIT_FISCAL_SOLICITAR  → retorna { protocoloRelatorio: "..." }
+2. CND com options.protocoloRelatorio  → emite certidão
+```
+Não é possível chamar CND diretamente sem o protocolo.
+
+### 3. PGMEI_EXTRATO / PGMEI_BOLETO precisam de ano + mês
+Sempre passar `options.ano` e `options.mes` ao emitir DAS. Sem eles, `periodoApuracao` fica ausente no payload → erro Serpro 400.
+
+### 4. DIVIDA_ATIVA e PGFN_CONSULTAR são aliases de PGMEI
+Os três chamam `PGMEI`/`DIVIDAATIVA24` por padrão. Diferença: `PGFN_CONSULTAR` usa `versaoSistema: '1.0'` (sem override), `PGMEI`/`DIVIDA_ATIVA` usam `'2.4'`. Override via env vars dedicadas.
+
+### 5. Falha em massa = procuração ausente
+Se quase todos os serviços falham para um CNPJ, verificar:
+1. `leads_processo.procuracao_ativa` no banco
+2. Chamar serviço `PROCURACAO` para confirmar e-CAC
+3. Certificado `.pfx` válido e `CONTRATANTE_CNPJ` correto

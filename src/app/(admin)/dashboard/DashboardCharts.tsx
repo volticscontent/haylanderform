@@ -11,7 +11,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
+  LabelList
 } from 'recharts'
 import {
   BarChart3,
@@ -23,7 +24,8 @@ import {
   CheckCircle2,
   XCircle,
   Send,
-  Users
+  Users,
+  TrendingUp
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { format, subDays, differenceInDays, isWithinInterval, parseISO, startOfDay, endOfDay, startOfMonth } from 'date-fns'
@@ -53,13 +55,33 @@ type DateRange = {
 }
 
 export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] }) {
-  const [filterColumn, setFilterColumn] = useState<'envio_disparo' | 'situacao' | 'qualificacao' | 'interesse_ajuda'>('envio_disparo')
+  const [filterColumn, setFilterColumn] = useState<'situacao' | 'qualificacao' | 'interesse_ajuda'>('situacao')
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar')
 
   // Date Filter State
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null })
   const datePickerRef = useRef<HTMLDivElement>(null)
+
+  // Theme Detection for Recharts
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Initial check
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+
+    // Observe class changes on html element
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDarkMode(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   // Carousel State
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -163,8 +185,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       value: summaryMetrics.current.totalLeads,
       prevValue: summaryMetrics.previous?.totalLeads,
       icon: Users,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      color: 'text-purple-600 dark:text-orange-500',
+      bg: 'bg-purple-50 dark:bg-orange-900/20',
       suffix: ''
     },
     {
@@ -172,8 +194,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       value: summaryMetrics.current.sentMessages,
       prevValue: summaryMetrics.previous?.sentMessages,
       icon: Send,
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      color: 'text-purple-500 dark:text-orange-400',
+      bg: 'bg-purple-50 dark:bg-orange-900/10',
       suffix: ''
     },
     {
@@ -181,8 +203,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       value: summaryMetrics.current.interested,
       prevValue: summaryMetrics.previous?.interested,
       icon: CheckCircle2,
-      color: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-900/20',
+      color: 'text-purple-600 dark:text-orange-500',
+      bg: 'bg-purple-100 dark:bg-orange-900/30',
       suffix: ''
     },
     {
@@ -190,9 +212,18 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       value: summaryMetrics.current.notInterested,
       prevValue: summaryMetrics.previous?.notInterested,
       icon: XCircle,
-      color: 'text-red-600 dark:text-red-400',
-      bg: 'bg-red-50 dark:bg-red-900/20',
+      color: 'text-purple-400 dark:text-orange-300',
+      bg: 'bg-purple-50 dark:bg-orange-900/10',
       suffix: ''
+    },
+    {
+      title: 'Conversão',
+      value: summaryMetrics.current.conversionRate.toFixed(1),
+      prevValue: summaryMetrics.previous?.conversionRate,
+      icon: TrendingUp,
+      color: 'text-purple-600 dark:text-orange-500',
+      bg: 'bg-purple-100 dark:bg-orange-900/40',
+      suffix: '%'
     }
   ]
 
@@ -207,7 +238,10 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
   const CurrentIcon = carouselItems[currentSlide].icon
 
   // Chart colors based on value (simplified palette)
-  const COLORS = ['#6366f1', '#8b5cf6', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4']
+  // Chart colors: Purple for light mode, Orange for dark mode
+  const COLORS = isDarkMode
+    ? ['#f97316', '#ea580c', '#fb923c', '#fdba74', '#c2410c'] // Orange palette (Dark)
+    : ['#8b5cf6', '#7c3aed', '#a78bfa', '#c4b5fd', '#6d28d9']; // Purple palette (Light)
 
   const columnLabels = {
     envio_disparo: 'Status de Envio',
@@ -279,7 +313,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <div>
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-black" />
+                <BarChart3 className="w-5 h-5 text-black dark:text-orange-500" />
                 <span className="truncate">
                   {chartType === 'line' ? lineChartTitle : `Distribuição por ${columnLabels[filterColumn]}`}
                 </span>
@@ -295,11 +329,11 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
                   className={`w-full flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange.start || dateRange.end
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
+                    ? 'bg-indigo-50 text-indigo-700 dark:text-orange-500 dark:hover:bg-gray-900 border border-indigo-200 dark:border-indigo-800'
                     : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
                     }`}
                 >
-                  <CalendarIcon className="w-4 h-4" />
+                  <CalendarIcon className="w-4 h-4 text-indigo-700 dark:text-orange-500" />
                   {dateRange.start ? (
                     <span className="truncate">
                       {format(parseISO(dateRange.start), 'dd/MM')}
@@ -363,19 +397,23 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     <div className="p-4 flex-1 space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-zinc-500 mb-1">Data Início</label>
+                          <label htmlFor="date-start" className="block text-xs font-medium text-zinc-500 mb-1">Data Início</label>
                           <input
+                            id="date-start"
+                            name="date-start"
                             type="date"
-                            className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                            className="block w-full px-1 rounded-md border-zinc-300 shadow-sm sm:text-sm dark:bg-zinc-800 dark:text-white"
                             value={dateRange.start || ''}
                             onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-zinc-500 mb-1">Data Fim</label>
+                          <label htmlFor="date-end" className="block text-xs font-medium text-zinc-500 mb-1">Data Fim</label>
                           <input
+                            id="date-end"
+                            name="date-end"
                             type="date"
-                            className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                            className="block w-full px-1 rounded-md border-zinc-300 shadow-sm sm:text-sm dark:bg-zinc-800 dark:text-white"
                             value={dateRange.end || ''}
                             onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                           />
@@ -400,7 +438,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                           </button>
                           <button
                             onClick={() => setShowDatePicker(false)}
-                            className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium transition-colors"
+                            className="px-3 py-1.5 text-xs bg-indigo-600 dark:bg-orange-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-orange-600 font-medium transition-colors"
                           >
                             Aplicar
                           </button>
@@ -435,9 +473,11 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
 
               {/* Select - Half width on mobile grid row 2 */}
               <select
+                id="filter-column"
+                name="filter-column"
                 value={filterColumn}
                 onChange={(e) => setFilterColumn(e.target.value as typeof filterColumn)}
-                className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
+                className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
               >
                 <option value="envio_disparo">Envio</option>
                 <option value="situacao">Situação</option>
@@ -473,9 +513,14 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                         return (
                           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
                             <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
-                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                              {payload[0].value} registros
-                            </p>
+                            <div className="flex flex-col">
+                              <p className={`text-sm font-medium ${isDarkMode ? 'text-orange-500' : 'text-purple-600'}`}>
+                                {payload[0].value} registros
+                              </p>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                {filteredData.length > 0 ? ((Number(payload[0].value) / filteredData.length) * 100).toFixed(1) : 0}% do total
+                              </p>
+                            </div>
                           </div>
                         );
                       }
@@ -486,6 +531,13 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
+                    <LabelList
+                      dataKey="value"
+                      position="top"
+                      formatter={(val: any) => filteredData.length > 0 ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
+                      fontSize={10}
+                      fill={isDarkMode ? '#a1a1aa' : '#71717a'}
+                    />
                   </Bar>
                 </BarChart>
               ) : (
@@ -511,7 +563,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                         return (
                           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
                             <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
-                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                            <p className={`text-sm font-medium ${isDarkMode ? 'text-orange-500' : 'text-purple-600'}`}>
                               {payload[0].value} leads
                             </p>
                           </div>
@@ -523,10 +575,10 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   <Line
                     type="linear"
                     dataKey="value"
-                    stroke="#6366f1"
+                    stroke={isDarkMode ? '#f97316' : '#8b5cf6'}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: isDarkMode ? '#f97316' : '#8b5cf6', strokeWidth: 0 }}
                   />
                 </LineChart>
               )}
@@ -621,7 +673,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               {carouselItems.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-indigo-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-indigo-500 dark:bg-orange-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
                     }`}
                 />
               ))}
@@ -629,13 +681,13 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
           </div>
 
           {/* Static Important Stats */}
-          <div className="bg-indigo-600 rounded-xl shadow-sm p-4 sm:p-6 text-white relative overflow-hidden">
+          <div className={`${isDarkMode ? 'bg-orange-600' : 'bg-purple-600'} rounded-xl shadow-sm p-4 sm:p-6 text-white relative overflow-hidden`}>
             <div className="relative z-10">
-              <h4 className="text-indigo-100 text-sm font-medium mb-2">Envios Pendentes</h4>
+              <h4 className={`${isDarkMode ? 'text-orange-100' : 'text-purple-100'} text-sm font-medium mb-2`}>Envios Pendentes</h4>
               <div className="text-3xl sm:text-4xl font-bold">
                 {summaryMetrics.current.pendingSends}
               </div>
-              <div className="mt-2 text-xs text-indigo-200">
+              <div className={`mt-2 text-xs ${isDarkMode ? 'text-orange-200' : 'text-purple-200'}`}>
                 Aguardando disparo (a1, a2, a3)
               </div>
             </div>
@@ -665,16 +717,29 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     return (
                       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg p-3">
                         <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{label}</p>
-                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                          {payload[0].value} leads
-                        </p>
+                        <div className="flex flex-col">
+                          <p className={`text-sm font-medium ${isDarkMode ? 'text-orange-500' : 'text-purple-600'}`}>
+                            {payload[0].value} leads
+                          </p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {payload[0].payload.percentual}% do total
+                          </p>
+                        </div>
                       </div>
                     );
                   }
                   return null;
                 }}
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#3b82f6" />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill={isDarkMode ? '#f97316' : '#8b5cf6'}>
+                <LabelList
+                  dataKey="value"
+                  position="top"
+                  formatter={(val: any) => (val > 0 && filteredData.length > 0) ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
+                  fontSize={10}
+                  fill={isDarkMode ? '#a1a1aa' : '#71717a'}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -710,7 +775,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
             title="Funil de Conversão (WhatsApp)"
             stages={stages}
             height={260}
-            gradient={["#2e7cf6", "#6b5dfc"]}
+            isDarkMode={isDarkMode}
+            gradient={isDarkMode ? ["#fb923c", "#ea580c"] : ["#a78bfa", "#7c3aed"]}
           />
         );
       })()}

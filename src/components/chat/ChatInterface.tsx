@@ -5,11 +5,12 @@ import { io } from 'socket.io-client';
 import { getChats, getMessages, sendMessage, sendMedia, registerLead, massRegisterLeads, getLeadByPhone, triggerBot } from '@/app/(admin)/atendimento/actions';
 
 import { ChatSidebar, ChatWindow } from '.';
-import { LeadSheet, LeadSheetData } from './LeadSheet';
 import { Chat, Message } from './types';
 
 import { useRouter } from 'next/navigation';
 import { useAdmin } from '@/contexts/AdminContext';
+import LeadDetailsSidebar from '@/components/LeadDetailsSidebar';
+import { LeadRecord } from '@/types/lead';
 
 export function ChatInterface() {
   const router = useRouter();
@@ -36,10 +37,9 @@ export function ChatInterface() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  const [leadSheetOpen, setLeadSheetOpen] = useState(false);
-  const [currentLeadData, setCurrentLeadData] = useState<LeadSheetData | null>(null);
-  const [loadingLeadData, setLoadingLeadData] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [isSidebarLeadOpen, setIsSidebarLeadOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -54,22 +54,20 @@ export function ChatInterface() {
     };
   }, []);
 
-  const handleViewLeadSheet = async (chat: Chat) => {
-    setLeadSheetOpen(true);
-    setDesktopSidebarOpen(false); // Close admin sidebar
-    setLoadingLeadData(true);
-    setCurrentLeadData(null);
-
+  const handleViewLead = async (chat: Chat) => {
+    const phone = chat.id.split('@')[0];
     try {
-      const phone = chat.id.split('@')[0];
-      const result = await getLeadByPhone(phone);
-      if (result.success && result.data) {
-        setCurrentLeadData(result.data as LeadSheetData);
+      const res = await getLeadByPhone(phone);
+      if (res.success && res.data) {
+        setSelectedLead(res.data as LeadRecord);
+        setIsSidebarLeadOpen(true);
+      } else {
+        // Fallback to navigation if lead not found or error
+        router.push(`/lista?search=${encodeURIComponent(phone)}`);
       }
     } catch (error) {
-      console.error("Error loading lead sheet:", error);
-    } finally {
-      setLoadingLeadData(false);
+      console.error("Error loading lead:", error);
+      router.push(`/lista?search=${encodeURIComponent(phone)}`);
     }
   };
 
@@ -588,14 +586,6 @@ export function ChatInterface() {
     }
   };
 
-  const handleViewLead = (chat: Chat) => {
-    // Assuming you want to go to the list and search for this lead, or go to details
-    // For now, redirecting to list with query params to find the user
-    const params = new URLSearchParams({
-      search: chat.leadName || chat.name
-    });
-    router.push(`?${params.toString()}`);
-  };
 
   const handleMassRegister = async (selectedChats: Chat[]) => {
     if (confirm(`Deseja cadastrar ${selectedChats.length} contatos?`)) {
@@ -687,7 +677,7 @@ export function ChatInterface() {
             onExportToConsulta={(c) => handleExport(c, 'consulta')}
             onExportToEmissao={(c) => handleExport(c, 'emissao')}
             onExportToDivida={(c) => handleExport(c, 'divida')}
-            onViewLeadSheet={handleViewLeadSheet}
+            onViewLeadSheet={handleViewLead}
             onRegister={handleRegister}
           />
         ) : (
@@ -700,16 +690,28 @@ export function ChatInterface() {
         )}
       </div>
 
-      <LeadSheet
-        lead={currentLeadData}
-        isOpen={leadSheetOpen}
-        onClose={() => {
-          setLeadSheetOpen(false);
-          setDesktopSidebarOpen(true); // Re-open admin sidebar when closing lead sheet
-        }}
-        loading={loadingLeadData}
-        mode={isMobile ? "overlay" : "inline"}
-      />
+      {isSidebarLeadOpen && selectedLead && (
+        <LeadDetailsSidebar
+          lead={selectedLead}
+          onClose={() => setIsSidebarLeadOpen(false)}
+          onUpdate={(updatedLead) => {
+            setSelectedLead(updatedLead);
+            // Optionally update the chat list name/status
+            setChats(prev => prev.map(c => {
+              if (c.leadId === updatedLead.id || c.id.includes(updatedLead.telefone || '')) {
+                return {
+                  ...c,
+                  leadName: updatedLead.nome_completo ?? c.leadName,
+                  leadStatus: updatedLead.status_atendimento ?? c.leadStatus,
+                  isRegistered: true,
+                  leadId: updatedLead.id
+                };
+              }
+              return c;
+            }));
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -45,6 +45,10 @@ src/app/(admin)/
 └── docs/                   ← Documentação interna
 ```
 
+## Componentes Compartilhados
+
+A Ficha de Lead foi unificada no componente `LeadDetailsSidebar.tsx` (ver [ADR-0004](../decisions/ADR-0004-lead-sheet-unification.md)). Ele atua como fonte única de verdade para visualização e edição de leads tanto na rota `/lista` quanto na rota `/atendimento`.
+
 ## Padrões de Página
 
 **Server Component + Server Action (padrão Integra):**

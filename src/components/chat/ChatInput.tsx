@@ -154,6 +154,8 @@ export function ChatInput({
     <div className="p-3 sm:p-4 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
       <div className="flex items-end gap-2 max-w-4xl mx-auto">
         <input 
+            id="chat-file-upload"
+            name="chat-file-upload"
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileChange} 
@@ -182,6 +184,8 @@ export function ChatInput({
             onDrop={handleDrop}
         >
             <textarea
+                id="message-input"
+                name="message-input"
                 ref={textareaRef}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}

@@ -6,6 +6,7 @@ import { backendGet, backendPost, backendPut, backendDelete } from '@/lib/backen
 export type LeadParaImportar = {
   id: number;
   nome_completo: string;
+  razao_social: string | null;
   cnpj: string;
   email: string | null;
   telefone: string | null;
@@ -20,6 +21,8 @@ export type IntegraEmpresa = {
   ativo: boolean;
   servicos_habilitados: string[];
   lead_id: number | null;
+  lead_nome: string | null;
+  lead_telefone: string | null;
   certificado_validade: string | null;
   observacoes: string | null;
   created_at: string;
@@ -89,7 +92,7 @@ export async function listarLeadsParaImportar(): Promise<LeadParaImportar[]> {
 export async function importarLeadComoEmpresa(lead: LeadParaImportar) {
   return criarEmpresa({
     cnpj: lead.cnpj,
-    razao_social: lead.nome_completo,
+    razao_social: lead.razao_social || lead.nome_completo,
     regime_tributario: 'mei',
     lead_id: lead.id,
   });

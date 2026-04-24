@@ -399,7 +399,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                 href={link.href || '#'}
                 onClick={() => onClose?.()}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                  ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
                   : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
                   }`}
               >

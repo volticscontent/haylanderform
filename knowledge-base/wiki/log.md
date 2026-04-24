@@ -2,6 +2,69 @@
 
 <!-- Append-only. Newest entries at top. Format: ## [YYYY-MM-DD] type | Description -->
 
+## [2026-04-23] schema | Audit integridade + 3 migrations + fixes app (ADR-0004)
+
+Audit completo de `cliente × empresa × cnpj × razao_social` revelou 6 problemas.
+Ações concluídas:
+
+**Migrations (src/lib/db/migrations/):**
+- `012_cliente_denorm_leads.sql` — `leads.cliente` coluna denorm + trigger sync de `leads_processo`
+- `013_procuracao_historico.sql` — tabela audit trail `leads_procuracao_historico` + seed estado atual
+- `014_consultas_lead_id.sql` — FK `consultas_serpro.lead_id → leads` + backfill por CNPJ
+
+**App (bot-backend):**
+- `serpro-db.ts`: `saveConsultation` aceita `leadId?: number | null`
+- `serpro-api.ts` POST `/serpro`: resolve `lead_id` por CNPJ lookup antes de salvar consulta
+- `serpro-api.ts` PUT `/serpro/procuracao/:leadId`: insere em `leads_procuracao_historico` a cada toggle
+
+**Não-tomado:** `integra_empresas.lead_id NOT NULL` — rejeitado, quebraria dados existentes.
+
+ADR: `decisions/ADR-0004-schema-integridade-dados.md`
+
+## [2026-04-23] fix | Fonte de verdade razao_social — lead ↔ integra_empresas
+
+Audit revelou 3 problemas críticos de integridade de dados. Correções aplicadas:
+
+1. **Bug importação**: `importarLeadComoEmpresa` usava `nome_completo` como `razao_social`.
+   Fix: usa `lead.razao_social` quando preenchida, fallback para `nome_completo`.
+
+2. **Sync POST**: ao criar empresa via `POST /integra/empresas` com `lead_id`, o backend
+   agora busca `leads.razao_social` como fonte primária. Após inserção, faz
+   `UPDATE leads SET razao_social = COALESCE(razao_social, $1)` para preencher o lead
+   se estava vazio (sem sobrescrever se já havia valor).
+
+3. **Sync PATCH**: ao atualizar `razao_social` via `PATCH /integra/empresas/:id`,
+   o backend sincroniza de volta para `leads.razao_social` quando empresa tem `lead_id`.
+   `integra_empresas` é a fonte de verdade fiscal; `leads` espelha.
+
+4. **Tipo `LeadParaImportar`**: adicionado campo `razao_social: string | null`.
+   Modal de importação agora exibe razão social como nome principal quando disponível,
+   mostrando `nome_completo` como secundário abaixo (· João Silva).
+
+Arquivos: `bot-backend/src/routes/integra/empresas.ts`, `actions.ts`, `EmpresasClient.tsx`
+
+## [2026-04-23] feat | Redesign tabela Empresas Integra + correlação lead
+
+`src/app/(admin)/serpro/integra/empresas/EmpresasClient.tsx` redesenhada:
+- Colunas "Razão Social" + "CNPJ" fundidas em célula empilhada
+- Regime como badge colorido (MEI=azul, Simples=verde, Presumido=roxo, Real=laranja)
+- Nova coluna "Lead Vinculado" (nome + telefone formatado) usando `lead_nome`/`lead_telefone`
+- Serviços como pills com overflow "+N"
+- Toggle Ativo corrigido (era quebrado por conflito `mx-auto` + `translate`)
+- Modais com `rounded-xl`, `shadow-2xl`, inputs com `focus:ring-2`
+
+Backend `GET /integra/empresas` agora faz LEFT JOIN com `leads` retornando `lead_nome` e `lead_telefone`.
+Tipo `IntegraEmpresa` em `actions.ts` atualizado com os dois campos.
+
+## [2026-04-23] fix | 4 bugs serpro.ts + serpro-config.ts corrigidos
+
+Diagnóstico disparado por falhas em quase todas as APIs Serpro para CNPJ de teste.
+1. **anoCalendario ausente**: `PGMEI_EXTRATO`, `PGMEI_BOLETO`, `PGMEI_ATU_BENEFICIO` não recebiam `anoCalendario` quando `options.ano` omitido (outer `else if` incompleto). Fix: expandida a lista + inner logic simplificado.
+2. **SITFIS sem CPF**: `SIT_FISCAL_SOLICITAR/RELATORIO/CND` enviavam CNPJ como contribuinte silenciosamente quando `options.cpf` não fornecido. Fix: throw explícito.
+3. **Aliases sem comentário**: `DIVIDA_ATIVA` e `PGFN_CONSULTAR` são duplicatas de `PGMEI`/`DIVIDAATIVA24` sem documentação. Fix: comentários adicionados.
+4. **Erro CND obscuro**: mensagem de erro para CND sem `protocoloRelatorio` não explicava o fluxo 2-etapas obrigatório. Fix: mensagem reescrita.
+ADR: decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md
+
 ## [2026-04-22] fix | 6 bugs críticos corrigidos no Módulo Integra Contador
 Workers CAIXA_POSTAL (chave errada), CND (fluxo 2 passos ausente), SIT_FISCAL (serviço inválido), PGMEI (código morto guias), routes sem try-catch, robos.ts coluna id inexistente.
 ADR: decisions/ADR-0001-serpro-integra-bugs.md

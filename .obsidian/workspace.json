@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "8095522f988584be",
+        "id": "7d7e5df0158220b0",
         "type": "tabs",
         "children": [
           {
-            "id": "4e329b15ce9a285b",
+            "id": "113625281f19b704",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Visualização em gráfico"
+              "icon": "lucide-file",
+              "title": "Nova aba"
             }
           }
         ]
@@ -179,9 +179,10 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "4e329b15ce9a285b",
+  "active": "113625281f19b704",
   "lastOpenFiles": [
     "knowledge-base/wiki/tracking.canvas",
+    "knowledge-base/wiki/decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md",
     "knowledge-base/wiki/tracking.md",
     "knowledge-base/wiki/features/empresa-bot-registration.md",
     "src/app/(admin)/serpro/integra/empresas/EmpresasClient.tsx.tmp.19360.1776849810941",

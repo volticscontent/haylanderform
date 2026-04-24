@@ -233,7 +233,7 @@ function MediaCard({ setting, onUpdate, onBotChange, onDelete, onEdit }: { setti
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col group">
             <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
-                <span className="font-medium text-sm text-zinc-700 dark:text-zinc-200">{setting.label}</span>
+                <span className="font-medium text-sm text-black dark:text-white">{setting.label}</span>
                 <div className="flex items-center gap-1">
                     {isTextFile && (
                         <button

@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Calendar, List, User, Building, Phone, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, List, User, Building, Phone, Clock, ChevronLeft, ChevronRight, Video, CalendarDays } from 'lucide-react'
+import { ChatAvatar } from '@/components/chat/ChatAvatar'
 
 export interface Reuniao {
   id: string
@@ -18,12 +19,18 @@ export interface Reuniao {
 function ReuniaoCard({ reuniao, upcoming }: { reuniao: Reuniao; upcoming: boolean }) {
   const dt = new Date(reuniao.data_reuniao)
   return (
-    <div className={`bg-white dark:bg-zinc-900 rounded-xl border p-4 flex items-start justify-between gap-4 ${
-      upcoming ? 'border-indigo-200 dark:border-indigo-800' : 'border-zinc-200 dark:border-zinc-800 opacity-60'
-    }`}>
+    <div className={`group bg-white dark:bg-zinc-900 rounded-2xl border p-4 flex items-start justify-between gap-4 transition-all hover:shadow-md ${upcoming 
+        ? 'border-zinc-200 dark:border-zinc-800 hover:border-purple-200 dark:hover:border-orange-500/50' 
+        : 'border-zinc-100 dark:border-zinc-800/50 opacity-60'
+      }`}>
       <div className="space-y-1 flex-1">
-        <div className="flex items-center gap-2 font-medium text-zinc-900 dark:text-white">
-          <User className="w-4 h-4 text-zinc-400" />
+        <div className="flex items-center gap-3 font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-purple-600 dark:group-hover:text-orange-500 transition-colors">
+          <ChatAvatar
+            chatId={reuniao.telefone || ''}
+            name={reuniao.nome_completo || ''}
+            size={36}
+            className="text-[10px]"
+          />
           {reuniao.nome_completo || 'Sem nome'}
         </div>
         {reuniao.razao_social && (
@@ -38,21 +45,24 @@ function ReuniaoCard({ reuniao, upcoming }: { reuniao: Reuniao; upcoming: boolea
           </div>
         )}
         {reuniao.servico && (
-          <span className="inline-block text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2 py-0.5 rounded-full mt-1">
+          <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 dark:bg-orange-950/20 dark:text-orange-400 px-2.5 py-1 rounded-lg mt-2 font-medium border border-purple-100 dark:border-orange-500/10">
+            <Video className="w-3 h-3" />
             {reuniao.servico}
           </span>
         )}
       </div>
-      <div className="text-right shrink-0 space-y-2">
-        <div className="flex items-center gap-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">
-          <Clock className="w-4 h-4" />
-          <div>
-            <div>{dt.toLocaleDateString('pt-BR')}</div>
-            <div className="text-xs text-zinc-500">{dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div className="text-right shrink-0 space-y-3">
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1.5 text-sm font-bold text-purple-600 dark:text-orange-500">
+            <Clock className="w-4 h-4" />
+            {dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+          </div>
+          <div className="text-xl font-black text-zinc-900 dark:text-white">
+            {dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
         {reuniao.telefone && (
-          <Link href={`/reuniao/${reuniao.telefone}`} className="block text-xs text-indigo-600 hover:text-indigo-800 dark:hover:text-indigo-400 underline">
+          <Link href={`/reuniao/${reuniao.telefone}`} className="inline-flex items-center px-3 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-purple-600 dark:hover:bg-orange-500 hover:text-white dark:hover:text-white transition-all">
             Reagendar
           </Link>
         )}
@@ -89,7 +99,7 @@ function CalendarView({ reunioes }: { reunioes: Reuniao[] }) {
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
 
   const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+  const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
   const cells: (number | null)[] = [
     ...Array(firstDayOfWeek).fill(null),
@@ -132,19 +142,19 @@ function CalendarView({ reunioes }: { reunioes: Reuniao[] }) {
               <button
                 key={day}
                 onClick={() => setSelectedDay(day === selectedDay ? null : day)}
-                className={`h-12 flex flex-col items-center justify-center gap-0.5 border-b border-r border-zinc-50 dark:border-zinc-800/50 last:border-r-0 transition-colors relative
-                  ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/40' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}
+                className={`h-16 flex flex-col items-center justify-center gap-0.5 border-b border-r border-zinc-100 dark:border-zinc-800 last:border-r-0 transition-all relative
+                  ${isSelected ? 'bg-purple-50 dark:bg-orange-950/20' : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40'}
                 `}
               >
-                <span className={`text-sm w-7 h-7 flex items-center justify-center rounded-full font-medium
-                  ${isToday ? 'bg-indigo-600 text-white' : isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-zinc-700 dark:text-zinc-300'}
+                <span className={`text-sm w-8 h-8 flex items-center justify-center rounded-xl font-bold transition-all
+                  ${isToday ? 'bg-purple-600 dark:bg-orange-500 text-white shadow-lg shadow-purple-200 dark:shadow-orange-900/20' : isSelected ? 'text-purple-700 dark:text-orange-400' : 'text-zinc-700 dark:text-zinc-300'}
                 `}>
                   {day}
                 </span>
                 {dayReunions.length > 0 && (
-                  <div className="flex gap-0.5">
-                    {hasFuture && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
-                    {hasPast && <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />}
+                  <div className="flex gap-1 mt-1">
+                    {hasFuture && <span className="w-1 h-1 rounded-full bg-purple-500 dark:bg-orange-500" />}
+                    {hasPast && <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />}
                   </div>
                 )}
               </button>
@@ -156,9 +166,10 @@ function CalendarView({ reunioes }: { reunioes: Reuniao[] }) {
       {/* Selected day panel */}
       {selectedDay && (
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
+            <CalendarDays className="w-4 h-4 text-purple-600 dark:text-orange-500" />
             {selectedDay} de {MONTHS[month]}
-            {selectedReunions.length === 0 && <span className="ml-2 font-normal normal-case text-zinc-400">— sem reuniões</span>}
+            {selectedReunions.length === 0 && <span className="ml-2 font-normal text-zinc-400">— sem reuniões</span>}
           </h3>
           {selectedReunions
             .sort((a, b) => new Date(a.data_reuniao).getTime() - new Date(b.data_reuniao).getTime())
@@ -179,30 +190,39 @@ export function ReuniaoView({ reunioes }: { reunioes: Reuniao[] }) {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-          <Calendar className="w-6 h-6 text-indigo-600" /> Reuniões
-        </h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-500">{futuras.length} próximas · {passadas.length} realizadas</span>
-          <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-zinc-900 dark:text-white flex items-center gap-3">
+            <div className="p-2.5 bg-purple-100 dark:bg-orange-950/30 rounded-2xl">
+              <Calendar className="w-7 h-7 text-purple-600 dark:text-orange-500" />
+            </div> 
+            Reuniões
+          </h1>
+          <p className="text-sm text-zinc-500 font-medium">
+            Gerencie sua agenda de atendimentos e compromissos
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex flex-col items-end text-right">
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{futuras.length} próximas</span>
+            <span className="text-xs text-zinc-500">{passadas.length} realizadas</span>
+          </div>
+          <div className="flex p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700">
             <button
               onClick={() => setView('lista')}
-              className={`px-3 py-1.5 flex items-center gap-1.5 text-sm transition-colors ${
-                view === 'lista'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-              }`}
+              className={`px-4 py-1.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all ${view === 'lista'
+                ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-orange-500 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                }`}
             >
               <List className="w-4 h-4" /> Lista
             </button>
             <button
               onClick={() => setView('calendario')}
-              className={`px-3 py-1.5 flex items-center gap-1.5 text-sm transition-colors ${
-                view === 'calendario'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-              }`}
+              className={`px-4 py-1.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all ${view === 'calendario'
+                ? 'bg-white dark:bg-zinc-900 text-purple-600 dark:text-orange-500 shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                }`}
             >
               <Calendar className="w-4 h-4" /> Calendário
             </button>
