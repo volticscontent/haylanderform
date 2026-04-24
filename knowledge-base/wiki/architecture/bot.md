@@ -46,10 +46,11 @@ Override manual via: `setAgentRouting(phone, 'vendedor'|'atendente'|null)`
 
 ### 1. Apolo SDR (`runApoloAgent`)
 **Arquivo:** `bot-backend/src/ai/agents/apolo/`
-- **Missão:** Qualificar leads (não vender)
+- **Missão:** Qualificar leads (não vender) e extrair dados progressivamente
 - **Prompt:** `BASE_PROMPT + COMERCIAL_RULES + REGULARIZACAO_RULES + SUPORTE_RULES`
 - **Ferramentas:** 20+ (update_user, enviar_lista_enumerada, iniciar_fluxo_regularizacao, consultar_pgmei_serpro...)
 - **Transição:** Ao chamar `update_user(qualificacao: "MQL")` → `setAgentRouting(phone, 'vendedor')` automático
+- **Lazy Verification:** O bot não bloqueia a conversa ao pedir procuração. Ele coleta dados da empresa enquanto a validação no e-CAC ocorre (ver [ADR-0003](../decisions/ADR-0003-apolo-state-machine.md)).
 
 ### 2. Vendedor Icaró (`runVendedorAgent`)
 - **Missão:** Fechar venda, negociar contrato

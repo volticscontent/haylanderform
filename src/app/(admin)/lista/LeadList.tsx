@@ -9,477 +9,12 @@ import { phoneMatches } from '@/lib/phone-utils'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
+import { LeadRecord } from '@/types/lead'
+import LeadDetailsSidebar from '@/components/LeadDetailsSidebar'
+import { ChatAvatar } from '@/components/chat/ChatAvatar'
+
 const DATE_COLUMNS = ['data_controle_24h', 'data_cadastro', 'atualizado_em', 'data_reuniao']
 
-type LeadRecord = {
-  id: number
-  telefone: string | null
-  nome_completo: string | null
-  razao_social: string | null
-  cnpj: string | null
-  email: string | null
-  observacoes: string | null
-  calculo_parcelamento: string | null
-  atualizado_em: string | null
-  data_cadastro: string | null
-  data_controle_24h: string | null
-  envio_disparo: string | null
-  situacao: string | null
-  qualificacao: string | null
-  motivo_qualificacao: string | null
-  interesse_ajuda: string | null
-  valor_divida_ativa: string | null
-  valor_divida_municipal: string | null
-  valor_divida_estadual: string | null
-  valor_divida_federal: string | null
-  tipo_divida: string | null
-  tipo_negocio: string | null
-  faturamento_mensal: string | null
-  possui_socio: boolean | null
-  pos_qualificacao: boolean | null
-  servico: string | null
-  status_atendimento: string | null
-  procuracao: boolean | null
-  data_reuniao: string | null
-  needs_attendant: boolean | null
-  attendant_requested_at: string | null
-  reuniao_agendada: boolean | null
-  cliente: boolean | null
-  confirmacao_qualificacao: boolean | null
-  metadata: Record<string, unknown> | null
-}
-
-function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEditMode = false }: { lead: LeadRecord | null, onClose: () => void, onUpdate?: (lead: LeadRecord) => void, initialEditMode?: boolean }) {
-  const router = useRouter()
-  const [isEditing, setIsEditing] = useState(initialEditMode)
-  const [formData, setFormData] = useState<LeadRecord>(lead as LeadRecord)
-  const [saving, setSaving] = useState(false)
-  const [serproHistory, setSerproHistory] = useState<{ tipo_servico: string; status: number; created_at: string }[]>([])
-
-  useEffect(() => {
-    if (!lead?.cnpj) return
-    const cnpj = lead.cnpj.replace(/\D/g, '')
-    fetch(`/api/serpro/history?cnpj=${cnpj}`)
-      .then(r => r.json())
-      .then(d => setSerproHistory(d.history ?? []))
-      .catch(() => { })
-  }, [lead?.cnpj])
-
-  if (!lead || !formData) return null
-
-  const handleChange = (field: keyof LeadRecord, value: LeadRecord[keyof LeadRecord]) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleSave = async () => {
-    if (!formData || !lead.telefone) return
-    setSaving(true)
-    try {
-      const updates: Record<string, unknown> = {}
-      let hasChanges = false
-
-      // Compare fields
-      Object.keys(formData).forEach((key) => {
-        const k = key as keyof LeadRecord
-        // Simple comparison
-        if (formData[k] != lead[k]) {
-          updates[k] = formData[k]
-          hasChanges = true
-        }
-      })
-
-      if (hasChanges) {
-        const res = await updateLeadFields(lead.telefone, updates)
-        if (res.success) {
-          setIsEditing(false)
-          // Update local state in parent
-          if (onUpdate) onUpdate({ ...lead, ...updates } as LeadRecord)
-          router.refresh()
-          alert('Atualizado com sucesso!')
-        } else {
-          alert('Erro ao atualizar: ' + res.message)
-        }
-      } else {
-        setIsEditing(false)
-      }
-    } catch (error) {
-      console.error(error)
-      alert('Erro ao salvar')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const EditableField = ({
-    label,
-    field,
-    type = 'text',
-    options = []
-  }: { label: string, field: keyof LeadRecord, type?: string, options?: string[] }) => {
-    const value = formData[field]
-
-    if (!isEditing) {
-      let displayValue: string | number | null | undefined
-      if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
-      else if (typeof value === 'object' && value !== null) displayValue = JSON.stringify(value)
-      else displayValue = value as string | number | null | undefined
-      if (!displayValue && displayValue !== 0) displayValue = '-'
-
-      return (
-        <div className="space-y-1">
-          <label className="text-xs text-zinc-500">{label}</label>
-          <div className="text-zinc-900 dark:text-zinc-200 font-medium break-words text-sm">
-            {displayValue}
-          </div>
-        </div>
-      )
-    }
-
-    if (type === 'select' && options.length > 0) {
-      return (
-        <div className="space-y-1">
-          <label className="text-xs text-zinc-500">{label}</label>
-          <select
-            value={String(value || '')}
-            onChange={(e) => handleChange(field, e.target.value)}
-            className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-          >
-            <option value="">Selecione...</option>
-            {options.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
-      )
-    }
-
-    if (type === 'textarea') {
-      return (
-        <div className="space-y-1 md:col-span-2">
-          <label className="text-xs text-zinc-500">{label}</label>
-          <textarea
-            value={String(value || '')}
-            onChange={(e) => handleChange(field, e.target.value)}
-            rows={4}
-            className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-1">
-        <label className="text-xs text-zinc-500">{label}</label>
-        <input
-          type={type}
-          value={String(value || '')}
-          onChange={(e) => handleChange(field, type === 'checkbox' ? e.target.checked : e.target.value)}
-          className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Sidebar */}
-      <div className="relative w-ful max-w-2xl bg-white dark:bg-zinc-900 h-full shadow-2xl p-0 overflow-hidden flex flex-col border-l border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-right duration-300">
-        {/* Header */}
-        <div className="flex flex-col col-1 gap-3 items-start p-6 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl">
-              {lead.nome_completo ? lead.nome_completo.substring(0, 2).toUpperCase() : <User className="w-6 h-6" />}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{lead.nome_completo || 'Sem nome'}</h2>
-              <div className="flex items-center gap-2 text-sm text-zinc-500">
-                <span className="font-mono">{lead.cnpj || 'CNPJ N/A'}</span>
-                {lead.situacao && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-300/50 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                    {lead.situacao}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {lead.cnpj && (
-              <Link
-                href={`/serpro?cnpj=${lead.cnpj.replace(/\D/g, '')}`}
-                className="p-2 px-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2"
-                title="Consultar no Serpro"
-              >
-                <FileText className="w-4 h-4" /> Serpro
-              </Link>
-            )}
-            {lead.telefone && (
-              <Link
-                href={`/reuniao/${lead.telefone}`}
-                className="p-2 px-3 rounded-md bg-purple-600 text-white hover:bg-gray-700 transition-colors text-sm font-medium flex items-center gap-2"
-                title="Agendar Reunião"
-              >
-                <Calendar className="w-4 h-4" /> Reunião
-              </Link>
-            )}
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="p-2 px-4 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
-              >
-                <Edit className="w-4 h-4" /> Editar
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="p-2 px-4 rounded-md bg-zinc-200 text-zinc-700 hover:bg-zinc-300 transition-colors text-sm font-medium"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="p-2 px-4 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
-                >
-                  {saving ? <Clock className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                  Salvar
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-
-          {/* 1. Dados de Contato */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <User className="w-4 h-4" /> Dados Pessoais e Contato
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
-              <EditableField label="Telefone" field="telefone" />
-              <EditableField label="Email" field="email" />
-              <div className="md:col-span-2">
-                <EditableField label="Razão Social" field="razao_social" />
-              </div>
-            </div>
-          </section>
-
-          {/* 2. Dados da Empresa */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Building className="w-4 h-4" /> Dados da Empresa
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <EditableField label="Tipo de Negócio" field="tipo_negocio" />
-              <EditableField label="Faturamento Mensal" field="faturamento_mensal" />
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Possui Sócio?</label>
-                {isEditing ? (
-                  <select
-                    value={formData.possui_socio ? 'true' : 'false'}
-                    onChange={(e) => handleChange('possui_socio', e.target.value === 'true')}
-                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-                  >
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
-                  </select>
-                ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.possui_socio ? 'Sim' : 'Não'}</p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* 3. Qualificação */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <CheckCircle className="w-4 h-4" /> Qualificação
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <EditableField
-                label="Status (Qualificação)"
-                field="qualificacao"
-                type="select"
-                options={['MQL', 'ICP', 'SQL']}
-              />
-              <EditableField
-                label="Situação"
-                field="situacao"
-                type="select"
-                options={['nao_respondido', 'desqualificado', 'qualificado', 'cliente']}
-              />
-              <EditableField
-                label="Interesse em Ajuda?"
-                field="interesse_ajuda"
-              />
-              <div className="md:col-span-2">
-                <EditableField label="Motivo da Qualificação" field="motivo_qualificacao" />
-              </div>
-            </div>
-          </section>
-
-          {/* 4. Dados Financeiros e Dívidas */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Dados Financeiros
-            </h3>
-            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 space-y-4">
-              <EditableField label="Tipo de Dívida" field="tipo_divida" />
-              <div className="grid grid-cols-2 gap-4">
-                <EditableField label="Dívida Ativa" field="valor_divida_ativa" />
-                <EditableField label="Dívida Federal" field="valor_divida_federal" />
-                <EditableField label="Dívida Estadual" field="valor_divida_estadual" />
-                <EditableField label="Dívida Municipal" field="valor_divida_municipal" />
-              </div>
-            </div>
-          </section>
-
-          {/* 5. Cálculo Parcelamento (Destaque) */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <FileText className="w-4 h-4" /> Cálculo Parcelamento da Dívida
-            </h3>
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-              <EditableField label="Cálculo" field="calculo_parcelamento" type="textarea" />
-            </div>
-          </section>
-
-          {/* 7. Vendas e Agendamento */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Vendas e Agendamento
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <EditableField label="Data Reunião" field="data_reuniao" type="datetime-local" />
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Reunião Agendada?</label>
-                {isEditing ? (
-                  <select
-                    value={formData.reuniao_agendada ? 'true' : 'false'}
-                    onChange={(e) => handleChange('reuniao_agendada', e.target.value === 'true')}
-                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-                  >
-                    <option value="false">Não</option>
-                    <option value="true">Sim</option>
-                  </select>
-                ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.reuniao_agendada ? 'Sim' : 'Não'}</p>
-                )}
-              </div>
-              <EditableField label="Serviço" field="servico" />
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Procuração?</label>
-                {isEditing ? (
-                  <select
-                    value={formData.procuracao ? 'true' : 'false'}
-                    onChange={(e) => handleChange('procuracao', e.target.value === 'true')}
-                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-                  >
-                    <option value="false">Não</option>
-                    <option value="true">Sim</option>
-                  </select>
-                ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.procuracao ? 'Sim' : 'Não'}</p>
-                )}
-              </div>
-              <EditableField label="Serviço" field="servico" />
-              <EditableField label="Status Atendimento" field="status_atendimento" />
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Cliente?</label>
-                {isEditing ? (
-                  <select
-                    value={formData.cliente ? 'true' : 'false'}
-                    onChange={(e) => handleChange('cliente', e.target.value === 'true')}
-                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-                  >
-                    <option value="false">Não</option>
-                    <option value="true">Sim</option>
-                  </select>
-                ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.cliente ? 'Sim' : 'Não'}</p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Confirmação de Qualificação?</label>
-                {isEditing ? (
-                  <select
-                    value={formData.confirmacao_qualificacao ? 'true' : 'false'}
-                    onChange={(e) => handleChange('confirmacao_qualificacao', e.target.value === 'true')}
-                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
-                  >
-                    <option value="false">Não</option>
-                    <option value="true">Sim</option>
-                  </select>
-                ) : (
-                  <p className="text-zinc-900 dark:text-zinc-200">{lead.confirmacao_qualificacao ? 'Sim' : 'Não'}</p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* 6. Informações do Sistema */}
-          <section>
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Info className="w-4 h-4" /> Informações do Sistema
-            </h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Data de Cadastro</label>
-                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm">
-                  <Calendar className="w-3 h-3" />
-                  {lead.data_cadastro ? new Date(lead.data_cadastro).toLocaleString('pt-BR') : '-'}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-500">Última Atualização</label>
-                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm">
-                  <Clock className="w-3 h-3" />
-                  {lead.atualizado_em ? new Date(lead.atualizado_em).toLocaleString('pt-BR') : '-'}
-                </div>
-              </div>
-
-              <div className="space-y-1 md:col-span-2">
-                <EditableField label="Observações Internas" field="observacoes" type="textarea" />
-              </div>
-            </div>
-          </section>
-
-          {/* Histórico Serpro */}
-          {lead.cnpj && (
-            <section>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-600" /> Histórico Serpro
-              </h3>
-              {serproHistory.length === 0 ? (
-                <p className="text-xs text-zinc-400">Nenhuma consulta registrada para este CNPJ.</p>
-              ) : (
-                <div className="space-y-2">
-                  {serproHistory.map((h, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${h.status === 200 ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                        <span className="font-mono text-zinc-700 dark:text-zinc-300">{h.tipo_servico}</span>
-                      </div>
-                      <span className="text-zinc-400">{new Date(h.created_at).toLocaleString('pt-BR')}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-        </div>
-      </div>
-    </div >
-  )
-}
 
 export default function LeadList({
   data,
@@ -696,6 +231,8 @@ export default function LeadList({
             <Search className="h-4 w-4 text-zinc-400" />
           </div>
           <input
+            id="lead-search"
+            name="lead-search"
             type="text"
             className="block w-full rounded-md border-0 py-2 pl-10 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700"
             placeholder="Buscar por nome, telefone ou CNPJ..."
@@ -705,6 +242,8 @@ export default function LeadList({
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
+            id="status-filter"
+            name="status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="block w-full sm:w-40 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
@@ -917,8 +456,10 @@ export default function LeadList({
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[260px] overflow-auto pr-1">
               {FIELD_COLUMNS.map((field) => (
-                <label key={String(field.id)} className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
+                <label key={String(field.id)} htmlFor={`column-${field.id}`} className="flex items-center gap-2 text-sm text-zinc-800 dark:text-zinc-200">
                   <input
+                    id={`column-${field.id}`}
+                    name={`column-${field.id}`}
                     type="checkbox"
                     checked={visibleFieldColumns.includes(field.id)}
                     onChange={(e) => {
@@ -1108,6 +649,9 @@ export default function LeadList({
                 {visibleColumns.includes('atualizado') && (
                   <th className="px-6 py-3 font-semibold">Atualizado</th>
                 )}
+                {visibleColumns.includes('procuracao') && (
+                  <th className="px-6 py-3 font-semibold text-center">Procuração</th>
+                )}
                 {FIELD_COLUMNS.filter(f => visibleFieldColumns.includes(f.id)).map((f) => (
                   <th key={String(f.id)} className="px-6 py-3 font-semibold">{f.label}</th>
                 ))}
@@ -1130,9 +674,12 @@ export default function LeadList({
                     {visibleColumns.includes('cliente') && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                            {row.nome_completo ? row.nome_completo.substring(0, 2).toUpperCase() : '??'}
-                          </div>
+                          <ChatAvatar
+                            chatId={row.telefone || ''}
+                            name={row.nome_completo || ''}
+                            size={32}
+                            className="text-[10px]"
+                          />
                           <div>
                             <div className="font-medium text-zinc-900 dark:text-zinc-200 flex flex-wrap items-center gap-2">
                               {row.nome_completo || 'Sem nome'}
@@ -1338,6 +885,18 @@ export default function LeadList({
           </div>
         )}
       </div>
+
+      {selectedLead && (
+        <LeadDetailsSidebar
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onUpdate={(updatedLead) => {
+            // Refrescar sem recarregar a página inteira se possível
+            router.refresh()
+          }}
+          initialEditMode={startInEditMode}
+        />
+      )}
     </div>
   )
 }

@@ -12,7 +12,7 @@ interface Props {
   width?: number;
   height?: number;
   gradient?: string[];
-  dark?: boolean;
+  isDarkMode?: boolean;
   title?: string;
 }
 
@@ -21,6 +21,7 @@ export default function MetaAdsFunnel({
   width,
   height = 260,
   gradient = ["#2e7bf6b0", "#8479fd"],
+  isDarkMode = false,
   title = "Funil de Conversão",
 }: Props) {
   const elementId = "meta-ads-funnel";
@@ -35,85 +36,44 @@ export default function MetaAdsFunnel({
 
       // Use container width, fallback to width prop or 300
       const containerWidth = el.clientWidth || width || 320;
-      const isMobile = containerWidth < 640; // Breakpoint mobile
-
-      // FunnelGraph needs a specific width number
+      // Forçar horizontal para evitar que a "linha" aponte para baixo como o funil vertical
       const graph = new FunnelGraph({
         container: selector,
-        direction: isMobile ? "vertical" : "horizontal",
-        gradientDirection: isMobile ? "vertical" : "horizontal",
+        direction: "horizontal",
+        gradientDirection: "horizontal",
         width: containerWidth,
-        height: isMobile ? 400 : height, // Altura maior no mobile para caber verticalmente
+        height: height,
         data: {
           labels: stages.map((s) => s.label),
           values: stages.map((s) => s.value),
-          colors: [gradient[0] || "#2e7cf6"],
+          // A biblioteca espera um array de cores para cada etapa. 
+          // Se for gradiente, deve ser um array dentro do array: colors: [ ['#c1', '#c2'], ['#c1', '#c2'] ]
+          colors: stages.map(() => gradient),
         },
         displayPercent: true,
       });
 
       graph.draw();
 
-      // Customização de Cores e Fontes das Labels via CSS Injection
-      // A biblioteca funnel-graph-js usa classes específicas que podemos sobrescrever
-      const style = document.createElement('style');
-      style.innerHTML = `
-        #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__value {
-          color: #18181b !important; /* zinc-900 - Número Principal (Escuro no claro) */
-          fill: #18181b !important;
-          font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
-          font-weight: 700 !important;
-        }
-        :is(.dark) #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__value {
-          color: #f4f4f5 !important; /* zinc-100 - Claro no escuro */
-          fill: #f4f4f5 !important;
-        }
+      // Forçar classe de tema da biblioteca se necessário
+      if (isDarkMode) {
+        el.classList.add("fg-dark");
+      } else {
+        el.classList.remove("fg-dark");
+      }
 
-        #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__title {
-          color: #18181b !important; /* blue-600 - Título (Azul) */
-          fill: #18181b !important;
-          font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
-          font-weight: 500 !important;
-        }
-        :is(.dark) #${elementId} .svg-funnel-js__labels .svg-funnel-js__label .label__title {
-          color: #60a5fa !important; /* blue-400 */
-          fill: #60a5fa !important;
-        }
-
-        #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel {
-           color: #18181b !important; /* blue-800 - Porcentagem (Azul Escuro) */
-           fill: #18181b !important;
-           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
-           font-weight: 600 !important;
-        }
-        :is(.dark) #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel {
-           color: #93c5fd !important; /* blue-300 - Azul claro para contraste no dark mode */
-           fill: #93c5fd !important;
-        }
-      `;
-      el.appendChild(style);
-
-      // Handle library specific theme class if needed, or rely on our CSS overrides
-      // el.classList.remove("fg-dark"); 
-
+      // Forçar atualização de cores via JS se o CSS falhar em alguns elementos
       try {
         const svg = el.querySelector("svg");
         if (svg) {
           const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
           const linear = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
           linear.setAttribute("id", "funnelGradient");
-          
-          if (isMobile) {
-            linear.setAttribute("x1", "0%");
-            linear.setAttribute("x2", "0%");
-            linear.setAttribute("y1", "0%");
-            linear.setAttribute("y2", "100%");
-          } else {
-            linear.setAttribute("x1", "0%");
-            linear.setAttribute("x2", "100%");
-            linear.setAttribute("y1", "0%");
-            linear.setAttribute("y2", "0%");
-          }
+
+          linear.setAttribute("x1", "0%");
+          linear.setAttribute("x2", "100%");
+          linear.setAttribute("y1", "0%");
+          linear.setAttribute("y2", "0%");
 
           const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
           stop1.setAttribute("offset", "0%");
@@ -131,7 +91,7 @@ export default function MetaAdsFunnel({
             (p as SVGPathElement).setAttribute("fill", "url(#funnelGradient)");
           });
         }
-      } catch {} 
+      } catch { }
     };
 
     // Initial draw
@@ -141,7 +101,7 @@ export default function MetaAdsFunnel({
     // Resize handler with ResizeObserver for better responsiveness
     const el = document.querySelector(`#${elementId}`);
     let resizeObserver: ResizeObserver | null = null;
-    
+
     if (el) {
       resizeObserver = new ResizeObserver(() => {
         // Debounce slightly to avoid too many redraws
@@ -149,7 +109,7 @@ export default function MetaAdsFunnel({
       });
       resizeObserver.observe(el.parentElement || el);
     }
-    
+
     // Fallback to window resize
     const handleWindowResize = () => {
       draw();
@@ -163,10 +123,58 @@ export default function MetaAdsFunnel({
       }
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, [stages, width, height, gradient]);
+  }, [stages, width, height, gradient, isDarkMode]);
 
   return (
     <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 overflow-hidden w-full shadow-sm">
+      <style>
+        {`
+        /* Número Principal */
+        #${elementId} .svg-funnel-js__label .label__value,
+        #${elementId} .label__value {
+          color: #18181b !important;
+          fill: #18181b !important;
+          font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
+          font-weight: 700 !important;
+        }
+        .dark #${elementId} .svg-funnel-js__label .label__value,
+        .dark #${elementId} .label__value {
+          color: #f4f4f5 !important;
+          fill: #f4f4f5 !important;
+        }
+
+        /* Títulos das Etapas */
+        #${elementId} .svg-funnel-js__label .label__title,
+        #${elementId} .label__title {
+          color: #9333ea !important;
+          fill: #9333ea !important;
+          font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
+          font-weight: 500 !important;
+        }
+        .dark #${elementId} .svg-funnel-js__label .label__title,
+        .dark #${elementId} .label__title {
+          color: #f97316 !important;
+          fill: #f97316 !important;
+        }
+
+        /* Porcentagens (Sublabels / Percentage) */
+        #${elementId} .svg-funnel-js__subLabel,
+        #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel,
+        #${elementId} .label__percentage {
+           color: #7c3aed !important; /* purple-600 */
+           fill: #7c3aed !important;
+           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
+           font-weight: 600 !important;
+           font-size: 11px !important;
+        }
+        .dark #${elementId} .svg-funnel-js__subLabel,
+        .dark #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel,
+        .dark #${elementId} .label__percentage {
+           color: #fb923c !important; /* orange-400 */
+           fill: #fb923c !important;
+        }
+        `}
+      </style>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
       </div>

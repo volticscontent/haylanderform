@@ -11,20 +11,63 @@
             "id": "6b696ef7a6b929c8",
             "type": "leaf",
             "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/integrations/redis.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "redis"
+            }
+          },
+          {
+            "id": "1ac5bdf7a71c2dad",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/architecture/bot.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "bot"
+            }
+          },
+          {
+            "id": "15205f9545276410",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/architecture/frontend.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "frontend"
+            }
+          },
+          {
+            "id": "2602400ae345a1a9",
+            "type": "leaf",
+            "state": {
               "type": "canvas",
               "state": {
                 "file": "wiki/tracking.canvas",
                 "viewState": {
-                  "x": 392.4954008851967,
-                  "y": 758.3991765637886,
-                  "zoom": -0.9151377386878179
+                  "x": 1779.23151444836,
+                  "y": 1384.4064514945094,
+                  "zoom": -1.0467942114789415
                 }
               },
               "icon": "lucide-layout-dashboard",
               "title": "tracking"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -81,7 +124,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 354.5
   },
   "right": {
     "id": "9985ae48862fdcdb",
@@ -183,39 +226,43 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "6b696ef7a6b929c8",
+  "active": "2602400ae345a1a9",
   "lastOpenFiles": [
-    "wiki/decisions/ADR-0003-apolo-state-machine.md",
-    "wiki/tracking.canvas",
-    "wiki/tracking.md",
-    "wiki/log.md",
-    "wiki/index.md",
-    "wiki/workflows/lead-qualification.md",
-    "wiki/integrations/serpro.md",
-    "wiki/decisions/ADR-0002-serpro-clients-interface.md",
-    "Sem título.canvas",
-    "wiki/security/serpro-certificates.md",
-    "wiki/overview.md",
-    "wiki/integrations/evolution-api.md",
-    "wiki/integrations/redis.md",
-    "wiki/features/empresa-bot-registration.md",
     "wiki/features/integra-contador.md",
+    "wiki/features/empresa-bot-registration.md",
     "wiki/features/apolo-audit.md",
+    "wiki/decisions/ADR-0003-apolo-state-machine.md",
     "wiki/decisions/ADR-002-gpt4o-mini.md",
     "wiki/decisions/ADR-0001-serpro-integra-bugs.md",
     "wiki/decisions/ADR-001-bff-pattern.md",
-    "wiki/log.md.tmp.22016.1776801194727",
-    "wiki/index.md.tmp.22016.1776801186790",
     "wiki/architecture/queues.md",
-    "wiki/architecture/queues.md.tmp.22016.1776801181816",
-    "wiki/features/integra-contador.md.tmp.22016.1776801157317",
-    "wiki/overview.md.tmp.22016.1776801154151",
-    "wiki/overview.md.tmp.22016.1776801151402",
-    "wiki/overview.md.tmp.22016.1776801151360",
-    "wiki/overview.md.tmp.6920.1776790427819",
-    "wiki/overview.md.tmp.6920.1776790424635",
-    "wiki/features/integra-contador.md.tmp.6920.1776790420552",
     "wiki/architecture/frontend.md",
-    "wiki/architecture/bot.md"
+    "wiki/architecture/bot.md",
+    "wiki/integrations/redis.md",
+    "wiki/tracking.canvas",
+    "wiki/integrations/evolution-api.md",
+    "wiki/integrations/serpro.md",
+    "wiki/decisions/ADR-0004-schema-integridade-dados.md",
+    "wiki/decisions/ADR-0002-serpro-clients-interface.md",
+    "wiki/index.md",
+    "wiki/decisions/ADR-0004-lead-sheet-unification.md",
+    "wiki/index.md.tmp.22848.1776940084008",
+    "wiki/log.md.tmp.22848.1776940077228",
+    "wiki/decisions/ADR-0004-schema-integridade-dados.md.tmp.22848.1776940069385",
+    "wiki/features/integra-contador.md.tmp.22848.1776939643862",
+    "wiki/log.md.tmp.22848.1776939637172",
+    "wiki/features/integra-contador.md.tmp.22848.1776938188649",
+    "wiki/features/integra-contador.md.tmp.22848.1776938185191",
+    "wiki/features/integra-contador.md.tmp.22848.1776938176827",
+    "wiki/index.md.tmp.22848.1776935911929",
+    "wiki/integrations/serpro.md.tmp.22848.1776935906484",
+    "wiki/decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md",
+    "wiki/features/lead-management.md",
+    "wiki/tracking.md",
+    "wiki/log.md",
+    "wiki/workflows/lead-qualification.md",
+    "Sem título.canvas",
+    "wiki/security/serpro-certificates.md",
+    "wiki/overview.md"
   ]
 }

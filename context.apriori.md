@@ -397,4 +397,4 @@ PS D:\Códigos\Haylander\haylanderform> claude
 
   O que a wiki agora reflete com precisão: código existe e compila, mas nenhum arquivo do  
   MÓDULO 4 foi commitado — ?? no git significa que qualquer git clone do projeto não tem   
-  nada disso.
+  nada disso.cd 

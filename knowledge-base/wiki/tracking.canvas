@@ -1,10 +1,12 @@
 {
 	"nodes":[
 		{"id":"file_empresa_bot","type":"file","file":"wiki/features/empresa-bot-registration.md","x":440,"y":420,"width":340,"height":1400},
-		{"id":"file_adr0001","type":"file","file":"wiki/decisions/ADR-0001-serpro-integra-bugs.md","x":820,"y":420,"width":340,"height":1400},
-		{"id":"file_adr0002","type":"file","file":"wiki/decisions/ADR-0002-serpro-clients-interface.md","x":1200,"y":420,"width":340,"height":1400},
-		{"id":"file_adr0003","type":"file","file":"wiki/decisions/ADR-0003-apolo-state-machine.md","x":1580,"y":420,"width":420,"height":1400},
+		{"id":"file_adr0001","type":"file","file":"wiki/decisions/ADR-0001-serpro-integra-bugs.md","x":820,"y":420,"width":340,"height":2580},
+		{"id":"file_adr0002","type":"file","file":"wiki/decisions/ADR-0002-serpro-clients-interface.md","x":1200,"y":420,"width":340,"height":2940},
+		{"id":"file_adr0003","type":"file","file":"wiki/decisions/ADR-0003-apolo-state-machine.md","x":1580,"y":420,"width":420,"height":2180},
+		{"id":"file_adr0004","type":"file","file":"wiki/decisions/ADR-0004-lead-sheet-unification.md","x":2040,"y":420,"width":680,"height":1290},
 		{"id":"e_20260422","type":"text","text":"## 📅 2026-04-22\n**Expansão Frontend & Context Registration**\n\n- Criação do roadmap de **RAG e Context Retrieval** para onboarding passivo com o Bot.\n- Refatoração Visual (Glassmorphism) na interface Serpro.\n- Solução estrutural para o crash no loop mental do LLM com o **Bug Cognitivo de Onboarding do Apolo**.","x":820,"y":-60,"width":420,"height":280},
+		{"id":"e_lead_consistency","type":"text","text":"## 📅 2026-04-22 (B)\n**Consistência de Dados & Ficha Unificada**\n\n- Refatoração SQL no backend (40+ campos).\n- Unificação de Ficha: Shared Component (`LeadDetailsSidebar`).\n- Fim do redirecionamento do chat em favor do acesso inline.\n- Solução 'Ghost Clients' no Serpro Integra.","x":1290,"y":-400,"width":400,"height":280,"color":"2"},
 		{"id":"file_bot","type":"file","file":"wiki/architecture/bot.md","x":-1540,"y":370,"width":620,"height":1230},
 		{"id":"e_20260421","type":"text","text":"## 📅 2026-04-21\n**Auditoria de Módulos e Filas**\n\n- Descoberta de divergências de commit no Módulo 4.\n- Criação da arquitetura de filas `queues.md`.\n- Finalização da Fase 3 e Fase 4 (Billing Tracker).","x":-290,"y":-60,"width":380,"height":280},
 		{"id":"file_serpro","type":"file","file":"wiki/integrations/serpro.md","x":-860,"y":370,"width":300,"height":1390},
@@ -26,6 +28,8 @@
 		{"id":"edge_10","fromNode":"e_20260422","fromSide":"bottom","toNode":"file_adr0002","toSide":"top","color":"4"},
 		{"id":"edge_11","fromNode":"e_20260422","fromSide":"right","toNode":"e_refactor_apolo","toSide":"left","color":"4"},
 		{"id":"edge_12","fromNode":"e_refactor_apolo","fromSide":"right","toNode":"e_nextstep","toSide":"left","color":"1"},
-		{"id":"edge_13","fromNode":"e_refactor_apolo","fromSide":"bottom","toNode":"file_adr0003","toSide":"top","color":"4"}
+		{"id":"edge_13","fromNode":"e_refactor_apolo","fromSide":"bottom","toNode":"file_adr0003","toSide":"top","color":"4"},
+		{"id":"edge_14","fromNode":"e_20260422","fromSide":"top","toNode":"e_lead_consistency","toSide":"bottom","color":"2"},
+		{"id":"edge_15","fromNode":"e_lead_consistency","fromSide":"bottom","toNode":"file_adr0004","toSide":"top","color":"2"}
 	]
 }

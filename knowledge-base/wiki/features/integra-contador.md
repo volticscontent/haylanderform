@@ -3,7 +3,7 @@ title: Integra Contador — Módulo 4
 type: feature
 tags: [integra, serpro, bullmq, robos, guias, caixa-postal]
 created: 2026-04-20
-updated: 2026-04-20
+updated: 2026-04-23
 status: current
 ---
 
@@ -38,7 +38,8 @@ Cron `0 * * * *` — a cada hora no `:00`, verifica `integra_robos` filtrando po
 
 | Rota | Descrição |
 |---|---|
-| `GET /api/integra/empresas` | Lista empresas |
+| `GET /api/integra/empresas` | Lista empresas (LEFT JOIN leads → retorna `lead_nome`, `lead_telefone`) |
+| `GET /api/integra/leads-para-importar` | Leads com CNPJ não em integra_empresas — inclui `razao_social` para importação correta |
 | `POST /api/integra/empresas` | Cria empresa (preset automático de serviços por regime) |
 | `PATCH /api/integra/empresas/:id` | Atualiza empresa |
 | `GET /api/integra/robos` | Lista robôs com última execução |
@@ -54,7 +55,7 @@ Cron `0 * * * *` — a cada hora no `:00`, verifica `integra_robos` filtrando po
 
 | Rota Admin | Descrição |
 |---|---|
-| `/serpro/integra/empresas` | CRUD empresas com toggle ativo |
+| `/serpro/integra/empresas` | CRUD empresas — tabela com badge regime, coluna Lead Vinculado, service pills, toggle fixado |
 | `/serpro/integra/dashboard` | Cards resumo + alertas certificados + status robôs |
 | `/serpro/integra/robos` | Toggle ativo, edição dia/hora, botão executar |
 | `/serpro/integra/guias` | Tabela DAS/DARF por empresa |

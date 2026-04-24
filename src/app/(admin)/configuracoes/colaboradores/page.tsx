@@ -10,7 +10,7 @@ const PERMISSOES_DISPONIVEIS = [
     { id: 'atendimento', label: 'Atendimento' },
     { id: 'vendas', label: 'Vendas' },
     { id: 'serpro', label: 'Serpro' },
-    { id: 'disparo', label: 'Disparos' },
+    //{ id: 'disparo', label: 'Disparos' },
     { id: 'financeiro', label: 'Financeiro' },
 ];
 
