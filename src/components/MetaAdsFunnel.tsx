@@ -15,15 +15,26 @@ interface Props {
   gradient?: string[];
   isDarkMode?: boolean;
   title?: string;
+  labelColor?: string;
+  titleColor?: string;
+  valueColor?: string;
+  percentageColor?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
 }
 
 export default function MetaAdsFunnel({
   stages,
   width,
   height = 260,
-  gradient = ["#2e7bf6b0", "#8479fd"],
+  gradient = ["#ffffffae", "#8479fd"],
   isDarkMode = false,
   title = "Funil de Conversão",
+  titleColor,
+  valueColor,
+  percentageColor,
+  strokeColor,
+  strokeWidth = 2,
 }: Props) {
   const elementId = "meta-ads-funnel";
 
@@ -89,7 +100,12 @@ export default function MetaAdsFunnel({
           svg.prepend(defs);
 
           svg.querySelectorAll("path").forEach((p) => {
-            (p as SVGPathElement).setAttribute("fill", "url(#funnelGradient)");
+            const path = p as SVGPathElement;
+            path.setAttribute("fill", "url(#funnelGradient)");
+            if (strokeColor) {
+              path.setAttribute("stroke", strokeColor);
+              path.setAttribute("stroke-width", strokeWidth.toString());
+            }
           });
         }
       } catch { }
@@ -124,55 +140,46 @@ export default function MetaAdsFunnel({
       }
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, [stages, width, height, gradient, isDarkMode]);
+  }, [stages, width, height, gradient, isDarkMode, strokeColor, strokeWidth]);
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 overflow-hidden w-full shadow-sm">
+    <div className="rounded-xl bg-white dark:bg-zinc-900 p-4 overflow-hidden w-full shadow-sm">
       <style>
         {`
         /* Número Principal */
         #${elementId} .svg-funnel-js__label .label__value,
         #${elementId} .label__value {
-          color: #18181b !important;
-          fill: #18181b !important;
+          color: ${valueColor || (isDarkMode ? '#f4f4f5' : '#9333ea')} !important;
+          fill: ${valueColor || (isDarkMode ? '#f4f4f5' : '#9333ea')} !important;
           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
           font-weight: 700 !important;
-        }
-        .dark #${elementId} .svg-funnel-js__label .label__value,
-        .dark #${elementId} .label__value {
-          color: #f4f4f5 !important;
-          fill: #f4f4f5 !important;
         }
 
         /* Títulos das Etapas */
         #${elementId} .svg-funnel-js__label .label__title,
         #${elementId} .label__title {
-          color: #9333ea !important;
-          fill: #9333ea !important;
+          color: ${titleColor || (isDarkMode ? '#ffffff' : '#9333ea')} !important;
+          fill: ${titleColor || (isDarkMode ? '#ffffff' : '#9333ea')} !important;
           font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
           font-weight: 500 !important;
-        }
-        .dark #${elementId} .svg-funnel-js__label .label__title,
-        .dark #${elementId} .label__title {
-          color: #f97316 !important;
-          fill: #f97316 !important;
         }
 
         /* Porcentagens (Sublabels / Percentage) */
         #${elementId} .svg-funnel-js__subLabel,
         #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel,
         #${elementId} .label__percentage {
-           color: #7c3aed !important; /* purple-600 */
-           fill: #7c3aed !important;
+           color: ${percentageColor || (isDarkMode ? '#ffffff' : '#7c3aed')} !important;
+           fill: ${percentageColor || (isDarkMode ? '#ffffff' : '#7c3aed')} !important;
            font-family: var(--font-sans, ui-sans-serif, system-ui) !important;
            font-weight: 600 !important;
            font-size: 11px !important;
         }
-        .dark #${elementId} .svg-funnel-js__subLabel,
-        .dark #${elementId} .svg-funnel-js__subLabels .svg-funnel-js__subLabel,
-        .dark #${elementId} .label__percentage {
-           color: #fb923c !important; /* orange-400 */
-           fill: #fb923c !important;
+
+        /* Linhas do Funil (Stroke/Outlines) */
+        #${elementId} .svg-funnel-js__path,
+        #${elementId} svg path {
+          stroke: ${strokeColor || 'transparent'} !important;
+          stroke-width: ${strokeWidth}px !important;
         }
         `}
       </style>

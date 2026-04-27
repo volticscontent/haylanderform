@@ -259,25 +259,21 @@ export default function LeadList({
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">Exportar</span>
           </button>
-          <button onClick={() => setBulkOpen((v) => !v)} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 transition-colors">
+          <button onClick={() => setBulkOpen((v) => !v)} className="inline-flex items-center p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
             <Edit className="w-4 h-4" />
-            <span>Edição em massa</span>
+            <span>Editar</span>
           </button>
-          <button onClick={() => setViewConfigOpen(true)} className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-500 transition-colors">
+          <button onClick={() => setViewConfigOpen(true)} className="inline-flex items-center inline-flex items-center p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
             <MoreVertical className="w-4 h-4" />
             <span className="hidden sm:inline">Visualização</span>
           </button>
-          <Link href="" className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-500 transition-colors">
-            <Send className="w-4 h-4" />
-            <span className="hidden sm:inline">Disparo</span>
-          </Link>
         </div>
       </div>
 
       {bulkOpen && (
-        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-indigo-50/50 dark:bg-indigo-900/20">
+        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-indigo-50/50 dark:bg-orange-800">
           <div className="max-w-3xl">
-            <div className="bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+            <div className="bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-orange-800 rounded-lg p-4">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-48">
@@ -285,7 +281,7 @@ export default function LeadList({
                     <select
                       value={bulkColumn}
                       onChange={(e) => { const val = e.target.value; setBulkColumn(val ? (val as keyof LeadRecord) : ''); setBulkValues([]); }}
-                      className="p-2 w-full rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
+                      className="p-2 w-full rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 px-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-orange-700"
                     >
                       <option value="">Selecione...</option>
                       <option value="nome_completo">Nome completo</option>
@@ -324,7 +320,7 @@ export default function LeadList({
                     <select
                       value={bulkOperator}
                       onChange={(e) => setBulkOperator(e.target.value as 'in' | 'not_in' | 'is_empty' | 'is_not_empty')}
-                      className="p-2 w-full rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
+                      className="p-2 w-full rounded-md py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-orange-700"
                       disabled={!bulkColumn}
                     >
                       <option value="in">Igual a (um dos)</option>
@@ -446,11 +442,11 @@ export default function LeadList({
             <div className="mb-2 text-xs text-zinc-600 dark:text-zinc-400">Campos da ficha (todas as colunas)</div>
             <div className="flex items-center gap-2 mb-2">
               <button
-                className="rounded px-2 py-1 text-xs border border-zinc-300 dark:border-zinc-700"
+                className="rounded pr-2 py-1 text-xs border border-zinc-300 dark:border-zinc-700"
                 onClick={() => setVisibleFieldColumns(FIELD_COLUMNS.map(f => f.id))}
               >Selecionar todos</button>
               <button
-                className="rounded px-2 py-1 text-xs border border-zinc-300 dark:border-zinc-700"
+                className="rounded pr-2 py-1 text-xs border border-zinc-300 dark:border-zinc-700"
                 onClick={() => setVisibleFieldColumns([])}
               >Limpar</button>
             </div>

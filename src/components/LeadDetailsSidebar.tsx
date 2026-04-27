@@ -186,12 +186,12 @@ export default function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEdi
 
           <div className="flex items-center gap-2">
             {lead.cnpj && (
-              <Link href={`/serpro?cnpj=${lead.cnpj.replace(/\D/g, '')}`} className="p-2 px-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center gap-2">
+              <Link href={`/serpro?cnpj=${lead.cnpj.replace(/\D/g, '')}`} className="p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
                 <FileText className="w-4 h-4" /> Serpro
               </Link>
             )}
             {lead.telefone && (
-              <Link href={`/reuniao/${lead.telefone}`} className="p-2 px-3 rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium flex items-center gap-2">
+              <Link href={`/reuniao/${lead.telefone}`} className="p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
                 <Calendar className="w-4 h-4" /> Reunião
               </Link>
             )}
@@ -232,32 +232,184 @@ export default function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEdi
 
           <section>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Building className="w-4 h-4" /> Empresa e Qualificação
+              <Building className="w-4 h-4" /> Dados da Empresa
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <EditableField label="Tipo de Negócio" field="tipo_negocio" />
-              <EditableField label="Faturamento" field="faturamento_mensal" />
-              <EditableField label="Qualificação" field="qualificacao" type="select" options={['MQL', 'ICP', 'SQL']} />
+              <EditableField label="Faturamento Mensal" field="faturamento_mensal" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Possui Sócio?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.possui_socio ? 'true' : 'false'}
+                    onChange={(e) => handleChange('possui_socio', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200 font-medium text-sm">{lead.possui_socio ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Qualificação
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <EditableField label="Status (Qualificação)" field="qualificacao" type="select" options={['MQL', 'ICP', 'SQL']} />
               <EditableField label="Situação" field="situacao" type="select" options={['nao_respondido', 'desqualificado', 'qualificado', 'cliente']} />
+              <EditableField label="Interesse em Ajuda?" field="interesse_ajuda" />
+              <div className="md:col-span-2">
+                <EditableField label="Motivo da Qualificação" field="motivo_qualificacao" />
+              </div>
             </div>
           </section>
 
           <section>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" /> Financeiro
+              <DollarSign className="w-4 h-4" /> Dados Financeiros
             </h3>
-            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 grid grid-cols-2 gap-4">
-              <EditableField label="Dívida Federal" field="valor_divida_federal" />
-              <EditableField label="Dívida Ativa" field="valor_divida_ativa" />
+            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-900/30 space-y-4">
+              <EditableField label="Tipo de Dívida" field="tipo_divida" />
+              <div className="grid grid-cols-2 gap-4">
+                <EditableField label="Dívida Ativa" field="valor_divida_ativa" />
+                <EditableField label="Dívida Federal" field="valor_divida_federal" />
+                <EditableField label="Dívida Estadual" field="valor_divida_estadual" />
+                <EditableField label="Dívida Municipal" field="valor_divida_municipal" />
+              </div>
             </div>
           </section>
 
           <section>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Info className="w-4 h-4" /> Observações
+              <FileText className="w-4 h-4" /> Cálculo Parcelamento da Dívida
             </h3>
-            <EditableField label="Notas Internas" field="observacoes" type="textarea" />
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+              <EditableField label="Cálculo" field="calculo_parcelamento" type="textarea" />
+            </div>
           </section>
+
+          <section>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Vendas e Agendamento
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <EditableField label="Data Reunião" field="data_reuniao" type="datetime-local" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Reunião Agendada?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.reuniao_agendada ? 'true' : 'false'}
+                    onChange={(e) => handleChange('reuniao_agendada', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200 font-medium text-sm">{lead.reuniao_agendada ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+              <EditableField label="Serviço" field="servico" />
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Procuração?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.procuracao ? 'true' : 'false'}
+                    onChange={(e) => handleChange('procuracao', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200 font-medium text-sm">{lead.procuracao ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Cliente?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.cliente ? 'true' : 'false'}
+                    onChange={(e) => handleChange('cliente', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200 font-medium text-sm">{lead.cliente ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Confirmação de Qualificação?</label>
+                {isEditing ? (
+                  <select
+                    value={formData.confirmacao_qualificacao ? 'true' : 'false'}
+                    onChange={(e) => handleChange('confirmacao_qualificacao', e.target.value === 'true')}
+                    className="w-full rounded-md border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm p-2"
+                  >
+                    <option value="false">Não</option>
+                    <option value="true">Sim</option>
+                  </select>
+                ) : (
+                  <p className="text-zinc-900 dark:text-zinc-200 font-medium text-sm">{lead.confirmacao_qualificacao ? 'Sim' : 'Não'}</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Info className="w-4 h-4" /> Informações do Sistema
+            </h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Data de Cadastro</label>
+                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm font-medium">
+                  <Calendar className="w-3 h-3" />
+                  {lead.data_cadastro ? new Date(lead.data_cadastro).toLocaleString('pt-BR') : '-'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-500">Última Atualização</label>
+                <div className="flex items-center gap-2 text-zinc-900 dark:text-zinc-200 text-sm font-medium">
+                  <Clock className="w-3 h-3" />
+                  {lead.atualizado_em ? new Date(lead.atualizado_em).toLocaleString('pt-BR') : '-'}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <EditableField label="Observações Internas" field="observacoes" type="textarea" />
+              </div>
+            </div>
+          </section>
+
+          {lead.cnpj && (
+            <section>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600" /> Histórico Serpro
+              </h3>
+              {serproHistory.length === 0 ? (
+                <p className="text-xs text-zinc-400">Nenhuma consulta registrada para este CNPJ.</p>
+              ) : (
+                <div className="space-y-2">
+                  {serproHistory.map((h, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${h.status === 200 ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                        <span className="font-mono text-zinc-700 dark:text-zinc-300">{h.tipo_servico}</span>
+                      </div>
+                      <span className="text-zinc-400">{new Date(h.created_at).toLocaleString('pt-BR')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>

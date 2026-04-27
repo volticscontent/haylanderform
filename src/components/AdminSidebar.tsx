@@ -35,7 +35,7 @@ const adminLinks: NavItem[] = [
   { name: 'Chat', href: '/atendimento', icon: MessageCircle },
   { name: 'Reuniões', href: '/reuniao', icon: Calendar },
   { name: 'Lista', href: '/lista', icon: Users },
-  // { name: 'Disparo', href: '/disparo', icon: Send }, // em desenvolvimento
+  /* { name: 'Disparo', href: '/disparo', icon: Send }, // em desenvolvimento */
   {
     name: 'Serpro / Integra',
     icon: Globe,
