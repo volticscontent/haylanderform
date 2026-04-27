@@ -171,7 +171,7 @@ export default function SerproPage() {
         </div>
       </div>
 
-      <div className="relative bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl p-7 rounded-2xl shadow-2xl shadow-blue-500/5 dark:shadow-blue-900/20 border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden">
+      <div className="relative bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl p-7 rounded-2xl shadow-2xl shadow-purple-500/5 dark:shadow-orange-900/20 border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden">
         {/* Decorative background glow */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
         
@@ -430,7 +430,7 @@ export default function SerproPage() {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${historyTab === key
                 ? key === 'test'
                   ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                  : 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-amber-500 text-amber-600 dark:text-amber-400'
                 : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                 }`}
             >

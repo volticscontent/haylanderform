@@ -23,7 +23,7 @@ import {
   ArrowDownRight,
   CheckCircle2,
   XCircle,
-  Send,
+  // Send,  // DISPARO: comentado — feature não ativa
   Users,
   TrendingUp
 } from 'lucide-react'
@@ -40,10 +40,10 @@ type LeadDashboardRecord = {
   calculo_parcelamento: string | null
   data_cadastro?: string | Date | null
   atualizado_em: string | Date | null
-  envio_disparo: string | null
   situacao: string | null
   qualificacao: string | null
   interesse_ajuda: string | null
+  // envio_disparo?: string | null  // DISPARO: comentado — feature não ativa
   confirmacao_qualificacao?: boolean | null
   reuniao_agendada?: boolean | null
   cliente?: boolean | null
@@ -135,18 +135,14 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
 
       return {
         totalLeads,
-        // Envio Pendente: a1, a2, a3 or 'Pendente' (if explicitly marked) or null/undefined
-        // User Logic: a1, a2, a3 = pending. 
-        // If completed, it should be something else.
-        // We assume anything NOT a1, a2, a3, Pendente, error is "Feito" (Sent)
-        pendingSends: dataset.filter(d => {
-          const status = d.envio_disparo
-          return !status || status === 'Pendente' || ['a1', 'a2', 'a3'].includes(status)
-        }).length,
-
-        sentMessages: dataset.filter(d => {
-          return String(d.envio_disparo || '').toLowerCase() === 'concluido'
-        }).length,
+        // DISPARO: comentado — feature não ativa
+        // pendingSends: dataset.filter(d => {
+        //   const status = d.envio_disparo
+        //   return !status || status === 'Pendente' || ['a1', 'a2', 'a3'].includes(status)
+        // }).length,
+        // sentMessages: dataset.filter(d => {
+        //   return String(d.envio_disparo || '').toLowerCase() === 'concluido'
+        // }).length,
 
         interested,
         notInterested: dataset.filter(d => String(d.interesse_ajuda || '').toLowerCase() === 'não').length,
@@ -190,15 +186,16 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
       bg: 'bg-purple-50 dark:bg-orange-900/20',
       suffix: ''
     },
-    {
-      title: 'Envios Feitos',
-      value: summaryMetrics.current.sentMessages,
-      prevValue: summaryMetrics.previous?.sentMessages,
-      icon: Send,
-      color: 'text-purple-500 dark:text-orange-400',
-      bg: 'bg-purple-50 dark:bg-orange-900/10',
-      suffix: ''
-    },
+    // DISPARO: comentado — feature não ativa
+    // {
+    //   title: 'Envios Feitos',
+    //   value: summaryMetrics.current.sentMessages,
+    //   prevValue: summaryMetrics.previous?.sentMessages,
+    //   icon: Send,
+    //   color: 'text-purple-500 dark:text-orange-400',
+    //   bg: 'bg-purple-50 dark:bg-orange-900/10',
+    //   suffix: ''
+    // },
     {
       title: 'Com Interesse',
       value: summaryMetrics.current.interested,
@@ -245,7 +242,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
     : ['#8b5cf6', '#7c3aed', '#a78bfa', '#c4b5fd', '#6d28d9']; // Purple palette (Light)
 
   const columnLabels = {
-    envio_disparo: 'Status de Envio',
+    // envio_disparo: 'Status de Envio',  // DISPARO: comentado — feature não ativa
     situacao: 'Situação',
     qualificacao: 'Qualificação',
     interesse_ajuda: 'Interesse'
@@ -480,7 +477,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 onChange={(e) => setFilterColumn(e.target.value as typeof filterColumn)}
                 className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
               >
-                <option value="envio_disparo">Envio</option>
+                {/* DISPARO: comentado — feature não ativa */}
+                {/* <option value="envio_disparo">Envio</option> */}
                 <option value="situacao">Situação</option>
                 <option value="qualificacao">Qualif.</option>
                 <option value="interesse_ajuda">Interesse</option>
@@ -681,8 +679,8 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
             </div>
           </div>
 
-          {/* Static Important Stats */}
-          <div className={`${isDarkMode ? 'bg-orange-600' : 'bg-purple-600'} rounded-xl shadow-sm p-4 sm:p-6 text-white relative overflow-hidden`}>
+          {/* DISPARO: comentado — feature não ativa */}
+          {/* <div className={`${isDarkMode ? 'bg-orange-600' : 'bg-purple-600'} rounded-xl shadow-sm p-4 sm:p-6 text-white relative overflow-hidden`}>
             <div className="relative z-10">
               <h4 className={`${isDarkMode ? 'text-orange-100' : 'text-purple-100'} text-sm font-medium mb-2`}>Envios Pendentes</h4>
               <div className="text-3xl sm:text-4xl font-bold">
@@ -695,7 +693,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
             <div className="absolute -right-2 -bottom-2 opacity-10">
               <Send className="w-24 h-24 sm:w-32 sm:h-32" />
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -732,7 +730,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   return null;
                 }}
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill={isDarkMode ? '#f97316' : '#8b5cf6'}>
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill={isDarkMode ? '#ffffff' : '#8b5cf6'}>
                 <LabelList
                   dataKey="value"
                   position="top"

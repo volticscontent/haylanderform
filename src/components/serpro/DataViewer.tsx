@@ -23,10 +23,16 @@ export const downloadPdf = (base64: string, fileName: string) => {
   document.body.removeChild(link);
 };
 
-import { Download } from 'lucide-react';
+import { Download, FileText, CheckCircle2, AlertCircle, Clock, MapPin, Building2, User, Phone, Mail, Hash, ShieldCheck } from 'lucide-react';
 
-// Função auxiliar para  exportar CSV
-const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
+// Chaves técnicas que o contador não precisa ver
+const IGNORED_KEYS = [
+  'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados',
+  'responseDateTime', 'idSistema', 'idServico', 'versaoSistema'
+];
+
+// Função auxiliar para exportar CSV
+const exportToCSV = (data: any[], fileName: string) => {
   if (!data || data.length === 0) return;
 
   // Pega as chaves do primeiro objeto para o cabeçalho
@@ -64,11 +70,19 @@ const exportToCSV = (data: Record<string, unknown>[], fileName: string) => {
   }
 };
 
-// Chaves técnicas que o contador não precisa ver
-const IGNORED_KEYS = [
-  'responseId', 'contratante', 'pedidoDados', 'autorPedidoDados',
-  'responseDateTime', 'idSistema', 'idServico', 'versaoSistema'
-];
+// Função auxiliar para obter ícone baseado no título
+const getIconForKey = (key: string) => {
+  const k = key.toLowerCase();
+  if (k.includes('endereço') || k.includes('logradouro') || k.includes('municipio') || k.includes('uf') || k.includes('cep')) return <MapPin className="w-4 h-4" />;
+  if (k.includes('razão social') || k.includes('nome empresarial') || k.includes('nome fantasia')) return <Building2 className="w-4 h-4" />;
+  if (k.includes('nome') || k.includes('sócio') || k.includes('qsa')) return <User className="w-4 h-4" />;
+  if (k.includes('telefone') || k.includes('ddd')) return <Phone className="w-4 h-4" />;
+  if (k.includes('email')) return <Mail className="w-4 h-4" />;
+  if (k.includes('cnpj') || k.includes('cpf') || k.includes('ni') || k.includes('numero')) return <Hash className="w-4 h-4" />;
+  if (k.includes('situação') || k.includes('status')) return <ShieldCheck className="w-4 h-4" />;
+  if (k.includes('data') || k.includes('vencimento') || k.includes('criado')) return <Clock className="w-4 h-4" />;
+  return <FileText className="w-4 h-4" />;
+};
 
 // Componente recursivo para exibir dados
 export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: string; level?: number }) => {
@@ -96,15 +110,18 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
     // Verifica se é PDF
     if (isPdfBase64(data)) {
       return (
-        <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center">
-          <span className="font-medium text-zinc-600 dark:text-zinc-400">{title}:</span>
+        <div className="flex justify-between p-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center bg-zinc-50/30 dark:bg-zinc-800/10 rounded-lg mb-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
+              <FileText className="w-5 h-5" />
+            </div>
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">{title}</span>
+          </div>
           <button
             onClick={() => downloadPdf(data, `${title || 'documento'}.pdf`)}
-            className="flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white dark:bg-red-500 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-all shadow-sm text-sm font-bold active:scale-95"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
+            <Download className="w-4 h-4" />
             Baixar PDF
           </button>
         </div>
@@ -115,22 +132,37 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   // Tipos primitivos
   if (typeof data !== 'object') {
     let displayValue = String(data);
-    let badgeClass = "";
+    let badgeClass = "text-zinc-900 dark:text-zinc-200 font-medium";
 
     if (typeof data === 'boolean') {
       displayValue = data ? 'Sim' : 'Não';
+      badgeClass = data 
+        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded text-xs font-bold"
+        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded text-xs font-bold";
     } else if (title && /situa[çc][ãa]o/i.test(title)) {
         // Lógica de cores para status
         const val = displayValue.toUpperCase();
-        if (val === 'ATIVA' || val === 'HABILITADO') badgeClass = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded text-xs font-bold";
-        else if (val === 'BAIXADA' || val === 'CANCELADA' || val === 'INAPTA') badgeClass = "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded text-xs font-bold";
-        else if (val === 'SUSPENSA' || val === 'NULA' || val === 'PENDENTE') badgeClass = "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded text-xs font-bold";
+        if (val === 'ATIVA' || val === 'HABILITADO' || val === 'OK') {
+          badgeClass = "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1";
+          displayValue = `● ${displayValue}`;
+        }
+        else if (val === 'BAIXADA' || val === 'CANCELADA' || val === 'INAPTA' || val === 'ERRO') {
+          badgeClass = "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1";
+          displayValue = `× ${displayValue}`;
+        }
+        else if (val === 'SUSPENSA' || val === 'NULA' || val === 'PENDENTE' || val === 'ALERTA') {
+          badgeClass = "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1";
+          displayValue = `! ${displayValue}`;
+        }
     }
 
     return (
-      <div className="flex justify-between p-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 items-center min-h-[40px]">
-        <span className="font-medium text-zinc-600 dark:text-zinc-400">{title}:</span>
-        <span className={`text-zinc-900 dark:text-zinc-200 text-right break-all ml-4 ${badgeClass}`}>
+      <div className="group flex justify-between p-2.5 border-b border-zinc-100 dark:border-zinc-800/50 last:border-0 items-center hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors rounded-md">
+        <div className="flex items-center gap-2.5 text-zinc-500 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
+          {title && getIconForKey(title)}
+          <span className="text-sm font-semibold">{title}:</span>
+        </div>
+        <span className={`text-sm text-right break-all ml-4 max-w-[60%] ${badgeClass}`}>
           {displayValue}
         </span>
       </div>
@@ -139,7 +171,7 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
 
   // Arrays
   if (Array.isArray(data)) {
-    if (data.length === 0) return <div className="text-zinc-500 italic py-2">Lista vazia</div>;
+    if (data.length === 0) return <div className="text-zinc-400 dark:text-zinc-600 text-sm italic py-3 flex items-center gap-2 px-2"><AlertCircle className="w-4 h-4" /> Lista vazia</div>;
 
     // Tenta renderizar como tabela se forem objetos simples
     const isSimpleObject = data.every(item => typeof item === 'object' && item !== null && !Array.isArray(item));
@@ -151,59 +183,72 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
 
 
       return (
-        <div className="mt-2 overflow-x-auto">
-          <div className="flex justify-between items-center mb-2">
-            {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
+        <div className="mt-4 mb-6">
+          <div className="flex justify-between items-center mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-5 bg-blue-500 rounded-full" />
+              {title && <h4 className={`font-bold text-zinc-900 dark:text-zinc-100 tracking-tight ${level === 0 ? 'text-xl' : 'text-lg'}`}>{title}</h4>}
+              <span className="text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-full font-bold">{data.length}</span>
+            </div>
             <button
               onClick={() => exportToCSV(data, title || 'dados_tabela')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-900/30 transition-all shadow-sm active:scale-95"
               title="Exportar tabela para CSV"
             >
               <Download className="w-3.5 h-3.5" />
               Exportar CSV
             </button>
           </div>
-          <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
-            <thead className="bg-zinc-50 dark:bg-zinc-800">
-              <tr>
-                {keys.map(k => (
-                  <th key={k} className="px-3 py-2 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider whitespace-nowrap">
-                    {formatKey(k)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-700">
-              {data.map((item, idx) => (
-                <tr key={idx}>
-                  {keys.map(k => {
-                    const val = item[k];
-                    let displayVal = String(val);
-                    if (typeof val === 'object') displayVal = JSON.stringify(val);
-                    if (typeof val === 'boolean') displayVal = val ? 'Sim' : 'Não';
+          <div className="overflow-hidden border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm bg-white dark:bg-zinc-950">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
+                <thead className="bg-zinc-50/50 dark:bg-zinc-900/50">
+                  <tr>
+                    {keys.map(k => (
+                      <th key={k} className="px-4 py-3 text-left text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">
+                        {formatKey(k)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                  {data.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors">
+                      {keys.map(k => {
+                        const val = item[k];
+                        let displayVal = String(val);
+                        if (typeof val === 'object') displayVal = JSON.stringify(val);
+                        if (typeof val === 'boolean') displayVal = val ? 'Sim' : 'Não';
 
-                    return (
-                      <td key={k} className="px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                        {displayVal}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        return (
+                          <td key={k} className="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300 whitespace-nowrap font-medium">
+                            {displayVal}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="space-y-4 mt-2">
-        {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
-        {data.map((item, idx) => (
-          <div key={idx} className="pl-4 border-l-2 border-zinc-200 dark:border-zinc-700">
-            <DataViewer data={item} level={level + 1} />
-          </div>
-        ))}
+      <div className="space-y-4 mt-4">
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-1.5 h-5 bg-indigo-500 rounded-full" />
+          {title && <h4 className={`font-bold text-zinc-900 dark:text-zinc-100 tracking-tight ${level === 0 ? 'text-xl' : 'text-lg'}`}>{title}</h4>}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.map((item, idx) => (
+            <div key={idx} className="p-4 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
+              <DataViewer data={item} level={level + 1} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -215,23 +260,30 @@ export const DataViewer = ({ data, title, level = 0 }: { data: unknown; title?: 
   if (filteredKeys.length === 0) return null;
 
   return (
-    <div className={`space-y-1 ${level > 0 ? 'mt-2' : ''}`}>
-      {title && <h4 className={`font-semibold text-zinc-800 dark:text-zinc-200 mb-2 ${level === 0 ? 'text-lg' : 'text-md'}`}>{title}</h4>}
-      <div className={`${level === 0 ? 'bg-white dark:bg-zinc-900 rounded-lg' : ''}`}>
-        {filteredKeys.map(key => {
-          const val = (data as Record<string, unknown>)[key];
-          return (
-            <div key={key}>
-              {typeof val === 'object' && val !== null ? (
-                <div className="py-2">
+    <div className={`space-y-2 ${level > 0 ? 'mt-4' : ''}`}>
+      {title && (
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <div className={`w-1.5 h-5 rounded-full ${level === 0 ? 'bg-blue-600' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+          <h4 className={`font-bold text-zinc-900 dark:text-zinc-100 tracking-tight ${level === 0 ? 'text-xl' : 'text-lg'}`}>{title}</h4>
+        </div>
+      )}
+      <div className={`${level === 0 ? 'bg-white dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm' : ''}`}>
+        <div className="grid grid-cols-1 gap-1">
+          {filteredKeys.map(key => {
+            const val = (data as Record<string, unknown>)[key];
+            return (
+              <div key={key}>
+                {typeof val === 'object' && val !== null ? (
+                  <div className="py-2">
+                    <DataViewer data={val} title={formatKey(key)} level={level + 1} />
+                  </div>
+                ) : (
                   <DataViewer data={val} title={formatKey(key)} level={level + 1} />
-                </div>
-              ) : (
-                <DataViewer data={val} title={formatKey(key)} level={level + 1} />
-              )}
-            </div>
-          );
-        })}
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
