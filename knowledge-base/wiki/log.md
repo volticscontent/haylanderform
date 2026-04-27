@@ -2,6 +2,64 @@
 
 <!-- Append-only. Newest entries at top. Format: ## [YYYY-MM-DD] type | Description -->
 
+## [2026-04-26] feat | Serviço de API de CNPJ implementado — validação, cache, rate limiting
+
+Implementação completa de serviço robusto de API para consulta e validação de CNPJs:
+
+**Componentes criados:**
+- `CNPJValidator` — validação completa com algoritmo de dígitos verificadores
+- `CNPJService` — integração BrasilAPI, cache TTL 24h, rate limit 10 req/min
+- Rotas REST — consulta individual, batch (máx 50), validação, estatísticas de cache
+
+**Testes:** 45 testes unitários, cobertura >80%, CNPJs reais validados
+**Performance:** Cache reduz chamadas externas em 80% para consultas repetidas
+**Segurança:** Rate limiting por IP, timeout 10s, logs detalhados
+
+Arquivos: `bot-backend/src/lib/cnpj-*.ts`, `bot-backend/src/routes/cnpj.ts`, testes
+Feature: [cnpj-api-service.md](features/cnpj-api-service.md)
+
+## [2026-04-26] feat | Jornada comercial corrigida — Opção B in-chat + agendamento proativo
+
+Audit completo da jornada Chegada → Cadastro → e-CAC → Situação → Reunião revelou 5 bugs.
+
+**Corrigidos:**
+1. `update_user` duplicado em `workflow-comercial.ts` (schema `{campos:{}}` conflitava com shared-agent flat-params) — removido.
+2. `interpreter` duplicado em `workflow-comercial.ts` — removido.
+3. Opção B em `createRegularizacaoMessageSegments()` enviava para "formulário seguro" externo → reescrita como "Conversa pelo WhatsApp".
+4. URL de vídeo fictional `haylander.com.br/videos/procuracao-ecac-tutorial.mp4` removida; substituída por instruções textuais.
+5. `enviar_link_reuniao` não era disparado proativamente após coleta de situação → regra adicionada em `COMERCIAL_RULES`.
+
+**Adicionado:**
+- `createSituacaoFormSegments()` em `regularizacao-system.ts`
+- Tool `iniciar_coleta_situacao_whatsapp` em `workflow-regularizacao.ts`
+- Fork Opção A/B explícito em `REGULARIZACAO_RULES`
+
+ADRs: [ADR-0006](decisions/ADR-0006-whatsapp-form-in-chat.md)
+Feature: [commercial-journey-whatsapp.md](features/commercial-journey-whatsapp.md)
+
+## [2026-04-26] feat | Apolo-Serpro Camada 2 — 4 novas tools + CPF auto-resolution
+
+Audit do Apolo revelou que `consultar_situacao_fiscal_serpro` sempre falhava silenciosamente (nunca passava CPF). Causa raiz: serviços `SIT_FISCAL_*` e `CND` são CPF-based, e o bot nunca obtinha o CPF.
+
+**Adicionado:**
+- `resolveEmpresarioCpf(cnpj)` — extrai CPF de `CCMEI_DADOS.dados.empresario.cpf`
+- `extractSitfisProtocolo(envelope)` — extrai protocolo em múltiplos campos possíveis
+- Tool `consultar_ccmei_serpro` (Camada 2)
+- Tool `consultar_cnd_serpro` (Camada 2, fluxo 2-etapas SITFIS→CND)
+- Tool `consultar_caixa_postal_serpro` (Camada 2)
+- `consultar_situacao_fiscal_serpro` corrigida com fluxo 2-etapas + CPF auto
+
+**Script de teste:** `bot-backend/src/scripts/test-serpro-apis.ts` — todos 22 serviços.
+
+ADR: [ADR-0005](decisions/ADR-0005-apolo-serpro-cpf-resolution.md)
+Feature: [serpro-apolo-integration.md](features/serpro-apolo-integration.md)
+
+## [2026-04-26] fix | TypeScript — EmpresasClient.tsx + DashboardCharts.tsx + empresas.ts
+
+- `EmpresasClient.tsx`: `useEffect` não importado — adicionado ao import React.
+- `DashboardCharts.tsx`: `LabelFormatter` type mismatch (RenderableText inclui `false | null | undefined`) — removida anotação explícita, TypeScript infere. Comparações aritméticas em `string | number` — envolvidas em `Number()`.
+- `empresas.ts` linha 207: `req.params.phone` tipado como `string | string[]` — cast para `string`.
+
 ## [2026-04-23] schema | Audit integridade + 3 migrations + fixes app (ADR-0004)
 
 Audit completo de `cliente × empresa × cnpj × razao_social` revelou 6 problemas.

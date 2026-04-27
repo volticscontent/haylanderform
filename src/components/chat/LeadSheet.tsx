@@ -151,7 +151,10 @@ function LeadSheetContent({ lead }: { lead: LeadSheetData }) {
       .finally(() => setLoadingConsultations(false))
   }, [lead.cnpj])
 
-  useEffect(() => { fetchConsultations() }, [fetchConsultations])
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchConsultations() 
+  }, [fetchConsultations])
 
   const disparo = statusDisparo(lead.envio_disparo)
 

@@ -32,15 +32,57 @@ Credenciais em `.env`:
 
 **Regra crítica:** Nunca apagar o `.pfx` sem que os Secrets estejam operacionais.
 
-## Serviços Disponíveis
+## Serviços Disponíveis (22 serviços — auditados 2026-04-26)
 
+### Dados Cadastrais
 | Serviço | Descrição | Camada Bot |
-|---|---|---|
-| `PGMEI` | Guias DAS MEI + situação PGFN | Camada 1 (padrão) |
-| `CND` | Certidão Negativa de Débitos | Camada 2 |
-| `CAIXAPOSTAL` | Mensagens da Receita Federal | Integra módulo |
-| `PGDASD` | Declaração Simples Nacional | Integra módulo |
-| `SITFIS` | Situação Fiscal | Avançado |
+|---------|-----------|------------|
+| `CCMEI_DADOS` | Dados cadastrais completos do MEI (nome, situação, CNAE, empresário.cpf) | Camada 2 |
+| `SIMEI` | Enquadramento SIMEI | — |
+| `PROCURACAO` | Verifica se há procuração e-CAC ativa | Verificação |
+
+### Guias e DAS (PGMEI)
+| Serviço | Parâmetros extras | Camada Bot |
+|---------|-------------------|------------|
+| `PGMEI` | — | Camada 1 |
+| `PGMEI_EXTRATO` | `ano`, `mes` (obrigatórios) | — |
+| `PGMEI_BOLETO` | `ano`, `mes` (obrigatórios) | — |
+| `PGMEI_ATU_BENEFICIO` | `ano` | — |
+
+### Situação Fiscal (CPF-based — exige CPF do empresário)
+| Serviço | Descrição |
+|---------|-----------|
+| `SIT_FISCAL_SOLICITAR` | Passo 1: retorna `protocoloRelatorio` |
+| `SIT_FISCAL_RELATORIO` | Passo 2: relatório completo com protocolo |
+
+### Declarações
+| Serviço | Parâmetros extras |
+|---------|-------------------|
+| `DASN_SIMEI` | `ano` (exercício anterior) |
+| `PGDASD` | `numeroDas` (requer consulta prévia) |
+| `DCTFWEB` | `ano`, `categoria` |
+
+### Parcelamentos
+| Serviço | Descrição |
+|---------|-----------|
+| `PARCELAMENTO_MEI_CONSULTAR` | Consulta parcelamentos MEI |
+| `PARCELAMENTO_MEI_EMITIR` | Emite boleto parcelamento MEI |
+| `PARCELAMENTO_SN_CONSULTAR` | Consulta parcelamentos Simples Nacional |
+| `PARCELAMENTO_SN_EMITIR` | Emite boleto parcelamento SN |
+
+### Dívida Ativa / PGFN
+| Serviço | Descrição |
+|---------|-----------|
+| `DIVIDA_ATIVA` | Alias de PGMEI com versaoSistema='2.4' |
+| `PGFN_CONSULTAR` | Alias de PGMEI com versaoSistema='1.0' |
+
+### Certidão e Outros
+| Serviço | Descrição | CPF-based? |
+|---------|-----------|------------|
+| `CND` | Certidão Negativa de Débitos (requer protocolo SITFIS) | Sim |
+| `PROCESSOS` | Consulta processos administrativos | Não |
+| `CAIXA_POSTAL` | Mensagens da Receita Federal | Não |
+| `PAGAMENTO` | Consulta pagamentos | Não |
 
 ## Presets por Regime (Integra Contador)
 
@@ -53,27 +95,36 @@ const PRESETS = {
 }
 ```
 
-## Fluxo Bot (Camadas de Segurança)
+## Fluxo Bot (Camadas de Segurança) — atualizado 2026-04-26
 
 ```
 Cliente menciona dívida
     ↓
-iniciar_fluxo_regularizacao() → Opção A (Procuração e-CAC) | Opção B (Acesso Direto)
-    ↓ (Opção A)
-enviar_processo_autonomo() → envia link e-CAC + vídeo tutorial
-    ↓
-[cliente faz e-CAC]
-    ↓
-verificar_serpro_pos_ecac() → confirma procuração no sistema gov
-    ↓
-marcar_procuracao_concluida()
-    ↓
-consultar_pgmei_serpro() → Camada 1 (PGMEI + PGFN)
-    ↓ (se necessário)
-consultar_divida_ativa_serpro() → Camada 2 (dívida completa)
+iniciar_fluxo_regularizacao() → Opção A ou Opção B
+
+  ─ Opção A (Procuração e-CAC) ──────────────────────────────────
+  enviar_processo_autonomo() → link e-CAC + instruções textuais
+      ↓
+  [cliente faz e-CAC: Outros > Outorgar Procuração]
+      ↓
+  verificar_serpro_pos_ecac() → confirma procuração
+      ↓
+  marcar_procuracao_concluida()
+      ↓
+  consultar_pgmei_serpro() → Camada 1 (PGMEI + PGFN)
+      ↓ (se necessário)
+  consultar_ccmei_serpro | consultar_situacao_fiscal_serpro | consultar_cnd_serpro | consultar_caixa_postal_serpro
+
+  ─ Opção B (recusou e-CAC — sem formulário externo) ────────────
+  iniciar_coleta_situacao_whatsapp()
+      ↓
+  Coleta conversacional: CNPJ → Razão Social → CPF → faturamento → tem_divida
+      ↓ (update_user a cada dado)
+  enviar_link_reuniao() ← proativo ao completar CNPJ + faturamento + tem_divida
 ```
 
-**Restrição absoluta:** Nenhuma consulta Serpro sem procuração e-CAC confirmada.
+**Restrição absoluta:** Nenhuma consulta Serpro (Camada 1 ou 2) sem procuração e-CAC confirmada.
+Exceção: `iniciar_coleta_situacao_whatsapp` — não acessa o Serpro, apenas coleta dados conversacionalmente.
 
 ## Workers BullMQ (Integra Contador)
 

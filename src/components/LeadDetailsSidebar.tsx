@@ -37,8 +37,8 @@ export default function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEdi
 
   if (!lead || !formData) return null
 
-  const handleChange = (field: keyof LeadRecord, value: any) => {
-    setFormData(prev => prev ? ({ ...prev, [field]: value }) : null)
+  const handleChange = (field: keyof LeadRecord, value: unknown) => {
+    setFormData(prev => prev ? ({ ...prev, [field]: value }) as LeadRecord : null)
   }
 
   const handleSave = async () => {
@@ -50,7 +50,7 @@ export default function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEdi
 
       Object.keys(formData).forEach((key) => {
         const k = key as keyof LeadRecord
-        if (formData[k] !== (lead as any)[k]) {
+        if (formData[k] !== (lead as unknown as Record<string, unknown>)[k]) {
           updates[k] = formData[k]
           hasChanges = true
         }
@@ -85,7 +85,7 @@ export default function LeadDetailsSidebar({ lead, onClose, onUpdate, initialEdi
     const value = formData[field]
 
     if (!isEditing) {
-      let displayValue: any = value
+      let displayValue: string | number | boolean = value as string | number | boolean
       if (typeof value === 'boolean') displayValue = value ? 'Sim' : 'Não'
       else if (typeof value === 'object' && value !== null) displayValue = JSON.stringify(value)
       

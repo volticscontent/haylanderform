@@ -41,9 +41,15 @@ function StatusBadge({ doc, onGerar, onOpenPdf, gerando, opening }: {
   gerando: boolean;
   opening: boolean;
 }) {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+  }, []);
+
   if (doc.status === 'GERADO') {
-    const daysLeft = doc.valido_ate
-      ? Math.ceil((new Date(doc.valido_ate).getTime() - Date.now()) / 86_400_000)
+    const daysLeft = (doc.valido_ate && now)
+      ? Math.ceil((new Date(doc.valido_ate).getTime() - now) / 86_400_000)
       : null;
     return (
       <div className="flex flex-col items-center gap-1">

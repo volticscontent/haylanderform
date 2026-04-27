@@ -11,10 +11,19 @@
 		{"id":"e_20260421","type":"text","text":"## 📅 2026-04-21\n**Auditoria de Módulos e Filas**\n\n- Descoberta de divergências de commit no Módulo 4.\n- Criação da arquitetura de filas `queues.md`.\n- Finalização da Fase 3 e Fase 4 (Billing Tracker).","x":-290,"y":-60,"width":380,"height":280},
 		{"id":"file_serpro","type":"file","file":"wiki/integrations/serpro.md","x":-860,"y":370,"width":300,"height":1390},
 		{"id":"e_20260420","type":"text","text":"## 📅 2026-04-20\n**Fundação e Base da Automação**\n\n- Estruturação do Bot (Apolo SDR, Vendedor, Atendente).\n- Integração com Serpro (PGMEI, PGFN).\n- Setup inicial BullMQ (Redis).","x":-1040,"y":-60,"width":260,"height":280},
-		{"id":"e_nextstep","type":"text","text":"## 🎯 Relatórios e Focos Futuros\n*(Conectar futuros arquivos de outputs das tasks aqui)*\n\n- Relatório de Auditoria Prisma/Database.\n- Validações Edge-to-Edge Integra Contador.","x":1720,"y":-60,"width":360,"height":280,"color":"1"},
+		{"id":"e_nextstep","type":"text","text":"## 🎯 Próximos Passos\n\n- [ ] Gravar vídeo tutorial real do e-CAC (substituir placeholder em `createAutonomoMessageSegments`).\n- [ ] Validação E2E Integra Contador (Frontend → BullMQ → Serpro → DB).\n- [ ] Implementar RAG + Context Retrieval para cadastro automático de empresas.\n- [ ] Commitar e deployar todos os arquivos ?? do git status.","x":4280,"y":-60,"width":400,"height":320,"color":"1"},
 		{"id":"e_refactor_apolo","type":"text","text":"## 🧠 Refatoração Cognitiva (Apolo)\n**Deep Refatoração da Máquina de Estados**\n\n- Reestruturação do processo mental do LLM para coletar Onboarding *antes* de travar por falta da Procuração Serpro.\n- Planejamento de Lazy Verification.","x":1290,"y":-60,"width":400,"height":280,"color":"4"},
 		{"id":"file_queues","type":"file","file":"wiki/architecture/queues.md","x":-520,"y":430,"width":380,"height":1240},
-		{"id":"file_integra","type":"file","file":"wiki/features/integra-contador.md","x":-100,"y":420,"width":480,"height":1380}
+		{"id":"file_integra","type":"file","file":"wiki/features/integra-contador.md","x":-100,"y":420,"width":480,"height":1380},
+		{"id":"e_20260423","type":"text","text":"## 📅 2026-04-23\n**Integridade de Dados & Bugs Serpro**\n\n- Audit integridade `leads × integra_empresas × cnpj × razao_social` (6 problemas).\n- 3 migrations SQL: `cliente_denorm`, `procuracao_historico`, `consultas_lead_id`.\n- Fix 4 bugs críticos `serpro.ts`: `anoCalendario`, SITFIS sem CPF, aliases, CND obscura.\n- Redesign tabela Empresas Integra + correlação lead vinculado.","x":2800,"y":-60,"width":480,"height":300,"color":"2"},
+		{"id":"file_adr0003b","type":"file","file":"wiki/decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md","x":2800,"y":420,"width":340,"height":1200},
+		{"id":"file_adr0004b","type":"file","file":"wiki/decisions/ADR-0004-schema-integridade-dados.md","x":3160,"y":420,"width":340,"height":1400},
+		{"id":"e_20260426","type":"text","text":"## 📅 2026-04-26\n**Serpro Camada 2 + Jornada Comercial**\n\n- **Audit + fix 22 serviços Serpro:** script de teste exaustivo, CPF auto-resolution via `CCMEI_DADOS`, 4 novas tools Camada 2 (`ccmei`, `cnd`, `caixa_postal`, `situacao_fiscal`).\n- **Jornada Comercial corrigida:** Opção B reescrita como coleta in-chat (sem formulário externo, sem senha GOV). `iniciar_coleta_situacao_whatsapp` adicionado. `enviar_link_reuniao` agora dispara proativamente após coleta.\n- **Duplicate tools removidas** de `workflow-comercial.ts` (`update_user` + `interpreter`).\n- **URL de vídeo fictional** removida de `createAutonomoMessageSegments`.","x":3560,"y":-60,"width":560,"height":360,"color":"5"},
+		{"id":"file_serpro_apolo","type":"file","file":"wiki/features/serpro-apolo-integration.md","x":3560,"y":420,"width":340,"height":1400},
+		{"id":"file_commercial_journey","type":"file","file":"wiki/features/commercial-journey-whatsapp.md","x":3920,"y":420,"width":340,"height":1400},
+		{"id":"file_adr0005","type":"file","file":"wiki/decisions/ADR-0005-apolo-serpro-cpf-resolution.md","x":4280,"y":420,"width":340,"height":1100},
+		{"id":"file_adr0006","type":"file","file":"wiki/decisions/ADR-0006-whatsapp-form-in-chat.md","x":4640,"y":420,"width":340,"height":1100},
+		{"id":"file_cnpj_api_service","type":"file","file":"wiki/features/cnpj-api-service.md","x":5000,"y":420,"width":340,"height":1400}
 	],
 	"edges":[
 		{"id":"edge_1","fromNode":"e_20260420","fromSide":"right","toNode":"e_20260421","toSide":"left"},
@@ -27,9 +36,20 @@
 		{"id":"edge_9","fromNode":"e_20260422","fromSide":"bottom","toNode":"file_adr0001","toSide":"top","color":"4"},
 		{"id":"edge_10","fromNode":"e_20260422","fromSide":"bottom","toNode":"file_adr0002","toSide":"top","color":"4"},
 		{"id":"edge_11","fromNode":"e_20260422","fromSide":"right","toNode":"e_refactor_apolo","toSide":"left","color":"4"},
-		{"id":"edge_12","fromNode":"e_refactor_apolo","fromSide":"right","toNode":"e_nextstep","toSide":"left","color":"1"},
-		{"id":"edge_13","fromNode":"e_refactor_apolo","fromSide":"bottom","toNode":"file_adr0003","toSide":"top","color":"4"},
-		{"id":"edge_14","fromNode":"e_20260422","fromSide":"top","toNode":"e_lead_consistency","toSide":"bottom","color":"2"},
-		{"id":"edge_15","fromNode":"e_lead_consistency","fromSide":"bottom","toNode":"file_adr0004","toSide":"top","color":"2"}
+		{"id":"edge_12","fromNode":"e_refactor_apolo","fromSide":"bottom","toNode":"file_adr0003","toSide":"top","color":"4"},
+		{"id":"edge_13","fromNode":"e_20260422","fromSide":"top","toNode":"e_lead_consistency","toSide":"bottom","color":"2"},
+		{"id":"edge_14","fromNode":"e_lead_consistency","fromSide":"bottom","toNode":"file_adr0004","toSide":"top","color":"2"},
+		{"id":"edge_15","fromNode":"e_20260422","fromSide":"right","toNode":"e_20260423","toSide":"left"},
+		{"id":"edge_16","fromNode":"e_20260423","fromSide":"right","toNode":"e_20260426","toSide":"left"},
+		{"id":"edge_17","fromNode":"e_20260426","fromSide":"right","toNode":"e_nextstep","toSide":"left","color":"1"},
+		{"id":"edge_18","fromNode":"e_20260423","fromSide":"bottom","toNode":"file_adr0003b","toSide":"top","color":"2"},
+		{"id":"edge_19","fromNode":"e_20260423","fromSide":"bottom","toNode":"file_adr0004b","toSide":"top","color":"2"},
+		{"id":"edge_20","fromNode":"e_20260426","fromSide":"bottom","toNode":"file_serpro_apolo","toSide":"top","color":"5"},
+		{"id":"edge_21","fromNode":"e_20260426","fromSide":"bottom","toNode":"file_commercial_journey","toSide":"top","color":"5"},
+		{"id":"edge_22","fromNode":"e_20260426","fromSide":"bottom","toNode":"file_adr0005","toSide":"top","color":"5"},
+		{"id":"edge_23","fromNode":"e_20260426","fromSide":"bottom","toNode":"file_adr0006","toSide":"top","color":"5"},
+		{"id":"edge_cnpj_1","fromNode":"file_cnpj_api_service","fromSide":"left","toNode":"file_serpro","toSide":"right","color":"2"},
+		{"id":"edge_cnpj_2","fromNode":"file_cnpj_api_service","fromSide":"left","toNode":"file_serpro_apolo","toSide":"right","color":"2"},
+		{"id":"edge_cnpj_3","fromNode":"file_cnpj_api_service","fromSide":"top","toNode":"e_20260426","toSide":"bottom","color":"5"}
 	]
 }
