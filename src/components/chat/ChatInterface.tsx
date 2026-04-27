@@ -248,7 +248,7 @@ export function ChatInterface() {
     console.log('[Bot Backend WS] Connecting to:', socketUrl);
 
     // Conectar ao nosso Backend (que gerencia o Dual-JID e padronização)
-    const newSocket: any = io(socketUrl, {
+    const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling']
       // Removido apikey pois nosso backend usa auth diferente ou nenhuma em dev
     });

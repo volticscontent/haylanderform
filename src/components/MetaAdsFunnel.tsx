@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect } from "react";
-// @ts-ignore
-import FunnelGraph from "funnel-graph-js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+import FunnelGraph from 'funnel-graph-js';
 import "funnel-graph-js/dist/css/main.min.css";
 import "funnel-graph-js/dist/css/theme.min.css";
 

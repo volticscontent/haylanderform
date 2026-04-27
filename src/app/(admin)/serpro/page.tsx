@@ -9,7 +9,6 @@ import { SERVICE_CONFIG, ServiceConfigItem } from '@/lib/serpro-config';
 import { savePdfToR2 } from './actions';
 import { fetchSitfisRelatorio } from '@/lib/sitfis-flow';
 import { validateCnpj } from '@/lib/format';
-import { useToast } from '@/contexts/ToastContext';
 
 interface SerproResponse {
   mensagens?: Array<{ codigo?: string; texto?: string }>;
@@ -19,7 +18,6 @@ interface SerproResponse {
 }
 
 export default function SerproPage() {
-  const { toast } = useToast();
   const searchParams = useSearchParams();
   const [cnpj, setCnpj] = useState(searchParams.get('cnpj') ?? '');
   const [ano, setAno] = useState(new Date().getFullYear().toString());
@@ -45,6 +43,16 @@ export default function SerproPage() {
   };
 
   const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO', 'PGFN_PAEX', 'PGFN_SIPADE'];
+
+  const SERVICE_GROUPS: Record<string, string[]> = {
+    "Dados Cadastrais & Enquadramento": ["CCMEI_DADOS", "SIMEI", "PROCURACAO"],
+    "Guias e Débitos (PGMEI)": ["PGMEI", "PGMEI_EXTRATO", "PGMEI_BOLETO", "PGMEI_ATU_BENEFICIO"],
+    "Situação Fiscal & Certidões": ["SIT_FISCAL_SOLICITAR", "SIT_FISCAL_RELATORIO", "CND"],
+    "Declarações (DASN, PGDAS, DCTFWeb)": ["DASN_SIMEI", "PGDASD", "DCTFWEB"],
+    "Parcelamentos (MEI & SN)": ["PARCELAMENTO_MEI_CONSULTAR", "PARCELAMENTO_MEI_EMITIR", "PARCELAMENTO_SN_CONSULTAR", "PARCELAMENTO_SN_EMITIR"],
+    "Dívida Ativa (PGFN)": ["DIVIDA_ATIVA", "PGFN_CONSULTAR", "PGFN_PAEX", "PGFN_SIPADE"],
+    "Mensagens e Processos": ["CAIXA_POSTAL", "PROCESSOS", "PAGAMENTO"]
+  };
 
   // Lógica inteligente para sugestão de ano baseada no serviço
   useEffect(() => {
@@ -191,10 +199,18 @@ export default function SerproPage() {
               onChange={(e) => setService(e.target.value as keyof typeof SERVICE_CONFIG)}
               className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm font-medium shadow-sm cursor-pointer appearance-none"
             >
-              {Object.entries(SERVICE_CONFIG).map(([key, config]) => (
-                <option key={key} value={key}>
-                  {config.descricao ? `${key} - ${config.descricao}` : key}
-                </option>
+              {Object.entries(SERVICE_GROUPS).map(([groupName, services]) => (
+                <optgroup key={groupName} label={groupName} className="font-semibold text-zinc-900 dark:text-white bg-zinc-50 dark:bg-zinc-900">
+                  {services.map(key => {
+                    const config = SERVICE_CONFIG[key];
+                    if (!config) return null;
+                    return (
+                      <option key={key} value={key} className="font-normal text-zinc-700 dark:text-zinc-300">
+                        {config.descricao ? `${key} - ${config.descricao}` : key}
+                      </option>
+                    );
+                  })}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -434,11 +450,11 @@ export default function SerproPage() {
 
       {result !== null && (
         (() => {
-          const r = typeof result === 'object' && result !== null ? result : { mensagem: 'Solicitação processada com sucesso pela Receita Federal, sem dados adicionais retornados.' };
-          const mensagens: Array<{ codigo?: string; texto?: string }> = Array.isArray((r as any).mensagens) ? (r as any).mensagens : [];
+          const rObj = (typeof result === 'object' && result !== null ? result : { mensagem: 'Solicitação processada com sucesso pela Receita Federal, sem dados adicionais retornados.' }) as Record<string, unknown>;
+          const mensagens = Array.isArray(rObj.mensagens) ? rObj.mensagens as Array<{ codigo?: string; texto?: string }> : [];
           // Se tiver 'primary', usa ele, senão usa o próprio root.
-          const primaryData = (r as any).primary ? (r as any).primary : r;
-          const fallbackData = (r as any).fallback;
+          const primaryData = rObj.primary ? rObj.primary : rObj;
+          const fallbackData = rObj.fallback;
 
           return (
             <div className="space-y-6">
@@ -460,11 +476,6 @@ export default function SerproPage() {
                 <DataViewer data={primaryData} title="Dados da Consulta" />
               </div>
 
-              {fallbackData && (
-                <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 border-l-4 border-l-emerald-500">
-                  <DataViewer data={fallbackData} title="Dados Complementares (PGMEI)" />
-                </div>
-              )}
             </div>
           );
         })()

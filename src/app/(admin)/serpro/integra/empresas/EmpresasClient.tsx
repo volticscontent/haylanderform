@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { IntegraEmpresa, LeadParaImportar, criarEmpresa, toggleAtivo, excluirEmpresa, atualizarEmpresa, importarLeadComoEmpresa } from './actions';
 
 const REGIMES = ['mei', 'simples', 'presumido', 'real'];
@@ -172,8 +172,14 @@ export default function EmpresasClient({
     });
   }
 
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+  }, []);
+
   const certVencendo = (val: string | null) =>
-    !!val && (new Date(val).getTime() - Date.now()) < 30 * 24 * 60 * 60 * 1000;
+    !!val && !!now && (new Date(val).getTime() - now) < 30 * 24 * 60 * 60 * 1000;
 
   const leadsVisiveis = leadsDisponiveis.filter(l =>
     l.nome_completo.toLowerCase().includes(importSearch.toLowerCase()) ||
@@ -331,7 +337,11 @@ export default function EmpresasClient({
                       checked={importSelected.has(l.id)}
                       onChange={() => setImportSelected(prev => {
                         const next = new Set(prev);
-                        next.has(l.id) ? next.delete(l.id) : next.add(l.id);
+                        if (next.has(l.id)) {
+                          next.delete(l.id);
+                        } else {
+                          next.add(l.id);
+                        }
                         return next;
                       })}
                     />

@@ -135,8 +135,8 @@ export async function sincronizarCaixaPostal() {
 export async function getGuiaDownloadUrl(id: number): Promise<string | null> {
   const res = await backendGet(`/api/integra/guias/${id}/download`);
   if (!res.ok) return null;
-  const data = await res.json();
-  return (data as any).url ?? null;
+  const data = await res.json() as Record<string, unknown>;
+  return (data.url as string) ?? null;
 }
 
 export async function gerarGuia(empresa_id: number, tipo_robo = 'pgmei') {

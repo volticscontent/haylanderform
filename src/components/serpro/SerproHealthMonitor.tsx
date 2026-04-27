@@ -45,6 +45,7 @@ export function SerproHealthMonitor() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkHealth();
     const interval = setInterval(checkHealth, 5 * 60 * 1000);
     return () => clearInterval(interval);

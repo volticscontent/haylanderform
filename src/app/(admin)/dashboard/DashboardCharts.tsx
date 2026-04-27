@@ -68,6 +68,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
 
   useEffect(() => {
     // Initial check
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDarkMode(document.documentElement.classList.contains('dark'));
 
     // Observe class changes on html element
@@ -534,7 +535,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                     <LabelList
                       dataKey="value"
                       position="top"
-                      formatter={(val: any) => filteredData.length > 0 ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
+                      formatter={(val) => filteredData.length > 0 ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
                       fontSize={10}
                       fill={isDarkMode ? '#a1a1aa' : '#71717a'}
                     />
@@ -641,22 +642,22 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
 
                   {/* Comparison Badge */}
                   {summaryMetrics.previous && (
-                    <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0))
+                    <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${(Number(carouselItems[currentSlide].value) > (carouselItems[currentSlide].prevValue || 0))
                       ? 'bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400'
-                      : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0))
+                      : (Number(carouselItems[currentSlide].value) < (carouselItems[currentSlide].prevValue || 0))
                         ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                         : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
                       }`}>
-                      {(carouselItems[currentSlide].value > (carouselItems[currentSlide].prevValue || 0)) ? (
+                      {(Number(carouselItems[currentSlide].value) > (carouselItems[currentSlide].prevValue || 0)) ? (
                         <ArrowUpRight className="w-3 h-3" />
-                      ) : (carouselItems[currentSlide].value < (carouselItems[currentSlide].prevValue || 0)) ? (
+                      ) : (Number(carouselItems[currentSlide].value) < (carouselItems[currentSlide].prevValue || 0)) ? (
                         <ArrowDownRight className="w-3 h-3" />
                       ) : (
                         <span>=</span>
                       )}
                       {carouselItems[currentSlide].prevValue !== undefined && carouselItems[currentSlide].prevValue !== 0 ? (
                         <span>
-                          {Math.abs(Math.round(((carouselItems[currentSlide].value - carouselItems[currentSlide].prevValue) / carouselItems[currentSlide].prevValue) * 100))}%
+                          {Math.abs(Math.round(((Number(carouselItems[currentSlide].value) - carouselItems[currentSlide].prevValue) / carouselItems[currentSlide].prevValue) * 100))}%
                         </span>
                       ) : (
                         <span>-</span>
@@ -735,7 +736,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <LabelList
                   dataKey="value"
                   position="top"
-                  formatter={(val: any) => (val > 0 && filteredData.length > 0) ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
+                  formatter={(val) => (Number(val) > 0 && filteredData.length > 0) ? `${((Number(val) / filteredData.length) * 100).toFixed(1)}%` : ''}
                   fontSize={10}
                   fill={isDarkMode ? '#a1a1aa' : '#71717a'}
                 />

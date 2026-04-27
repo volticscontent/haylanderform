@@ -41,9 +41,12 @@ updated: 2026-04-20
 
 - 3 agentes (Apolo SDR, Vendedor Icaró, Atendente) + roteador automático por estado do lead
 - Serpro integrado com restrição de procuração obrigatória (camadas 1 e 2)
-- 20+ ferramentas implementadas
+- 22+ ferramentas implementadas
 - ✅ Gap 1 resolvido: `POST /api/bot/context-update` — frontend injeta contexto via Redis
 - ✅ Gap 2 resolvido: Diferenciação atendimento vs reunião em `COMERCIAL_RULES`
+- ✅ 2026-04-26: Camada 2 Serpro completa — 5 tools, CPF auto-resolution via CCMEI_DADOS
+- ✅ 2026-04-26: Jornada comercial corrigida — Opção B in-chat, sem formulário externo, reunião proativa
+- ✅ 2026-04-26: Duplicate tools (`update_user`, `interpreter`) removidos de `workflow-comercial.ts`
 
 ---
 
@@ -102,5 +105,5 @@ haylanderform/
 
 ---
 
-Última atualização: 2026-04-21
+Última atualização: 2026-04-26
 Ver [log.md](log.md) para histórico completo de operações.

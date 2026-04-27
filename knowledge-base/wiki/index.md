@@ -24,9 +24,12 @@ Ver [tracking.canvas](tracking.canvas) para o Canvas visual de acompanhamento do
 
 | Página | Descrição | Status |
 |---|---|---|
+| [cnpj-api-service.md](features/cnpj-api-service.md) | Serviço de API de CNPJ com validação, cache e rate limiting | completed |
 | [apolo-audit.md](features/apolo-audit.md) | Auditoria completa do Bot Apolo (14 dimensões) | current |
 | [integra-contador.md](features/integra-contador.md) | Módulo 4 — Integra Contador (robôs, guias, caixa postal) | current |
 | [lead-management.md](features/lead-management.md) | Gestão de leads e ficha técnica unificada | current |
+| [serpro-apolo-integration.md](features/serpro-apolo-integration.md) | Integração Apolo↔Serpro: 5 tools Camada 2, CPF auto-resolution | current |
+| [commercial-journey-whatsapp.md](features/commercial-journey-whatsapp.md) | Jornada comercial: chegada → cadastro → e-CAC → reunião | current |
 | [empresa-bot-registration.md](features/empresa-bot-registration.md) | Cadastro e Orquestração de Bot para Empresas (RAG, Automação) | planned |
 
 ## Integrations
@@ -61,6 +64,8 @@ Ver [tracking.canvas](tracking.canvas) para o Canvas visual de acompanhamento do
 | [ADR-0003-serpro-sitfis-pgmei-bugs.md](decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md) | 4 bugs serpro.ts: anoCalendario, SITFIS sem CPF, aliases não documentados, erro CND obscuro (2026-04-23) |
 | [ADR-0004-lead-sheet-unification.md](decisions/ADR-0004-lead-sheet-unification.md) | Unificação da Ficha de Lead e Arquitetura de Componentes Compartilhados |
 | [ADR-0004-schema-integridade-dados.md](decisions/ADR-0004-schema-integridade-dados.md) | Audit + 3 migrations: cliente denorm, procuração historico, consultas lead_id; fix razao_social (2026-04-23) |
+| [ADR-0005-apolo-serpro-cpf-resolution.md](decisions/ADR-0005-apolo-serpro-cpf-resolution.md) | CPF auto-resolution via CCMEI_DADOS para serviços Serpro CPF-based (2026-04-26) |
+| [ADR-0006-whatsapp-form-in-chat.md](decisions/ADR-0006-whatsapp-form-in-chat.md) | Opção B: coleta in-chat no WhatsApp ao invés de formulário externo (2026-04-26) |
 
 ## Migrations (Audit Reports)
 
