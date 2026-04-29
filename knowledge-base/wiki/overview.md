@@ -1,109 +1,60 @@
 ---
-title: Overview — Haylanderform
-type: overview
-updated: 2026-04-20
+name: Visão Geral da Arquitetura
+description: Síntese viva da arquitetura atual do sistema Haylanderform
+type: architecture
+updated: 2026-04-29
 ---
 
-# Haylanderform — Visão Geral da Arquitetura
+# Visão Geral — Haylanderform
 
-**CRM/ERP + Automação WhatsApp para contabilidade de MEIs.**
+## Propósito
+Sistema completo de captação, qualificação e fechamento de clientes MEI para a Haylander Martins Contabilidade, operado via WhatsApp com automação de IA.
 
----
-
-## Stack
-
-| Camada | Tech |
-|---|---|
-| Frontend Admin | Next.js App Router (BFF pattern — proxies para backend) |
-| Bot Backend | Node.js, Express, BullMQ, Baileys/Evolution API |
-| Banco de Dados | PostgreSQL (pool.query, parametrizado) |
-| Cache/State | Redis (histórico, locks, debounce, routing override, bot context) |
-| IA | OpenAI `gpt-4o-mini` (default), suporte a tools/function calling |
-| Storage | R2 (PDFs de guias Serpro) |
-| Real-time | Socket.io (`haylander-bot-events`) |
-
----
-
-## Módulos — Status
-
-| Módulo | Status | Documento Guia |
-|---|---|---|
-| MÓDULO 1: Frontend + API Architecture | ✅ Concluído + commitado | `docs/plan.master.frontend.md` |
-| MÓDULO 2: Fluxo Bot + Auditoria Base | ✅ Concluído + commitado | `docs/plan.master.bot.md` |
-| MÓDULO 3: Segurança Serpro + DART | ✅ Concluído + commitado | `docs/plan.master.serpro.md` |
-| MÓDULO 4: Integra Contador | ⚠️ Código escrito, **não commitado, não validado** | `docs/plan.master.integra.md` |
-
----
-
-## Bot Apolo — Status Atual
-
-**100% operacional.** Ver [features/apolo-audit.md](features/apolo-audit.md) para auditoria completa.
-
-- 3 agentes (Apolo SDR, Vendedor Icaró, Atendente) + roteador automático por estado do lead
-- Serpro integrado com restrição de procuração obrigatória (camadas 1 e 2)
-- 22+ ferramentas implementadas
-- ✅ Gap 1 resolvido: `POST /api/bot/context-update` — frontend injeta contexto via Redis
-- ✅ Gap 2 resolvido: Diferenciação atendimento vs reunião em `COMERCIAL_RULES`
-- ✅ 2026-04-26: Camada 2 Serpro completa — 5 tools, CPF auto-resolution via CCMEI_DADOS
-- ✅ 2026-04-26: Jornada comercial corrigida — Opção B in-chat, sem formulário externo, reunião proativa
-- ✅ 2026-04-26: Duplicate tools (`update_user`, `interpreter`) removidos de `workflow-comercial.ts`
-
----
-
-## Integra Contador — Status Real (auditado 2026-04-21)
-
-⚠️ **Todos os arquivos do MÓDULO 4 são `??` no git (nunca commitados).** TSC passa, mas fluxo ponta-a-ponta não foi validado.
-
-| Componente | Código | Commitado | Validado |
-|---|---|---|---|
-| Migration SQL `integra_*` | ✅ | ❓ | ❓ |
-| CRUD empresas (`/routes/integra/empresas.ts`) | ✅ | ❓ bot-submodule | ❓ |
-| Workers BullMQ (PGMEI, CND, Caixa Postal) | ✅ | ❓ bot-submodule | ❓ |
-| Cron scheduler `integra_robos` | ✅ | ❓ bot-submodule | ❓ |
-| Páginas frontend `/integra/*` (6 páginas) | ✅ | ❌ untracked | ❌ |
-| `actions.ts` BFF proxy | ✅ | ❌ untracked | ❌ |
-| Billing Tracker `/integra/billing` | ✅ | ❌ untracked | ❌ |
-| Download PDF R2 | ✅ | ❌ untracked | ❌ |
-
-**Outros arquivos não commitados (M ou ??):** configuracoes, dashboard, lista, reuniao, serpro pages + chat components + AdminSidebar.
-
----
-
-## Integrações Ativas
-
-- **Serpro Integra Contador** — PGMEI, PGFN, CND, Caixa Postal (via certificado .pfx mTLS)
-- **Evolution API** — WhatsApp webhook, envio de mensagens/mídia
-- **PostgreSQL** — leads, leads_processo, leads_recurso, chat_history, leads_serpro_consulta, integra_*
-- **Redis** — cache, locks distribuídos, debounce Lua scripts, routing override, bot context, chat history
-- **BullMQ** — message queue, follow-up queue, debounce queue, integra jobs (pgmei, cnd, caixa-postal)
-- **Socket.io** — real-time updates frontend (`haylander-bot-events`)
-
----
-
-## Estrutura de Diretórios
+## Fluxo Principal
 
 ```
-haylanderform/
-├── src/                        ← Frontend Next.js
-│   ├── app/(admin)/            ← Páginas admin (Auth + Layout)
-│   │   ├── dashboard/
-│   │   ├── atendimento/        ← Chat WhatsApp
-│   │   ├── lista/              ← LeadList
-│   │   ├── reuniao/            ← Agenda de reuniões
-│   │   ├── serpro/             ← Consultas Serpro
-│   │   └── integra/            ← Integra Contador (MÓDULO 4)
-│   ├── components/             ← UI components
-│   └── lib/                    ← backend-proxy, auth helpers
-├── bot-backend/src/            ← Node.js Backend
-│   ├── ai/agents/              ← Apolo, Vendedor, Atendente + shared-agent
-│   ├── routes/                 ← Express routes
-│   ├── queues/                 ← BullMQ workers
-│   ├── lib/                    ← serpro, evolution, redis, db, socket-server
-│   └── cron/                   ← node-cron jobs
-└── knowledge-base/wiki/        ← Esta wiki
+Lead (Ad/LP) → WhatsApp → Apolo (SDR) → Qualificação → Apolo (Closer) → Reunião → Haylander fecha
 ```
 
----
+1. **Lead entra** via anúncio ou landing page, preenche formulário e recebe mensagem no WhatsApp
+2. **Apolo (SDR)** acolhe, envia apresentação comercial, coleta CNPJ e qualifica via BANT
+3. **BrasilAPI** preenche automaticamente a ficha do lead (razão social, endereço, CNAE, detecção MEI)
+4. **Procuração e-CAC** é orientada — necessária para acessar Receita Federal com segurança
+5. **Serpro** consulta dívidas (PGMEI + PGFN) após procuração ativa
+6. **Apolo (Closer)** apresenta diagnóstico, maneja objeções, agenda reunião de fechamento
+7. **Haylander** entra na reunião com contexto completo e fecha o contrato
+8. **Cron pós-reunião** (4x/dia) notifica Haylander sobre reuniões pendentes de confirmação
 
-Última atualização: 2026-04-26
-Ver [log.md](log.md) para histórico completo de operações.
+## Componentes
+
+### Frontend Admin (Next.js App Router)
+- Painel de leads, chat ao vivo, configurações, serviços
+- BFF pattern — sem lógica pesada, proxy HTTP para o bot-backend
+- Rota: `src/app/(admin)/`
+
+### Bot Backend (Node.js/Express)
+- Agente Apolo: SDR + Closer em comportamentos distintos roteados por qualificação
+- Agente Vendedor (Ícaro): recebe leads qualificados, foca em agendamento
+- BullMQ: filas de mensagens, jobs de regularização, follow-ups
+- Cron: follow-up de inatividade, relatório diário, confirmação pós-reunião, robôs Integra
+
+### Banco de Dados (PostgreSQL)
+- `leads` — ficha do lead (dados pessoais, empresa, situação)
+- `leads_processo` — processo comercial (status, reunião, procuração, observações)
+- `consultas_serpro` — histórico de consultas com freshness control
+- `system_settings` — configurações do sistema (URLs de mídia, video_ecac, etc.)
+- `services` — catálogo de serviços com preços
+- `interpreter_memories` — memória vetorial do agente
+
+### Integrações Externas
+- **Serpro**: PGMEI, PGFN, SITFIS, CND, Procuração, Caixa Postal
+- **BrasilAPI**: dados públicos de CNPJ, detecção de MEI
+- **Evolution API**: WhatsApp (envio/recebimento de mensagens, mídia)
+- **Cloudflare R2**: armazenamento de PDFs, apresentação comercial
+- **Redis**: cache, filas BullMQ, roteamento de agentes, memória de sessão
+
+## Roteamento de Agentes
+O roteamento acontece via Redis (`routing_override:{phone}`):
+- Sem override → **Apolo** (SDR/triagem)
+- `qualificacao` definida em `update_user` → `setAgentRouting('vendedor')` → **Ícaro/Vendedor**
+- Override manual pelo admin → qualquer agente

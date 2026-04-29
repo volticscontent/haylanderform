@@ -1,72 +1,39 @@
 ---
-title: Knowledge Base Index — Haylanderform
+name: Índice Master — Haylanderform Knowledge Base
+description: Catálogo central de toda a documentação viva do projeto
 type: index
-updated: 2026-04-20
+updated: 2026-04-29
 ---
 
-# Knowledge Base — Índice Master
+# Haylanderform — Knowledge Base
 
-Ver [overview.md](overview.md) para visão geral da arquitetura.
-Ver [log.md](log.md) para histórico de operações (Nossa referência de tempo linear).
-Ver [tracking.canvas](tracking.canvas) para o Canvas visual de acompanhamento do que precisa ser documentado/construído.
+Projeto: CRM/ERP + Automação WhatsApp para contabilidade de MEIs.
+Stack: Next.js (frontend admin) + Node.js/Express (bot-backend) + Evolution API + BullMQ + PostgreSQL + Cloudflare R2.
 
----
+## Arquitetura
+- [Visão Geral](overview.md)
+- [Bot Backend](architecture/bot-backend.md)
 
-## Architecture
+## Agente Apolo
+- [Fluxo Comercial e Qualificação](workflows/apolo-comercial.md)
+- [Fluxo de Regularização](workflows/apolo-regularizacao.md)
+- [Sistema de Red-Flags](features/red-flags.md)
+- [Cron Pós-Reunião](features/cron-pos-reuniao.md)
 
-| Página | Descrição |
-|---|---|
-| [bot.md](architecture/bot.md) | 3 agentes + roteador automático, crons, debounce |
-| [frontend.md](architecture/frontend.md) | BFF pattern, rotas Next.js, auth, Socket.io |
-| [queues.md](architecture/queues.md) | BullMQ queues, workers, Redis keys, disparos, cron jobs |
+## Serviços
+- [Catálogo de Serviços](features/servicos.md)
 
-## Features
+## Integrações
+- [Serpro](integrations/serpro.md)
+- [BrasilAPI / CNPJ](integrations/brasil-api.md)
 
-| Página | Descrição | Status |
-|---|---|---|
-| [cnpj-api-service.md](features/cnpj-api-service.md) | Serviço de API de CNPJ com validação, cache e rate limiting | completed |
-| [apolo-audit.md](features/apolo-audit.md) | Auditoria completa do Bot Apolo (14 dimensões) | current |
-| [integra-contador.md](features/integra-contador.md) | Módulo 4 — Integra Contador (robôs, guias, caixa postal) | current |
-| [lead-management.md](features/lead-management.md) | Gestão de leads e ficha técnica unificada | current |
-| [serpro-apolo-integration.md](features/serpro-apolo-integration.md) | Integração Apolo↔Serpro: 5 tools Camada 2, CPF auto-resolution | current |
-| [commercial-journey-whatsapp.md](features/commercial-journey-whatsapp.md) | Jornada comercial: chegada → cadastro → e-CAC → reunião | current |
-| [empresa-bot-registration.md](features/empresa-bot-registration.md) | Cadastro e Orquestração de Bot para Empresas (RAG, Automação) | planned |
+## Segurança
+- [Procuração e-CAC](security/procuracao-ecac.md)
 
-## Integrations
+## Decisões Arquiteturais
+- [ADR-001: Procuração Obrigatória](decisions/ADR-001-procuracao-obrigatoria.md)
+- [ADR-002: Reunião de Fechamento vs Atendimento](decisions/ADR-002-reuniao-fechamento.md)
+- [ADR-003: Red-Flags e Notificação](decisions/ADR-003-red-flags.md)
 
-| Página | Descrição |
-|---|---|
-| [serpro.md](integrations/serpro.md) | mTLS + OAuth, serviços, workers BullMQ, agendamento |
-| [evolution-api.md](integrations/evolution-api.md) | WhatsApp webhook, LID, keep-alive, envio |
-| [redis.md](integrations/redis.md) | Padrões de keys, debounce, bot context, locks |
-
-## Security
-
-| Página | Descrição |
-|---|---|
-| [serpro-certificates.md](security/serpro-certificates.md) | Certificado .pfx, OAuth, rotação, API secret |
-
-## Workflows
-
-| Página | Descrição |
-|---|---|
-| [lead-qualification.md](workflows/lead-qualification.md) | Regras MQL/desqualificado, tabelas alimentadas, atendimento vs reunião |
-
-## Decisions (ADRs)
-
-| Página | Decisão |
-|---|---|
-| [ADR-001-bff-pattern.md](decisions/ADR-001-bff-pattern.md) | Frontend como cliente leve (BFF) |
-| [ADR-002-gpt4o-mini.md](decisions/ADR-002-gpt4o-mini.md) | gpt-4o-mini como modelo padrão |
-| [ADR-0001-serpro-integra-bugs.md](decisions/ADR-0001-serpro-integra-bugs.md) | 6 bugs críticos Integra Contador (2026-04-22) |
-| [ADR-0002-serpro-clients-interface.md](decisions/ADR-0002-serpro-clients-interface.md) | Redesign /serpro/clients para incluir leads com procuração (2026-04-22) |
-| [ADR-0003-apolo-state-machine.md](decisions/ADR-0003-apolo-state-machine.md) | Refatoração Máquina de Estados (Apolo) para lazy verification |
-| [ADR-0003-serpro-sitfis-pgmei-bugs.md](decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md) | 4 bugs serpro.ts: anoCalendario, SITFIS sem CPF, aliases não documentados, erro CND obscuro (2026-04-23) |
-| [ADR-0004-lead-sheet-unification.md](decisions/ADR-0004-lead-sheet-unification.md) | Unificação da Ficha de Lead e Arquitetura de Componentes Compartilhados |
-| [ADR-0004-schema-integridade-dados.md](decisions/ADR-0004-schema-integridade-dados.md) | Audit + 3 migrations: cliente denorm, procuração historico, consultas lead_id; fix razao_social (2026-04-23) |
-| [ADR-0005-apolo-serpro-cpf-resolution.md](decisions/ADR-0005-apolo-serpro-cpf-resolution.md) | CPF auto-resolution via CCMEI_DADOS para serviços Serpro CPF-based (2026-04-26) |
-| [ADR-0006-whatsapp-form-in-chat.md](decisions/ADR-0006-whatsapp-form-in-chat.md) | Opção B: coleta in-chat no WhatsApp ao invés de formulário externo (2026-04-26) |
-
-## Migrations (Audit Reports)
-
-_Relatórios semanais aparecerão aqui conforme o consolidate automático rodar._
+## Log Operacional
+- [log.md](log.md)

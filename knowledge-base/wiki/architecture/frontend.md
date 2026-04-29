@@ -23,6 +23,9 @@ Browser → Next.js (Server Components / Server Actions)
 ```
 
 **Nunca** conecta direto ao DB. **Nunca** acessa Redis. **Nunca** chama Serpro.
+ 
+## Design System — Roxo & Laranja
+O frontend utiliza um sistema de cores dinâmico que alterna entre **Roxo** (Light Mode) e **Laranja** (Dark Mode). Veja os detalhes em: [design-system.md](design-system.md).
 
 ## Estrutura de Rotas Admin
 
