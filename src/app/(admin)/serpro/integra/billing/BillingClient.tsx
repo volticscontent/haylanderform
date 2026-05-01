@@ -91,7 +91,7 @@ function PrecosEditor({ precos }: { precos: BillingData['precos'] }) {
       <button
         onClick={handleSave}
         disabled={pending}
-        className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+        className="mt-4 flex items-center gap-2 px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white rounded-lg disabled:opacity-50 transition-colors"
       >
         {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
         {saved ? 'Salvo!' : 'Salvar Preços'}
@@ -124,7 +124,7 @@ export default function BillingClient({ data, mesAtual }: { data: BillingData | 
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-indigo-600" /> Billing Tracker
+            <DollarSign className="w-6 h-6 text-purple-600 dark:text-orange-500" /> Billing Tracker
           </h1>
           <p className="text-sm text-zinc-500 mt-1">Consumo e custo estimado de consultas Serpro.</p>
         </div>
@@ -143,7 +143,7 @@ export default function BillingClient({ data, mesAtual }: { data: BillingData | 
             </div>
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5">
               <p className="text-sm text-zinc-500">Custo Estimado</p>
-              <p className="text-3xl font-bold mt-1 text-indigo-600 dark:text-indigo-400">{fmt(data.totais.custo_total)}</p>
+              <p className="text-3xl font-bold mt-1 text-purple-600 dark:text-orange-400">{fmt(data.totais.custo_total)}</p>
             </div>
           </div>
 

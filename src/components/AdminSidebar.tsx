@@ -317,7 +317,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
             <Link
               href="/dashboard"
               onClick={() => onClose?.()}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors mb-4 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-700"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors mb-4 text-zinc-600 dark:text-zinc-400 hover:bg-purple-50 dark:hover:bg-orange-900/20 hover:text-purple-700 dark:hover:text-orange-500 border border-zinc-200 dark:border-zinc-800 shadow-sm"
             >
               <ArrowLeft className="w-5 h-5" />
               Voltar ao Admin
@@ -338,8 +338,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                   <button
                     onClick={() => handleToggle(link.name)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
+                      ? 'text-purple-700 bg-purple-50 dark:text-orange-500 dark:bg-orange-900/20 shadow-sm dark:shadow-none'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-purple-50/50 dark:hover:bg-orange-900/10 hover:text-purple-700 dark:hover:text-orange-500'
                       }`}
                   >
                     <div className="flex items-center gap-3">
@@ -379,8 +379,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                             }
                           }}
                           className={`flex items-center gap-3 pl-11 pr-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${isChildActive
-                            ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
-                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                            ? 'text-purple-700 bg-purple-50 dark:text-orange-500 dark:bg-orange-900/20 shadow-sm dark:shadow-none'
+                            : 'text-zinc-500 dark:text-zinc-400 hover:bg-purple-50/50 dark:hover:bg-orange-900/10 hover:text-purple-700 dark:hover:text-orange-500'
                             }`}
                         >
                           <div className={`w-1.5 h-1.5 rounded-full bg-current ${isChildActive ? 'opacity-100' : 'opacity-40'}`} />
@@ -399,8 +399,8 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
                 href={link.href || '#'}
                 onClick={() => onClose?.()}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? 'text-black dark:text-white bg-gray-100/50 dark:bg-white/10'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200'
+                  ? 'text-purple-700 bg-purple-50 dark:text-orange-500 dark:bg-orange-900/20 shadow-sm dark:shadow-none'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-purple-50/50 dark:hover:bg-orange-900/10 hover:text-purple-700 dark:hover:text-orange-500'
                   }`}
               >
                 <Icon className="w-5 h-5" />
@@ -414,7 +414,7 @@ export default function AdminSidebar({ isOpen = false, isDesktopOpen = true, onC
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-purple-50 dark:hover:bg-orange-900/20 hover:text-purple-700 dark:hover:text-orange-500 transition-colors"
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             {isDark ? 'Modo Claro' : 'Modo Escuro'}

@@ -234,7 +234,7 @@ export default function LeadList({
             id="lead-search"
             name="lead-search"
             type="text"
-            className="block w-full rounded-md border-0 py-2 pl-10 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700"
+            className="block w-full rounded-md border-0 py-2 pl-10 text-zinc-900 ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-purple-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700 dark:focus:ring-orange-500"
             placeholder="Buscar por nome, telefone ou CNPJ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -246,7 +246,7 @@ export default function LeadList({
             name="status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="block w-full sm:w-40 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700"
+            className="block w-full sm:w-40 rounded-md border-0 py-1.5 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-purple-600 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 dark:focus:ring-orange-500"
           >
             <option value="all">Todos os Status</option>
             <option value="pendente">Pendentes (Geral)</option>
@@ -263,7 +263,7 @@ export default function LeadList({
             <Edit className="w-4 h-4" />
             <span>Editar</span>
           </button>
-          <button onClick={() => setViewConfigOpen(true)} className="inline-flex items-center inline-flex items-center p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
+          <button onClick={() => setViewConfigOpen(true)} className="inline-flex items-center p-2 px-4 rounded-md bg-zinc-900 dark:bg-white dark:text-black text-white hover:opacity-90 transition-colors text-sm font-medium flex items-center gap-2">
             <MoreVertical className="w-4 h-4" />
             <span className="hidden sm:inline">Visualização</span>
           </button>
@@ -271,9 +271,9 @@ export default function LeadList({
       </div>
 
       {bulkOpen && (
-        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-indigo-50/50 dark:bg-orange-800">
+        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-purple-50/50 dark:bg-orange-900/10">
           <div className="max-w-3xl">
-            <div className="bg-white dark:bg-zinc-900 border border-indigo-200 dark:border-orange-800 rounded-lg p-4">
+            <div className="bg-white dark:bg-zinc-900 border border-purple-200 dark:border-orange-800/50 rounded-lg p-4">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-48">
@@ -480,7 +480,7 @@ export default function LeadList({
               <div className="flex gap-2">
                 <button className="rounded px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => setViewConfigOpen(false)}>Cancelar</button>
                 <button
-                  className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50 hover:bg-indigo-500"
+                  className="rounded bg-purple-600 dark:bg-orange-500 px-3 py-2 text-sm text-white disabled:opacity-50 hover:bg-purple-500 dark:hover:bg-orange-600 transition-colors"
                   onClick={() => { saveViewConfig(); saveFieldConfig(); setViewConfigOpen(false) }}
                 >
                   Salvar
@@ -564,7 +564,7 @@ export default function LeadList({
               </button>
               <button
                 disabled={editLoading || editValue.trim() === ''}
-                className="px-3 py-2 text-sm rounded-md text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50"
+                className="px-3 py-2 text-sm rounded-md text-white bg-purple-600 dark:bg-orange-500 hover:bg-purple-500 dark:hover:bg-orange-600 transition-colors disabled:opacity-50"
                 onClick={async () => {
                   if (!bulkColumn) { alert('Selecione a coluna.'); return }
                   if ((bulkOperator === 'in' || bulkOperator === 'not_in') && bulkValues.length === 0) { alert('Selecione ao menos um valor.'); return }
@@ -728,7 +728,7 @@ export default function LeadList({
                         {row.cnpj ? (
                           <Link
                             href={`/serpro?cnpj=${row.cnpj.replace(/\\D/g, '')}`}
-                            className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium line-clamp-2"
+                            className="text-purple-600 dark:text-orange-400 hover:underline text-sm font-medium line-clamp-2"
                             title="Consultar no Serpro"
                           >
                             {row.razao_social || 'Sem nome da empresa'}
@@ -788,7 +788,7 @@ export default function LeadList({
                             setStartInEditMode(true)
                             setSelectedLead(row)
                           }}
-                          className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                          className="p-1.5 rounded-md text-zinc-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:text-orange-400 dark:hover:bg-orange-900/30 transition-colors"
                           title="Editar"
                         >
                           <Edit className="w-4 h-4" />

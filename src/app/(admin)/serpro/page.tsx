@@ -42,7 +42,7 @@ export default function SerproPage() {
     return URL.createObjectURL(blob);
   };
 
-  const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO', 'PGFN_PAEX', 'PGFN_SIPADE'];
+  const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO'];
 
   const SERVICE_GROUPS: Record<string, string[]> = {
     "Dados Cadastrais & Enquadramento": ["CCMEI_DADOS", "SIMEI", "PROCURACAO"],
@@ -50,8 +50,8 @@ export default function SerproPage() {
     "Situação Fiscal & Certidões": ["SIT_FISCAL_SOLICITAR", "SIT_FISCAL_RELATORIO", "CND"],
     "Declarações (DASN, PGDAS, DCTFWeb)": ["DASN_SIMEI", "PGDASD", "DCTFWEB"],
     "Parcelamentos (MEI & SN)": ["PARCELAMENTO_MEI_CONSULTAR", "PARCELAMENTO_MEI_EMITIR", "PARCELAMENTO_SN_CONSULTAR", "PARCELAMENTO_SN_EMITIR"],
-    "Dívida Ativa (PGFN)": ["DIVIDA_ATIVA", "PGFN_CONSULTAR", "PGFN_PAEX", "PGFN_SIPADE"],
-    "Mensagens e Processos": ["CAIXA_POSTAL", "PROCESSOS", "PAGAMENTO"]
+    "Dívida Ativa (PGFN)": ["DIVIDA_ATIVA", "PGFN_CONSULTAR"],
+    "Mensagens e Processos": ["CAIXA_POSTAL", "PROCESSOS", "PAGAMENTO"],
   };
 
   // Lógica inteligente para sugestão de ano baseada no serviço
@@ -173,7 +173,7 @@ export default function SerproPage() {
 
       <div className="relative bg-white/70 dark:bg-zinc-900/50 backdrop-blur-2xl p-7 rounded-2xl shadow-2xl shadow-purple-500/5 dark:shadow-orange-900/20 border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden">
         {/* Decorative background glow */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 dark:bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="max-w space-y-5 relative z-10">
           <div>
@@ -186,7 +186,7 @@ export default function SerproPage() {
               onChange={(e) => setCnpj(e.target.value)}
               placeholder="00.000.000/0000-00"
               maxLength={18}
-              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 placeholder:text-zinc-400 font-mono text-sm shadow-sm"
+              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:ring-orange-500/20 dark:focus:border-orange-500 outline-none transition-all duration-300 placeholder:text-zinc-400 font-mono text-sm shadow-sm"
             />
           </div>
 
@@ -197,7 +197,7 @@ export default function SerproPage() {
             <select
               value={service}
               onChange={(e) => setService(e.target.value as keyof typeof SERVICE_CONFIG)}
-              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 text-sm font-medium shadow-sm cursor-pointer appearance-none"
+              className="w-full p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 text-zinc-900 dark:text-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:ring-orange-500/20 dark:focus:border-orange-500 outline-none transition-all duration-300 text-sm font-medium shadow-sm cursor-pointer appearance-none"
             >
               {Object.entries(SERVICE_GROUPS).map(([groupName, services]) => (
                 <optgroup key={groupName} label={groupName} className="font-semibold text-zinc-900 dark:text-white bg-zinc-50 dark:bg-zinc-900">
@@ -235,7 +235,7 @@ export default function SerproPage() {
             </div>
           </div>
 
-          {(['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO', 'PGFN_PAEX', 'PGFN_SIPADE'].includes(service)) && (
+          {SERVICES_WITH_YEAR.includes(service) && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -244,7 +244,7 @@ export default function SerproPage() {
                     <button
                       type="button"
                       onClick={() => setShowYearInfo(!showYearInfo)}
-                      className="text-zinc-400 hover:text-blue-500 transition-colors"
+                      className="text-zinc-400 hover:text-purple-500 dark:hover:text-orange-500 transition-colors"
                       title="O que é Ano-Calendário?"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
@@ -255,7 +255,7 @@ export default function SerproPage() {
                     value={ano}
                     onChange={(e) => setAno(e.target.value)}
                     placeholder="2026"
-                    className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all"
                   />
                 </div>
                 <div>
@@ -269,7 +269,7 @@ export default function SerproPage() {
                     value={mes}
                     onChange={(e) => setMes(e.target.value)}
                     placeholder="Ex: 01"
-                    className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function SerproPage() {
                     type="button"
                     onClick={() => setAno(y.toString())}
                     className={`text-xs px-2 py-1 rounded border transition-all ${ano === y.toString()
-                      ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300'
+                      ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-300'
                       : 'bg-zinc-100 border-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 hover:border-zinc-400'
                       }`}
                   >
@@ -321,7 +321,7 @@ export default function SerproPage() {
               <select
                 value={categoria}
                 onChange={(e) => setCategoria(e.target.value)}
-                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all"
               >
                 <option value="GERAL_MENSAL">Geral Mensal</option>
                 <option value="GERAL_TRIMESTRAL">Geral Trimestral</option>
@@ -332,8 +332,8 @@ export default function SerproPage() {
           )}
 
           {(service === 'SIT_FISCAL_RELATORIO' || service === 'PGDASD') && (
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-black/50 rounded-lg">
-              <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+            <div className="p-3 bg-purple-50 dark:bg-orange-900/20 border border-purple-100 dark:border-orange-900/50 rounded-lg">
+              <label className="block text-sm font-medium text-purple-900 dark:text-orange-100 mb-1">
                 Número do Recibo / Protocolo (Obrigatório)
               </label>
               <input
@@ -341,9 +341,9 @@ export default function SerproPage() {
                 value={numeroRecibo}
                 onChange={(e) => setNumeroRecibo(e.target.value)}
                 placeholder="Insira o protocolo aqui"
-                className="w-full p-2 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
+                className="w-full p-2 rounded border border-purple-300 dark:border-orange-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
               />
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">
+              <p className="text-[10px] text-purple-600 dark:text-orange-400 mt-1">
                 Este serviço exige o número do recibo ou protocolo da solicitação prévia.
               </p>
             </div>
@@ -372,7 +372,7 @@ export default function SerproPage() {
           <button
             onClick={handleConsultar}
             disabled={loading || !cnpj}
-            className="w-full py-3.5 px-6 font-bold text-[15px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 dark:from-white dark:to-zinc-200 dark:text-black dark:hover:from-zinc-200 dark:hover:to-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 dark:shadow-white/10 rounded-xl transition-all duration-300 active:scale-[0.98] flex items-center justify-center mt-6"
+            className="w-full py-3.5 px-6 font-bold text-[15px] bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600 dark:from-orange-500 dark:to-orange-400 dark:hover:from-orange-600 dark:hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 dark:shadow-orange-500/20 rounded-xl transition-all duration-300 active:scale-[0.98] flex items-center justify-center mt-6"
           >
             {loading ? (
               <>
@@ -463,9 +463,9 @@ export default function SerproPage() {
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Mensagens do Sistema</h3>
                   <div className="space-y-2">
                     {mensagens.map((m, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-black/50">
-                        <div className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 min-w-[120px]">{m.codigo || 'AVISO'}</div>
-                        <div className="text-sm text-black/50 dark:text-blue-200">{m.texto || '-'}</div>
+                      <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 dark:bg-orange-900/20 border border-purple-100 dark:border-orange-900/50">
+                        <div className="text-xs font-mono font-bold text-purple-600 dark:text-orange-400 min-w-[120px]">{m.codigo || 'AVISO'}</div>
+                        <div className="text-sm text-black/50 dark:text-orange-200">{m.texto || '-'}</div>
                       </div>
                     ))}
                   </div>

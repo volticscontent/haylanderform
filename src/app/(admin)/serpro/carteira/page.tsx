@@ -82,7 +82,7 @@ function StatusBadge({ doc, onGerar, onOpenPdf, gerando, opening }: {
 
   return (
     <button onClick={onGerar} disabled={gerando}
-      className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors disabled:opacity-50">
+      className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-orange-900/20 dark:hover:text-orange-400 transition-colors disabled:opacity-50">
       {gerando ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
       Gerar
     </button>
@@ -232,12 +232,12 @@ export default function CarteiraPage() {
           placeholder="Buscar por nome ou CNPJ..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none w-64"
+          className="px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none w-64"
         />
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as 'todos' | 'pendente' | 'ok')}
-          className="px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+          className="px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none"
         >
           <option value="todos">Todos</option>
           <option value="pendente">Com pendências</option>
@@ -245,11 +245,11 @@ export default function CarteiraPage() {
         </select>
 
         {selected.size > 0 && (
-          <div className="flex items-center gap-2 ml-auto bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
-            <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">{selected.size} selecionados</span>
+          <div className="flex items-center gap-2 ml-auto bg-purple-50 dark:bg-orange-900/20 border border-purple-200 dark:border-orange-800 rounded-lg px-3 py-2">
+            <span className="text-xs text-purple-700 dark:text-orange-400 font-medium">{selected.size} selecionados</span>
             {SERVICOS.map((s) => (
               <button key={s} onClick={() => gerarParaSelecionados(s)}
-                className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
+                className="text-xs px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 dark:bg-orange-600 dark:hover:bg-orange-700 text-white font-medium transition-colors">
                 Gerar {SERVICO_LABEL[s]}
               </button>
             ))}
@@ -265,7 +265,7 @@ export default function CarteiraPage() {
               <th className="px-4 py-3 w-10">
                 <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0}
                   onChange={toggleAll}
-                  className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
+                  className="rounded border-zinc-300 dark:border-zinc-600 text-purple-600 focus:ring-purple-500 dark:text-orange-600 dark:focus:ring-orange-500" />
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Cliente</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Procuração</th>
@@ -291,7 +291,7 @@ export default function CarteiraPage() {
                 </td>
               </tr>
             ) : filtered.map((lead) => (
-              <tr key={lead.lead_id} className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors ${selected.has(lead.lead_id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+              <tr key={lead.lead_id} className={`hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors ${selected.has(lead.lead_id) ? 'bg-purple-50/50 dark:bg-orange-900/10' : ''}`}>
                 <td className="px-4 py-3">
                   <input type="checkbox"
                     checked={selected.has(lead.lead_id)}
@@ -300,7 +300,7 @@ export default function CarteiraPage() {
                       e.target.checked ? s.add(lead.lead_id) : s.delete(lead.lead_id);
                       setSelected(s);
                     }}
-                    className="rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500" />
+                    className="rounded border-zinc-300 dark:border-zinc-600 text-purple-600 focus:ring-purple-500 dark:text-orange-600 dark:focus:ring-orange-500" />
                 </td>
                 <td className="px-4 py-3">
                   <div className="font-medium text-zinc-900 dark:text-white">{lead.nome}</div>
@@ -350,7 +350,7 @@ export default function CarteiraPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => router.push(`/serpro?cnpj=${lead.cnpj}`)}
-                      className="text-xs flex items-center gap-1 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                      className="text-xs flex items-center gap-1 px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-purple-300 hover:text-purple-600 dark:hover:border-orange-500 dark:hover:text-orange-400 transition-colors"
                     >
                       <FileText className="w-3 h-3" /> Consultar
                     </button>

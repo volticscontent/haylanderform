@@ -18,7 +18,7 @@ function StatusBadge({ status }: { status: string | null }) {
     completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     partial:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     failed:    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    running:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    running:   'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-400',
   }
   return (
     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? 'bg-zinc-100 text-zinc-600'}`}>
@@ -75,7 +75,7 @@ export default function RobosClient({ robos }: { robos: IntegraRobo[] }) {
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-          <Bot className="w-6 h-6 text-indigo-600" /> Robôs — Configuração
+          <Bot className="w-6 h-6 text-purple-600 dark:text-orange-500" /> Robôs — Configuração
         </h1>
         <p className="text-sm text-zinc-500 mt-1">Gerencie o agendamento e disparo manual dos robôs Serpro.</p>
       </div>
@@ -92,7 +92,7 @@ export default function RobosClient({ robos }: { robos: IntegraRobo[] }) {
                   <button
                     onClick={() => handleToggle(r.tipo_robo, r.ativo)}
                     disabled={pending}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${r.ativo ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${r.ativo ? 'bg-purple-600 dark:bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
                   >
                     <span className={`inline-block w-3.5 h-3.5 transform rounded-full bg-white shadow transition-transform ${r.ativo ? 'translate-x-4' : 'translate-x-1'}`} />
                   </button>
@@ -131,14 +131,14 @@ export default function RobosClient({ robos }: { robos: IntegraRobo[] }) {
                   </p>
                 )}
                 {feedback[r.tipo_robo] && (
-                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{feedback[r.tipo_robo]}</p>
+                  <p className="text-xs text-purple-600 dark:text-orange-400 mt-1">{feedback[r.tipo_robo]}</p>
                 )}
               </div>
 
               <button
                 onClick={() => handleExecutar(r.tipo_robo)}
                 disabled={!!pending || runningTipo === r.tipo_robo}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors shrink-0"
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-600 hover:bg-purple-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-white rounded-lg disabled:opacity-50 transition-colors shrink-0"
               >
                 {runningTipo === r.tipo_robo
                   ? <Loader2 className="w-4 h-4 animate-spin" />

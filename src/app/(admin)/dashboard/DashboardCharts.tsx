@@ -327,11 +327,11 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 <button
                   onClick={() => setShowDatePicker(!showDatePicker)}
                   className={`w-full flex items-center justify-center sm:justify-start gap-2 px-3 py-2 sm:py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange.start || dateRange.end
-                    ? 'bg-indigo-50 text-indigo-700 dark:text-orange-500 dark:hover:bg-gray-900 border border-indigo-200 dark:border-indigo-800'
+                    ? 'bg-purple-50 text-purple-700 dark:bg-orange-900/20 dark:text-orange-500 dark:hover:bg-orange-900/40 border border-purple-200 dark:border-orange-800/50'
                     : 'bg-zinc-50 text-zinc-700 border border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700'
                     }`}
                 >
-                  <CalendarIcon className="w-4 h-4 text-indigo-700 dark:text-orange-500" />
+                  <CalendarIcon className="w-4 h-4 text-purple-700 dark:text-orange-500" />
                   {dateRange.start ? (
                     <span className="truncate">
                       {format(parseISO(dateRange.start), 'dd/MM')}
@@ -436,7 +436,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                           </button>
                           <button
                             onClick={() => setShowDatePicker(false)}
-                            className="px-3 py-1.5 text-xs bg-indigo-600 dark:bg-orange-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-orange-600 font-medium transition-colors"
+                            className="px-3 py-1.5 text-xs bg-purple-600 dark:bg-orange-500 text-white rounded-md hover:bg-purple-700 dark:hover:bg-orange-600 font-medium transition-colors"
                           >
                             Aplicar
                           </button>
@@ -475,7 +475,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 name="filter-column"
                 value={filterColumn}
                 onChange={(e) => setFilterColumn(e.target.value as typeof filterColumn)}
-                className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
+                className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-purple-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
               >
                 {/* DISPARO: comentado — feature não ativa */}
                 {/* <option value="envio_disparo">Envio</option> */}
@@ -672,7 +672,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
               {carouselItems.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-indigo-500 dark:bg-orange-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentSlide ? 'bg-purple-500 dark:bg-orange-500 w-3' : 'bg-zinc-300 dark:bg-zinc-700'
                     }`}
                 />
               ))}
@@ -730,7 +730,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                   return null;
                 }}
               />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill={isDarkMode ? '#ffffff' : '#8b5cf6'}>
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} fill={isDarkMode ? '#f97316' : '#8b5cf6'}>
                 <LabelList
                   dataKey="value"
                   position="top"

@@ -4,16 +4,17 @@ export interface ServiceConfigItem {
   env_servico: string;
   default_sistema?: string;
   default_servico?: string;
+  versaoSistema?: string;
   tipo: 'Consultar' | 'Emitir' | 'Solicitar' | 'Apoiar';
   descricao?: string;
   uso?: string;
   finalidade?: string;
 }
 
-// Catálogo de Serviços do Integra Contador (Serpro)
-// Padronizado com as variáveis de ambiente do .env e Catálogo 2025/2026
+// Espelho do catálogo do bot-backend (bot-backend/src/lib/serpro-config.ts).
+// Usado apenas para UI (dropdown, badges, metadados). As chamadas reais sempre passam pelo backend.
+// IMPORTANTE: manter sincronizado com o backend — serviços removidos de lá devem ser removidos aqui.
 export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
-  // --- GRUPO CCMEI (Dados Cadastrais) ---
   CCMEI_DADOS: {
     env_sistema: 'INTEGRA_CCMEI_ID_SISTEMA',
     env_servico: 'INTEGRA_CCMEI_DADOS_ID_SERVICO',
@@ -22,19 +23,18 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta dados cadastrais completos do MEI.',
     uso: 'Requer apenas CNPJ.',
-    finalidade: 'Verificar situação cadastral, atividades e endereço.'
+    finalidade: 'Verificar situação cadastral, atividades e endereço.',
   },
-
-  // --- GRUPO PGMEI (Débitos e Guias MEI) ---
   PGMEI: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
     env_servico: 'INTEGRA_PGMEI_ID_SERVICO',
     default_sistema: 'PGMEI',
     default_servico: 'DIVIDAATIVA24',
+    versaoSistema: '2.4',
     tipo: 'Consultar',
-    descricao: 'Consulta débitos e dívida ativa do MEI.',
+    descricao: 'Consulta dívida ativa e débitos via PGMEI.',
     uso: 'Requer CNPJ e Ano (opcional).',
-    finalidade: 'Verificar débitos pendentes e inscritos em Dívida Ativa.'
+    finalidade: 'Verificar débitos pendentes e inscritos em Dívida Ativa.',
   },
   PGMEI_EXTRATO: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
@@ -51,7 +51,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_sistema: 'PGMEI',
     default_servico: 'GERARDASCODBARRA22',
     tipo: 'Emitir',
-    descricao: 'Geração de Código de Barras do DAS.',
+    descricao: 'Geração de Linha Digitável/Código de Barras do DAS.',
     uso: 'Requer CNPJ e Período (MM/AAAA).',
   },
   PGMEI_ATU_BENEFICIO: {
@@ -63,42 +63,38 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Atualização de Benefícios Previdenciários no PGMEI.',
     uso: 'Requer CNPJ.',
   },
-
-  // --- GRUPO SIMEI (Situação de Enquadramento) ---
   SIMEI: {
     env_sistema: 'INTEGRA_SIMEI_ID_SISTEMA',
     env_servico: 'INTEGRA_SIMEI_ID_SERVICO',
     default_sistema: 'CCMEI',
     default_servico: 'DADOSCCMEI122',
     tipo: 'Consultar',
-    descricao: 'Consulta enquadramento no SIMEI (via CCMEI).',
+    descricao: 'Consulta situação do SIMEI via CCMEI.',
     uso: 'Requer CNPJ e Ano.',
-    finalidade: 'Verificar se a empresa é optante pelo SIMEI.'
+    finalidade: 'Verificar se a empresa é optante pelo SIMEI.',
   },
-
-  // --- GRUPO SITFIS (Situação Fiscal Completa) ---
   SIT_FISCAL_SOLICITAR: {
     env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
     env_servico: 'INTEGRA_SITFIS_PROTOCOLO_ID_SERVICO',
     default_sistema: 'SITFIS',
     default_servico: 'SOLICITARPROTOCOLO91',
+    versaoSistema: '2.0',
     tipo: 'Apoiar',
-    descricao: 'Solicitar Protocolo de Situação Fiscal.',
+    descricao: 'Solicitação de Protocolo de Situação Fiscal.',
     uso: 'Requer CNPJ.',
-    finalidade: 'Primeiro passo para o diagnóstico completo de pendências.'
+    finalidade: 'Primeiro passo para o diagnóstico completo de pendências.',
   },
   SIT_FISCAL_RELATORIO: {
     env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
     env_servico: 'INTEGRA_SITFIS_RELATORIO_ID_SERVICO',
     default_sistema: 'SITFIS',
     default_servico: 'RELATORIOSITFIS92',
+    versaoSistema: '2.0',
     tipo: 'Emitir',
     descricao: 'Relatório de Situação Fiscal Completa.',
     uso: 'Requer número do protocolo obtido na solicitação.',
-    finalidade: 'Obtenção do relatório detalhado em PDF/JSON.'
+    finalidade: 'Obtenção do relatório detalhado em PDF/JSON.',
   },
-
-  // --- GRUPO DASN-SIMEI (Declaração Anual MEI) ---
   DASN_SIMEI: {
     env_sistema: 'INTEGRA_DASNSIMEI_ID_SISTEMA',
     env_servico: 'INTEGRA_DASNSIMEI_ID_SERVICO',
@@ -107,22 +103,18 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta Declaração Anual do MEI (DASN).',
     uso: 'Requer CNPJ e Ano.',
-    finalidade: 'Consultar recibos e situação de declarações do MEI.'
+    finalidade: 'Consultar recibos e situação de declarações do MEI.',
   },
-
-  // --- GRUPO PGDAS-D (Simples Nacional) ---
   PGDASD: {
     env_sistema: 'INTEGRA_PGDASD_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGDASD_CONSEXTRATO_ID_SERVICO',
+    env_servico: 'INTEGRA_PGDASD_ID_SERVICO',
     default_sistema: 'PGDASD',
     default_servico: 'CONSEXTRATO16',
     tipo: 'Consultar',
     descricao: 'Extrato PGDAS-D (Simples Nacional).',
     uso: 'Requer CNPJ e Ano Calendário.',
-    finalidade: 'Consultar declarações transmitidas e situação do PGDAS-D.'
+    finalidade: 'Consultar declarações transmitidas e situação do PGDAS-D.',
   },
-
-  // --- GRUPO DCTFWEB ---
   DCTFWEB: {
     env_sistema: 'INTEGRA_DCTFWEB_ID_SISTEMA',
     env_servico: 'INTEGRA_DCTFWEB_ID_SERVICO',
@@ -131,10 +123,8 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta Declaração DCTFWeb Completa.',
     uso: 'Requer CNPJ e Período (MM/AAAA).',
-    finalidade: 'Consultar débitos e créditos tributários previdenciários.'
+    finalidade: 'Consultar débitos e créditos tributários previdenciários.',
   },
-
-  // --- GRUPO PARCELAMENTOS ---
   PARCELAMENTO_MEI_CONSULTAR: {
     env_sistema: 'INTEGRA_PARCMEI_SISTEMA',
     env_servico: 'INTEGRA_PARCMEI_CONSULTAR_SERVICO',
@@ -142,7 +132,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_servico: 'PEDIDOSPARC203',
     tipo: 'Consultar',
     descricao: 'Consulta Pedidos de Parcelamento MEI.',
-    finalidade: 'Verificar status e parcelas de acordos ativos.'
+    finalidade: 'Verificar status e parcelas de acordos ativos.',
   },
   PARCELAMENTO_MEI_EMITIR: {
     env_sistema: 'INTEGRA_PARCMEI_SISTEMA',
@@ -158,44 +148,43 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_sistema: 'PARCSN',
     default_servico: 'PEDIDOSPARC163',
     tipo: 'Consultar',
-    descricao: 'Consulta Pedidos de Parcelamento SN.',
+    descricao: 'Consulta de Pedidos de Parcelamento Simples Nacional.',
   },
-
-  // --- GRUPO DÍVIDA ATIVA PGFN ---
-  PGFN_PAEX: {
-    env_sistema: 'INTEGRA_PGFN_PAEX_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGFN_PAEX_ID_SERVICO',
-    default_sistema: 'PARC-PAEX',
-    default_servico: 'OBTEREXTRATOPARC245',
+  PARCELAMENTO_SN_EMITIR: {
+    env_sistema: 'INTEGRA_PARCSN_SISTEMA',
+    env_servico: 'INTEGRA_PARCSN_GERAR_SERVICO',
+    default_sistema: 'PARCSN',
+    default_servico: 'GERARDAS161',
+    tipo: 'Emitir',
+    descricao: 'Emissão de DAS de Parcelamento Simples Nacional.',
+    finalidade: 'Gerar guia de pagamento de parcela SN.',
+  },
+  DIVIDA_ATIVA: {
+    env_sistema: 'INTEGRA_DIVIDA_ATIVA_ID_SISTEMA',
+    env_servico: 'INTEGRA_DIVIDA_ATIVA_ID_SERVICO',
+    default_sistema: 'PGMEI',
+    default_servico: 'DIVIDAATIVA24',
+    versaoSistema: '2.4',
     tipo: 'Consultar',
-    descricao: 'Parcelamento Excepcional PGFN (PAEX).',
-    uso: 'Requer CNPJ.',
+    descricao: 'Consulta de Dívida Ativa da União.',
+    finalidade: 'Verificar inscrições em dívida ativa federal.',
   },
-  PGFN_SIPADE: {
-    env_sistema: 'INTEGRA_PGFN_SIPADE_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGFN_SIPADE_ID_SERVICO',
-    default_sistema: 'PARC-SIPADE',
-    default_servico: 'OBTEREXTRATOPARC251',
-    tipo: 'Consultar',
-    descricao: 'Parcelamento de Débitos PGFN (SIPADE).',
-    uso: 'Requer CNPJ.',
-  },
-
-  // --- GRUPO CERTIDÕES E OUTROS ---
   CND: {
-    env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
-    env_servico: 'INTEGRA_SITFIS_RELATORIO_ID_SERVICO',
+    env_sistema: 'INTEGRA_CND_ID_SISTEMA',
+    env_servico: 'INTEGRA_CND_ID_SERVICO',
     default_sistema: 'SITFIS',
     default_servico: 'RELATORIOSITFIS92',
+    versaoSistema: '2.0',
     tipo: 'Emitir',
-    descricao: 'Certidão Negativa de Débitos (via SITFIS).',
-    finalidade: 'Comprovar regularidade fiscal perante a Receita Federal.'
+    descricao: 'Emissão de Certidão via Relatório de Situação Fiscal.',
+    finalidade: 'Comprovar regularidade fiscal perante a Receita Federal.',
   },
   PROCESSOS: {
     env_sistema: 'INTEGRA_PROCESSOS_ID_SISTEMA',
     env_servico: 'INTEGRA_PROCESSOS_ID_SERVICO',
     default_sistema: 'EPROCESSO',
     default_servico: 'CONSPROCPORINTER271',
+    versaoSistema: '2.0',
     tipo: 'Consultar',
     descricao: 'Consulta de Processos Administrativos.',
   },
@@ -206,36 +195,26 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_servico: 'MSGCONTRIBUINTE61',
     tipo: 'Consultar',
     descricao: 'Caixa Postal Eletrônica (DTE).',
-    finalidade: 'Ler mensagens e intimações oficiais.'
+    finalidade: 'Ler mensagens e intimações oficiais.',
+  },
+  PAGAMENTO: {
+    env_sistema: 'INTEGRA_PAGAMENTO_ID_SISTEMA',
+    env_servico: 'INTEGRA_PAGAMENTO_ID_SERVICO',
+    default_sistema: 'PAGTOWEB',
+    default_servico: 'COMPARRECADACAO72',
+    tipo: 'Emitir',
+    descricao: 'Emissão de Comprovante de Arrecadação.',
+    finalidade: 'Verificar pagamentos realizados pelo contribuinte.',
   },
   PROCURACAO: {
     env_sistema: 'INTEGRA_PROCURACAO_ID_SISTEMA',
     env_servico: 'INTEGRA_PROCURACAO_ID_SERVICO',
     default_sistema: 'PROCURACOES',
     default_servico: 'OBTERPROCURACAO41',
+    versaoSistema: '1',
     tipo: 'Consultar',
     descricao: 'Consulta de Procurações Eletrônicas.',
-    finalidade: 'Verificar poderes do contador no e-CAC.'
-  },
-
-  // --- SERVIÇOS ADICIONAIS (do Bot) ---
-  PAGAMENTO: {
-    env_sistema: 'INTEGRA_PAGAMENTO_ID_SISTEMA',
-    env_servico: 'INTEGRA_PAGAMENTO_ID_SERVICO',
-    default_sistema: 'PAGTOWEB',
-    default_servico: 'COMPARRECADACAO72',
-    tipo: 'Consultar',
-    descricao: 'Consulta de Comprovantes de Arrecadação.',
-    finalidade: 'Verificar pagamentos realizados pelo contribuinte.'
-  },
-  DIVIDA_ATIVA: {
-    env_sistema: 'INTEGRA_DIVIDA_ATIVA_ID_SISTEMA',
-    env_servico: 'INTEGRA_DIVIDA_ATIVA_ID_SERVICO',
-    default_sistema: 'PGMEI',
-    default_servico: 'DIVIDAATIVA24',
-    tipo: 'Consultar',
-    descricao: 'Consulta de Dívida Ativa da União.',
-    finalidade: 'Verificar inscrições em dívida ativa federal.'
+    finalidade: 'Verificar poderes do contador no e-CAC.',
   },
   PGFN_CONSULTAR: {
     env_sistema: 'INTEGRA_PGFN_ID_SISTEMA',
@@ -243,16 +222,6 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_sistema: 'PGMEI',
     default_servico: 'DIVIDAATIVA24',
     tipo: 'Consultar',
-    descricao: 'Consulta de débitos em Dívida Ativa da União (MEI).',
-    finalidade: 'Para geral, use SITFIS.'
+    descricao: 'Consulta de débitos em Dívida Ativa da União (MEI). Para geral, use SITFIS.',
   },
-  PARCELAMENTO_SN_EMITIR: {
-    env_sistema: 'INTEGRA_PARCSN_SISTEMA',
-    env_servico: 'INTEGRA_PARCSN_GERAR_SERVICO',
-    default_sistema: 'PARCSN',
-    default_servico: 'GERARDAS161',
-    tipo: 'Emitir',
-    descricao: 'Emissão de DAS de Parcelamento Simples Nacional.',
-    finalidade: 'Gerar guia de pagamento de parcela SN.'
-  }
 };

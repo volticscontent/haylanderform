@@ -19,7 +19,7 @@ function StatusBadge({ status }: { status: string | null }) {
     completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     partial:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     failed:    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    running:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    running:   'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   }
   return (
     <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? 'bg-zinc-100 text-zinc-600'}`}>
@@ -55,7 +55,7 @@ export default async function IntegraDashboard() {
     <div className="space-y-8 p-6">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-          <Bot className="w-6 h-6 text-indigo-600" /> Integra Contador — Dashboard
+          <Bot className="w-6 h-6 text-purple-600 dark:text-orange-500" /> Integra Contador — Dashboard
         </h1>
         <p className="text-sm text-zinc-500 mt-1">Visão consolidada das empresas, guias e robôs.</p>
       </div>
@@ -151,7 +151,7 @@ export default async function IntegraDashboard() {
                 <div className="flex items-center gap-3">
                   {h.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> :
                    h.status === 'failed' ? <XCircle className="w-4 h-4 text-red-500" /> :
-                   <Clock className="w-4 h-4 text-blue-500" />}
+                   <Clock className="w-4 h-4 text-purple-500" />}
                   <RoboLabel tipo={h.robo_tipo} />
                 </div>
                 <div className="flex items-center gap-4 text-xs text-zinc-500">

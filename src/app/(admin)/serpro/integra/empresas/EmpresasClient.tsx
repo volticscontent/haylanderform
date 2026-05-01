@@ -18,7 +18,7 @@ const PRESETS: Record<string, string[]> = {
 };
 
 const REGIME_BADGE: Record<string, string> = {
-  mei:       'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  mei:       'bg-purple-100 text-purple-700 dark:bg-orange-900/40 dark:text-orange-300',
   simples:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   presumido: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   real:      'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
@@ -76,7 +76,7 @@ function Toggle({ on, onClick, disabled }: { on: boolean; onClick: () => void; d
   );
 }
 
-const inputCls = 'w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inputCls = 'w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500';
 
 export default function EmpresasClient({
   empresas: inicial,
@@ -203,7 +203,7 @@ export default function EmpresasClient({
               Importar leads ({leadsDisponiveis.length})
             </button>
           )}
-          <button onClick={openCreate} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
+          <button onClick={openCreate} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-sm font-medium">
             + Nova Empresa
           </button>
         </div>
@@ -291,7 +291,7 @@ export default function EmpresasClient({
 
                 <td className="px-4 py-4 text-center">
                   <div className="flex items-center justify-center gap-3">
-                    <button onClick={() => openEdit(e)} className="text-blue-500 hover:text-blue-400 text-xs font-medium">
+                    <button onClick={() => openEdit(e)} className="text-purple-600 hover:text-purple-500 dark:text-orange-500 dark:hover:text-orange-400 text-xs font-medium">
                       Editar
                     </button>
                     <span className="text-slate-300 dark:text-slate-600">|</span>
@@ -367,7 +367,7 @@ export default function EmpresasClient({
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => setImportSelected(new Set(leadsVisiveis.map(l => l.id)))}
-                className="text-xs text-blue-500 hover:text-blue-400"
+                className="text-xs text-purple-600 hover:text-purple-500 dark:text-orange-500 dark:hover:text-orange-400"
               >
                 Selecionar todos
               </button>
@@ -444,7 +444,7 @@ export default function EmpresasClient({
                 Cancelar
               </button>
               <button onClick={handleSubmit} disabled={isPending}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50">
                 {isPending ? 'Salvando...' : 'Salvar'}
               </button>
             </div>

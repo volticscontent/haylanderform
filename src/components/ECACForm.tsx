@@ -124,7 +124,7 @@ export default function ECACForm() {
             name="nome_completo"
             value={formData.nome_completo}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all dark:text-white"
             placeholder="Seu nome completo"
           />
         </div>
@@ -138,7 +138,7 @@ export default function ECACForm() {
             name="telefone"
             value={formData.telefone}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all dark:text-white"
             placeholder="(00) 00000-0000"
           />
         </div>
@@ -153,7 +153,7 @@ export default function ECACForm() {
             type="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all dark:text-white"
             placeholder="seu@email.com"
           />
         </div>
@@ -168,7 +168,7 @@ export default function ECACForm() {
             type="text"
             value={formData.senha_gov}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+            className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all dark:text-white"
             placeholder="Sua senha do Gov.br"
           />
         </div>
@@ -177,7 +177,7 @@ export default function ECACForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 dark:bg-orange-600 dark:hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {status === "submitting" ? (
           <>

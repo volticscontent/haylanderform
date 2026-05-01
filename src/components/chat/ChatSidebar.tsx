@@ -138,7 +138,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             <button
               onClick={toggleSelectionMode}
               className={`p-2 rounded-lg transition-colors ${isSelectionMode
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                ? 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300'
                 : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
               title={isSelectionMode ? "Cancelar seleção" : "Selecionar contatos"}
@@ -209,11 +209,11 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
 
       {/* Bulk Action Bar */}
       {isSelectionMode && (
-        <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 flex flex-col gap-3">
+        <div className="px-4 py-3 bg-purple-50 dark:bg-orange-900/20 border-b border-purple-100 dark:border-orange-800 flex flex-col gap-3">
           <div className="flex justify-between items-center">
             <button
               onClick={selectAllUnregisteredInView}
-              className="text-xs font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1.5 hover:underline"
+              className="text-xs font-medium text-purple-700 dark:text-orange-300 flex items-center gap-1.5 hover:underline"
             >
               {unregisteredInView.length > 0 && unregisteredInView.every(c => selectedForMassAction.has(c.id)) ? (
                 <CheckSquare size={14} />
@@ -222,7 +222,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
               )}
               Selecionar visíveis ({unregisteredInView.length})
             </button>
-            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+            <span className="text-xs font-semibold text-purple-700 dark:text-orange-300">
               {selectedForMassAction.size} selecionados
             </span>
           </div>
@@ -231,7 +231,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
             onClick={handleMassRegisterClick}
             disabled={selectedForMassAction.size === 0}
             className={`w-full text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-2 ${selectedForMassAction.size > 0
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow'
+              ? 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-orange-600 dark:hover:bg-orange-700 shadow-sm hover:shadow'
               : 'bg-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600'
               }`}
           >
@@ -277,8 +277,8 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                       <div
                         onClick={(e) => toggleChatSelection(e, chat.id)}
                         className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-zinc-300 dark:border-zinc-600 hover:border-blue-400'
+                          ? 'bg-purple-600 border-purple-600 dark:bg-orange-600 dark:border-orange-600 text-white'
+                          : 'border-zinc-300 dark:border-zinc-600 hover:border-purple-400 dark:hover:border-orange-400'
                           }`}
                       >
                         {isSelected && <CheckSquare size={14} />}
@@ -342,7 +342,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                       <div className="mt-2 flex justify-start gap-1 flex-wrap">
                         <button
                           onClick={(e) => { e.stopPropagation(); onViewLead(chat); }}
-                          className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-md hover:bg-blue-100 dark:hover:bg-blue-300/10 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 transition-colors font-medium"
+                          className="flex items-center gap-1 text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1 rounded-md hover:bg-purple-100 dark:hover:bg-orange-300/10 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800 transition-colors font-medium"
                           title="Ver detalhes"
                         >
                           <ExternalLink size={12} />
@@ -374,7 +374,7 @@ export function ChatSidebar({ chats, selectedChatId, onSelectChat, loading, onRe
                       <div className="mt-2 flex gap-2 justify-start flex-wrap">
                         <button
                           onClick={(e) => { e.stopPropagation(); onRegister(chat); }}
-                          className="flex items-center gap-1 text-[10px] bg-green-50 text-green-700 border border-blue-200 px-2 py-1 rounded-md hover:bg-green-100 dark:hover:bg-orange-300/10 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800 transition-colors font-medium"
+                          className="flex items-center gap-1 text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-md hover:bg-green-100 dark:hover:bg-orange-300/10 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800 transition-colors font-medium"
                           title="Apenas cadastrar"
                         >
                           <UserPlus size={12} />

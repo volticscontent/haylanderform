@@ -223,7 +223,7 @@ export function ChatWindow({
             Online
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <div className="w-2 h-2 rounded-full bg-purple-500"></div>
             Sincronizado
           </div>
         </div>
@@ -261,7 +261,7 @@ export function ChatWindow({
             </h2>
             {chat.isRegistered && chat.leadStatus && (
               <div className="flex flex-col items-start gap-1">
-                <span className="text-[10px] bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-1 rounded border border-indigo-200 dark:border-indigo-800 font-medium">
+                <span className="text-[10px] bg-purple-50 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300 px-1 rounded border border-purple-200 dark:border-orange-800 font-medium">
                   {chat.leadStatus === 'qualificado' && chat.leadDataReuniao
                     ? 'CALL'
                     : chat.leadStatus.replace(/_/g, ' ').toUpperCase()}
@@ -290,7 +290,7 @@ export function ChatWindow({
             onViewLeadSheet && (
               <button
                 onClick={() => onViewLeadSheet(chat)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-md text-xs font-medium transition-colors border border-indigo-200 dark:border-indigo-800 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 text-purple-600 dark:text-orange-400 rounded-md text-xs font-medium transition-colors border border-purple-200 dark:border-orange-800 whitespace-nowrap"
               >
                 <FileText size={14} />
                 <span className="hidden sm:inline">Ver Ficha</span>

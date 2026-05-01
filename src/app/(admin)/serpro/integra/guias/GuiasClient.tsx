@@ -60,7 +60,7 @@ function GuiaRow({ g }: { g: IntegraGuia }) {
             onClick={handleDownload}
             disabled={pending}
             title="Baixar PDF"
-            className="p-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-indigo-600 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-purple-600 dark:hover:text-orange-500 transition-colors disabled:opacity-50"
           >
             {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           </button>
@@ -84,7 +84,7 @@ export default function GuiasClient({ guias }: { guias: IntegraGuia[] }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-6 h-6 text-indigo-600" /> Guias
+            <FileText className="w-6 h-6 text-purple-600 dark:text-orange-500" /> Guias
           </h1>
           <p className="text-sm text-zinc-500 mt-1">
             {guias.length} registradas · {pendentes} pendentes

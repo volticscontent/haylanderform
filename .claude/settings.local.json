@@ -106,7 +106,12 @@
       "Bash(curl -s --max-time 30 -X POST \"http://localhost:3001/api/serpro\" -H \"Content-Type: application/json\" -d '{\"cnpj\":\"37418796000107\",\"service\":\"CAIXA_POSTAL\"}')",
       "Bash(curl -s http://127.0.0.1:3001/serpro/health)",
       "Bash(curl *)",
-      "Bash(python -m json.tool)"
+      "Bash(python -m json.tool)",
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" diff --stat HEAD)",
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" status --short)",
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform/bot-backend\" status --short)",
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform/bot-backend\" log --oneline -3)",
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" log --oneline -3)"
     ]
   }
 }
