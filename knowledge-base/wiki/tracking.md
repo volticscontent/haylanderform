@@ -2,7 +2,7 @@
 title: Canvas de Acompanhamento (Tracking)
 type: tracking
 tags: [kanban, roadmap, status]
-updated: 2026-04-26
+updated: 2026-05-06
 ---
 
 # Canvas de Acompanhamento (Tracking)
@@ -29,6 +29,7 @@ Este documento atua como o nosso "Kanban" e mapa principal das documentações, 
 
 ## ✅ DONE (Documentado Recentemente)
 
+- [x] **Fix: Falso Negativo PGMEI/PGFN (2026-05-06):** Bot informava "sem dívidas" para CNPJs com débitos reais. Root cause: DIVIDAATIVA24 v2.4 retorna PDF base64 em `dados` em vez de JSON. Fix: `parseSerproData()` async com `pdf-parse` extrai texto + `detectarDebitosNoPdf()` analisa palavras-chave. Prompt reforçado com regra explícita de "nunca diga sem dívidas sem confirmação". Documentado em `integrations/serpro.md` (armadilha #6) e `log.md`.
 - [x] **Serpro Camada 2 — Apolo (2026-04-26):** 4 novas tools (`consultar_ccmei_serpro`, `consultar_cnd_serpro`, `consultar_caixa_postal_serpro`, `consultar_situacao_fiscal_serpro` corrigida). CPF auto-resolution via `resolveEmpresarioCpf()`. ADR-0005.
 - [x] **Jornada Comercial Corrigida (2026-04-26):** Opção B reescrita como coleta in-chat (sem formulário externo). `iniciar_coleta_situacao_whatsapp` adicionado. Reunião disparada proativamente após coleta. Duplicate tools removidas. ADR-0006.
 - [x] **Integridade de Dados & Serpro Bugs (2026-04-23):** 3 migrations SQL, fix 4 bugs críticos serpro.ts, redesign tabela Empresas Integra. ADR-0003b, ADR-0004b.
