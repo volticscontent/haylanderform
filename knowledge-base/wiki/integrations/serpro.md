@@ -168,3 +168,14 @@ Se quase todos os serviços falham para um CNPJ, verificar:
 1. `leads_processo.procuracao_ativa` no banco
 2. Chamar serviço `PROCURACAO` para confirmar e-CAC
 3. Certificado `.pfx` válido e `CONTRATANTE_CNPJ` correto
+
+### 6. DIVIDAATIVA24 v2.4 retorna PDF em vez de JSON (bug corrigido 2026-05-06)
+O campo `dados` pode ser um PDF em base64 em vez de JSON estruturado. Isso ocorre para CNPJs com débitos em algumas versões do serviço. A IA recebia a string base64 como opaca e concluía "sem dívidas" (falso negativo crítico).
+
+**Solução implementada em `workflow-regularizacao.ts`:**
+- `parseSerproData()` tenta `JSON.parse(dados)` primeiro
+- Se falhar → `pdf-parse` extrai o texto do PDF base64
+- `detectarDebitosNoPdf()` detecta palavras-chave de dívida no texto extraído
+- IA recebe `tem_debitos_detectado: true/false/null` + `texto_pdf` legível
+
+**Regra no prompt:** IA só afirma "sem dívidas" com `tem_debitos_detectado === false` explícito em PGMEI e PGFN.

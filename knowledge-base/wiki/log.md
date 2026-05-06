@@ -6,6 +6,27 @@ type: log
 
 # Log Operacional
 
+## 2026-05-06 — Fix: Falso Negativo de Dívidas no PGMEI/PGFN
+
+### Problema identificado (produção)
+CNPJ 23950473000155 reportado pelo cliente Haylander: bot informava "sem dívidas" mesmo com dívida ativa na PGFN e guias em aberto no PGMEI.
+
+**Root cause:** O serviço DIVIDAATIVA24 (v2.4) da Serpro pode retornar o campo `dados` como PDF em base64 em vez de JSON estruturado. A tool `consultar_pgmei_serpro` devolvia o envelope bruto para a IA — que via `dados: "<base64>"` (string opaca) e `documentos: []` e concluía erroneamente "sem dívidas".
+
+### Correções aplicadas
+- `workflow-regularizacao.ts`: nova função async `parseSerproData()` que tenta `JSON.parse(dados)` e, em caso de falha, passa o base64 pelo `pdf-parse` para extrair texto legível
+- `extractPdfText()`: decodifica base64 → Buffer → pdf-parse → texto
+- `detectarDebitosNoPdf()`: lista de palavras-chave PT-BR para PGMEI/PGFN (DEVEDOR, GUIA EM ABERTO, DÍVIDA ATIVA, etc.)
+- Cobre também PDFs em `env.documentos[].conteudo`
+- Prompt `REGULARIZACAO_RULES` reforçado: IA só pode dizer "sem dívidas" com `tem_debitos_detectado === false` explícito em PGMEI e PGFN
+
+### Decisões tomadas
+- `pdf-parse` já estava instalado no projeto — nenhuma dependência nova
+- Regra conservadora: se inconclusivo (`null`) → IA diz "não foi possível confirmar", nunca "sem dívidas"
+- `texto_pdf` limitado a 800 chars para não estourar contexto da IA
+
+---
+
 ## 2026-04-29 — Auditoria e Reforma do Agente Apolo
 
 ### Problemas identificados
