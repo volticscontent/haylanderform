@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyAdminSession } from '@/lib/dashboard-auth';
-import { Client } from 'pg';
+import { backendPut } from '@/lib/backend-proxy';
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -11,20 +11,11 @@ export async function POST(req: Request) {
   const { phone, data_reuniao } = await req.json();
   if (!phone || !data_reuniao) return NextResponse.json({ error: 'phone e data_reuniao obrigatórios' }, { status: 400 });
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
   try {
-    await client.connect();
-    await client.query(
-      `UPDATE leads_vendas lv
-       SET data_reuniao = $1, reuniao_agendada = TRUE, updated_at = NOW()
-       FROM leads l
-       WHERE lv.lead_id = l.id AND l.telefone = $2`,
-      [data_reuniao, phone]
-    );
+    const res = await backendPut(`/api/leads/user/${encodeURIComponent(phone)}`, { data_reuniao });
+    if (!res.ok) return NextResponse.json({ error: `Backend ${res.status}` }, { status: res.status });
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
-  } finally {
-    await client.end();
   }
 }

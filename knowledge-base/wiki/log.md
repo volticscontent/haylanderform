@@ -6,6 +6,73 @@ type: log
 
 # Log Operacional
 
+## [2026-05-15 12:33] [FIX] Frontend Serpro usa apenas PGFN_API para Dívida Ativa.
+- Files affected: [[serpro]]
+- Context: Removidos aliases visuais `DIVIDA_ATIVA`/`PGFN_CONSULTAR`, rota admin passa a chamar API PGFN avulsa e payloads básicos de Caixa Postal/DCTFWeb foram ajustados após auditoria de 3 CNPJs.
+
+## [2026-05-15 09:53] [FIX] PGFN separada do Integra Contador com token próprio.
+- Files affected: [[serpro]]
+- Context: Criado cliente `bot-backend/src/lib/pgfn.ts`, adicionadas variáveis `PGFN_*` no `.env` e fluxo do Apolo passa a consultar Dívida Ativa pela API avulsa da Serpro.
+
+## [2026-05-13 10:57] [TASK] Documentado decisão arquitetural sobre uso da Brasil API
+- Files affected: [[brasil-api]]
+- Context: Explicitação da Brasil API como motor oficial para consultas públicas simples, reservando Serpro para dados fiscais sensíveis autenticados (redução de custos e rate limits).
+
+## [2026-05-09 20:26] [TASK] Estudo técnico da PGFN consolidado na integração Serpro.
+- Files affected: [[serpro]], [[log]]
+- Context: Documentado diagnóstico de PGFN (fluxo Camada 1/2, alias operacional, riscos multi-empresa e recomendações de hardening) com foco em operação real do bot e painel admin.
+
+## 2026-05-09 — Implementação P0/P1 + BUG-4 + Fix Serpro Timeout
+
+**P0 bugs corrigidos (workflow-regularizacao.ts):**
+- BUG-1: `consultar_divida_ativa_serpro` agora passa envelope por `parseSerproData()` — PDFs de DIVIDA_ATIVA via Camada 2 detectados corretamente
+- BUG-2: `verificar_serpro_pos_ecac` usa `SELECT cnpj_ativo, cnpj FROM leads WHERE id = $1` — elimina risco multi-empresa
+- BUG-3: Truncamento `detectarDebitosNoPdf` aumentado 800→2500 chars
+- BUG-5: `ADMIN_PHONES` sem fallback hardcoded com números reais
+
+**Fix serpro.ts:**
+- `req.on('timeout', ...)` adicionado — destrói socket com `req.destroy()`, rejeitando a Promise corretamente. Antes o socket ficava pendurado silenciosamente após 30s.
+
+**Fix carteira/page.tsx:**
+- `fetchCarteira` tem catch + banner de erro visível na UI
+- `toggleProcuracao` mostra alert em vez de apenas logar no console
+
+**P1 gaps de comportamento (prompts):**
+- GAP-1: `update_user` obrigatório após resultado Serpro — adicionado em REGULARIZACAO_RULES
+- GAP-2: Seção COLETA MANDATÓRIA adicionada em COMERCIAL_RULES
+- GAP-3: Gate `is_mei` antes de Camada 1 — adicionado em REGULARIZACAO_RULES
+- GAP-4: Seção "Cliente Retornante" adicionada em BASE_PROMPT
+- GAP-5: Template WhatsApp para resultado Serpro (COM_DEBITO / SEM_DEBITO / INCONCLUSIVO) adicionado em REGULARIZACAO_RULES
+
+**BUG-4 implementado (cron/index.ts):**
+- Cron job #8 (a cada hora): detecta leads com tutorial e-CAC enviado há >24h sem procuração confirmada → marca `red_flag` + notifica Haylander. Redis TTL 7d evita notificações duplicadas.
+
+---
+
+## 2026-05-09 — Auditoria Completa Agente Apolo (ADR-014)
+
+Auditoria de comportamento, gaps Serpro, formatação, vendas, pipelines e alinhamento canvas.
+
+**Bugs críticos identificados:**
+- BUG-1: `consultar_divida_ativa_serpro` (Camada 2) não usa `parseSerproData` — falso negativo ainda possível via Camada 2
+- BUG-2: `verificar_serpro_pos_ecac` usa `p.cnpj` do contexto em vez de `cnpj_ativo` do banco — multi-empresa errado
+- BUG-3: `detectarDebitosNoPdf` trunca em 800 chars — débitos depois desse ponto invisíveis
+- BUG-4: Red flag 24h silêncio sem automação — agente não detecta ausência de mensagem
+
+**Gaps de comportamento:**
+- update_user não instruído após resultado Serpro (DB não atualizado)
+- coleta_mand ausente em COMERCIAL_RULES (só existe em REGULARIZACAO_RULES)
+- sem validação `is_mei` antes de Camada 1
+- sem template explícito de formatação de resultado Serpro no WhatsApp
+
+**KB enriquecida:**
+- ADR-014 criado em `decisions/`
+- `wiki/metrics/apolo-benchmarks.md` criado (KPIs, benchmarks, padrões)
+- `integrations/serpro.md` atualizado com 2 novos gaps e armadilhas 7 e 8
+- `index.md` atualizado com seção Métricas e ADR-014
+
+---
+
 ## 2026-05-06 — Fix: Falso Negativo de Dívidas no PGMEI/PGFN
 
 ### Problema identificado (produção)
@@ -61,3 +128,8 @@ CNPJ 23950473000155 reportado pelo cliente Haylander: bot informava "sem dívida
 - Red-flags disparam notificação imediata ao Haylander via `callAttendant`
 - Auto-preenchimento da ficha via BrasilAPI é silencioso (sem precisar que o bot chame `update_user` manualmente)
 - Nutrição automatizada de leads desqualificados é escopo futuro (BullMQ campaign)
+
+## [2026-05-15 12:08] [TASK] Padronização v2.0 aplicada sem perda de contexto.
+- Files affected: [[CLAUDE]], [[index]], [[tracking]]
+- Context: Vault histórico Haylander/ copiado para knowledge-base/, commands e skill memory instalados; vault original preservado intacto.
+

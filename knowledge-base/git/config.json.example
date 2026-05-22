@@ -1,0 +1,5 @@
+{
+  "remote": "https://github.com/<usuário>/<repo>",
+  "branch": "main",
+  "path": "."
+}

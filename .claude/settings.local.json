@@ -111,7 +111,24 @@
       "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" status --short)",
       "Bash(git -C \"d:/Códigos/Haylander/haylanderform/bot-backend\" status --short)",
       "Bash(git -C \"d:/Códigos/Haylander/haylanderform/bot-backend\" log --oneline -3)",
-      "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" log --oneline -3)"
+      "Bash(git -C \"d:/Códigos/Haylander/haylanderform\" log --oneline -3)",
+      "Bash(npx tsx *)",
+      "Bash(npm list *)",
+      "Bash(git filter-repo *)",
+      "Bash(git filter-branch *)",
+      "Bash(git stash *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \"git rm --cached --ignore-unmatch docs/advertising.mp4 docs/unboxing_1.mp4\" --prune-empty --tag-name-filter cat -- --all)",
+      "Bash(git reflog *)",
+      "Bash(git gc *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Códigos\\\\Tzolkin\\\\Portifolio\\\\Haylander\\\\haylanderform\\\\bot-backend\\\\src\" -Recurse -Name)",
+      "Bash(findstr /C:\"PHONE_WHITELIST\" .env)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Códigos\\\\Tzolkin\\\\Portifolio\\\\Haylander\\\\haylanderform\\\\bot-backend\" -Recurse -Filter \"*serpro*\")",
+      "Bash(Select-Object FullName)",
+      "WebFetch(domain:www.loja.serpro.gov.br)",
+      "WebFetch(domain:www.blog.sci.com.br)",
+      "WebFetch(domain:suporte.dominioatendimento.com)",
+      "WebFetch(domain:centraldeajuda.serpro.gov.br)",
+      "Bash(dir D:\\\\Códigos\\\\Tzolkin\\\\Portifolio\\\\Haylander\\\\haylanderform\\\\knowledge-base\\\\wiki *)"
     ]
   }
 }

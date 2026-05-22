@@ -4,6 +4,7 @@ export type LeadRecord = {
   nome_completo: string | null
   razao_social: string | null
   cnpj: string | null
+  empresas: { cnpj: string; tipo: 'proprietario' | 'socio' | 'representante'; razao_social?: string; procuracao_ativa?: boolean }[] | null
   email: string | null
   observacoes: string | null
   calculo_parcelamento: string | null

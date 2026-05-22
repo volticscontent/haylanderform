@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { X, Search, FileText, Bot, User } from 'lucide-react';
 import { DataViewer } from './DataViewer';
+import { PgfnResultCard, hasPgfnResumo } from './PgfnResultCard';
 
 interface Consultation {
   id: number;
@@ -151,7 +152,11 @@ export default function ConsultationHistoryModal({
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 rounded-lg px-2 border border-zinc-200 dark:border-zinc-800">
+                {hasPgfnResumo(selectedConsultation.resultado) && (
+                  <PgfnResultCard data={selectedConsultation.resultado} />
+                )}
+
+                <div className="">
                    <DataViewer data={selectedConsultation.resultado} />
                 </div>
 

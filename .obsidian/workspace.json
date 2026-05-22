@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "7d7e5df0158220b0",
+        "id": "8341a95307f27e34",
         "type": "tabs",
         "children": [
           {
-            "id": "113625281f19b704",
+            "id": "785b05adeb3fcba9",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Visualização em gráfico"
+              "type": "markdown",
+              "state": {
+                "file": "services.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "services"
             }
           }
         ]
@@ -29,6 +33,7 @@
       {
         "id": "57d1137510964ac2",
         "type": "tabs",
+        "dimension": 63.35583413693346,
         "children": [
           {
             "id": "101f5c1ca1c80124",
@@ -71,10 +76,27 @@
             }
           }
         ]
+      },
+      {
+        "id": "cd880c9434e8e79e",
+        "type": "tabs",
+        "dimension": 36.64416586306653,
+        "children": [
+          {
+            "id": "113625281f19b704",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização em gráfico"
+            }
+          }
+        ]
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 455.5
   },
   "right": {
     "id": "14be5df30e6b2bdc",
@@ -171,38 +193,55 @@
   "left-ribbon": {
     "hiddenItems": {
       "switcher:Abrir a troca rápida": false,
-      "graph:Abrir visualização em gráfico": false,
       "canvas:Criar novo canvas": false,
       "daily-notes:Abrir a nota de hoje": false,
       "templates:Inserir modelo": false,
       "command-palette:Abrir paleta de comandos": false,
-      "bases:Criar nova base": false
+      "bases:Criar nova base": false,
+      "graph:Abrir visualização em gráfico": false
     }
   },
-  "active": "113625281f19b704",
+  "active": "785b05adeb3fcba9",
   "lastOpenFiles": [
-    "knowledge-base/wiki/tracking.canvas",
-    "knowledge-base/wiki/decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md",
-    "knowledge-base/wiki/tracking.md",
-    "knowledge-base/wiki/features/empresa-bot-registration.md",
-    "src/app/(admin)/serpro/integra/empresas/EmpresasClient.tsx.tmp.19360.1776849810941",
-    "src/app/(admin)/serpro/integra/empresas/page.tsx.tmp.19360.1776849752120",
-    "src/app/(admin)/serpro/integra/empresas/actions.ts.tmp.19360.1776849747850",
-    "src/app/(admin)/serpro/integra/empresas/actions.ts.tmp.19360.1776849742018",
-    "bot-backend/src/routes/integra/empresas.ts.tmp.19360.1776849709121",
-    "knowledge-base/wiki/workflows/lead-qualification.md",
-    "bot-backend/src/index.ts.tmp.19360.1776849140058",
-    "knowledge-base/wiki/index.md.tmp.19360.1776848884436",
-    "knowledge-base/wiki/log.md.tmp.19360.1776848871302",
-    "knowledge-base/wiki/decisions/ADR-0002-serpro-clients-interface.md",
-    "knowledge-base/wiki/decisions/ADR-0002-serpro-clients-interface.md.tmp.19360.1776848838975",
-    "knowledge-base/wiki/decisions/ADR-0001-serpro-integra-bugs.md",
-    "knowledge-base/wiki/decisions/ADR-0001-serpro-integra-bugs.md.tmp.19360.1776848819569",
+    "integra.md",
     "CLAUDE.md",
+    "tmp/serpro/sitfis-45723564000190-1776311472926.pdf",
+    "knowledge-base/wiki/decisions/ADR-015-multi-empresa-pgfn-array-fix.md",
+    "knowledge-base/wiki/decisions/ADR-014-apolo-agent-audit-2026-05.md",
+    "knowledge-base/wiki/tracking.canvas",
+    "docs/serpro-audit-2026-04-19.md",
+    "knowledge-base/wiki/architecture/queues.md",
+    "knowledge-base/wiki/tracking.md",
+    "knowledge-base/wiki/index.md.tmp.1500.0c2552857dab",
+    "knowledge-base/wiki/tracking.canvas.tmp.1500.85a7d3e682da",
+    "knowledge-base/wiki/decisions/ADR-015-multi-empresa-pgfn-array-fix.md.tmp.1500.cc13654a6c08",
+    "bot-backend/src/ai/agents/apolo/workflow-regularizacao.ts.tmp.1500.9ad43ecdefcd",
+    "bot-backend/src/scripts/test-serpro-pgfn.ts",
+    "bot-backend/src/scripts/test-serpro-pgfn.ts.tmp.1500.9c8eff92637c",
+    "knowledge-base/wiki/index.md",
+    "bot-backend/src/ai/agents/apolo/workflow-regularizacao.ts.tmp.1500.cbc231baa899",
+    "knowledge-base/wiki/apolo-flow.canvas",
+    "bot-backend/src/ai/agents/apolo/prompt.ts.tmp.1500.345268750802",
+    "bot-backend/src/routes/serpro-api.ts.tmp.1500.668ecac127be",
+    "knowledge-base/wiki/apolo-audit-2026-05.canvas",
+    "knowledge-base/raw/docs/Respostas.md",
+    "knowledge-base/raw/docs/l.md",
+    "knowledge-base/raw/docs/prompt.audit.md",
+    "knowledge-base/raw/docs/database.manager.md",
+    "knowledge-base/raw/docs/Karpathy.obsidian.md",
+    "knowledge-base/raw/docs/audit.apolo.md",
+    "knowledge-base/wiki/metrics/apolo-benchmarks.md",
+    "audit.apolo.md",
+    "context.apriori.md",
+    "image.png",
+    "l.md",
+    "knowledge-base/wiki/decisions/ADR-0003-serpro-sitfis-pgmei-bugs.md",
+    "knowledge-base/wiki/features/empresa-bot-registration.md",
+    "knowledge-base/wiki/workflows/lead-qualification.md",
+    "knowledge-base/wiki/decisions/ADR-0002-serpro-clients-interface.md",
+    "knowledge-base/wiki/decisions/ADR-0001-serpro-integra-bugs.md",
     "Karpathy.obsidian.md",
     "knowledge-base/wiki/decisions/ADR-002-gpt4o-mini.md",
-    "knowledge-base/wiki/integrations/evolution-api.md",
-    "knowledge-base/wiki/integrations/redis.md",
-    "knowledge-base/wiki/decisions/ADR-001-bff-pattern.md"
+    "knowledge-base/wiki/integrations/evolution-api.md"
   ]
 }

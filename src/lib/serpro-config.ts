@@ -159,15 +159,15 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Emissão de DAS de Parcelamento Simples Nacional.',
     finalidade: 'Gerar guia de pagamento de parcela SN.',
   },
-  DIVIDA_ATIVA: {
-    env_sistema: 'INTEGRA_DIVIDA_ATIVA_ID_SISTEMA',
-    env_servico: 'INTEGRA_DIVIDA_ATIVA_ID_SERVICO',
-    default_sistema: 'PGMEI',
-    default_servico: 'DIVIDAATIVA24',
-    versaoSistema: '2.4',
+  PGFN_API: {
+    env_sistema: 'PGFN_CLIENT_ID',
+    env_servico: 'PGFN_CLIENT_SECRET',
+    default_sistema: 'consulta-divida-ativa-df',
+    default_servico: 'devedor',
     tipo: 'Consultar',
-    descricao: 'Consulta de Dívida Ativa da União.',
-    finalidade: 'Verificar inscrições em dívida ativa federal.',
+    descricao: 'Consulta Dívida Ativa PGFN por API avulsa.',
+    uso: 'Requer CNPJ. Usa token próprio da API Consulta Dívida Ativa.',
+    finalidade: 'Verificar inscrições, valores consolidados e situação na Dívida Ativa da União.',
   },
   CND: {
     env_sistema: 'INTEGRA_CND_ID_SISTEMA',
@@ -215,13 +215,5 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta de Procurações Eletrônicas.',
     finalidade: 'Verificar poderes do contador no e-CAC.',
-  },
-  PGFN_CONSULTAR: {
-    env_sistema: 'INTEGRA_PGFN_ID_SISTEMA',
-    env_servico: 'INTEGRA_PGFN_CONSULTA_ID_SERVICO',
-    default_sistema: 'PGMEI',
-    default_servico: 'DIVIDAATIVA24',
-    tipo: 'Consultar',
-    descricao: 'Consulta de débitos em Dívida Ativa da União (MEI). Para geral, use SITFIS.',
   },
 };

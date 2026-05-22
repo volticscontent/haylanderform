@@ -91,8 +91,14 @@ export default function EmpresasClient({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm());
   const [error, setError] = useState('');
+  const [pageError, setPageError] = useState('');
   const [importSearch, setImportSearch] = useState('');
   const [importSelected, setImportSelected] = useState<Set<number>>(new Set());
+  const [search, setSearch] = useState('');
+  const [regimeFilter, setRegimeFilter] = useState('todos');
+  const [ativoFilter, setAtivoFilter] = useState('todos');
+  const [certFilter, setCertFilter] = useState('todos');
+  const [serviceFilter, setServiceFilter] = useState('todos');
   const [isPending, startTransition] = useTransition();
 
   function openCreate() {
@@ -129,14 +135,35 @@ export default function EmpresasClient({
   }
 
   function handleSubmit() {
-    if (!form.cnpj || !form.razao_social) { setError('CNPJ e Razão Social são obrigatórios'); return; }
+    if (!form.razao_social) { setError('Razão Social é obrigatória'); return; }
+    if (!editingId) {
+      const cleanCnpj = form.cnpj.replace(/\D/g, '');
+      if (cleanCnpj.length !== 14) { setError('CNPJ inválido. Informe 14 dígitos.'); return; }
+    }
     startTransition(async () => {
       if (editingId) {
-        const res = await atualizarEmpresa(editingId, form);
+        const payload = {
+          razao_social: form.razao_social,
+          regime_tributario: form.regime_tributario,
+          servicos_habilitados: form.servicos_habilitados,
+          certificado_validade: form.certificado_validade || null,
+          observacoes: form.observacoes || null,
+        };
+        const res = await atualizarEmpresa(editingId, payload);
         if (!res.ok) { setError(res.data?.error ?? 'Erro ao atualizar'); return; }
-        setEmpresas(prev => prev.map(e => e.id === editingId ? { ...e, ...form } : e));
+        setEmpresas(prev => prev.map(e => e.id === editingId ? {
+          ...e,
+          ...payload,
+          certificado_validade: payload.certificado_validade,
+          observacoes: payload.observacoes,
+        } : e));
       } else {
-        const res = await criarEmpresa(form);
+        const res = await criarEmpresa({
+          ...form,
+          cnpj: form.cnpj.replace(/\D/g, ''),
+          certificado_validade: form.certificado_validade || undefined,
+          observacoes: form.observacoes || undefined,
+        });
         if (!res.ok) { setError(res.data?.error ?? 'Erro ao criar'); return; }
         setEmpresas(prev => [...prev, res.data]);
       }
@@ -146,7 +173,12 @@ export default function EmpresasClient({
 
   function handleToggle(id: number, ativo: boolean) {
     startTransition(async () => {
-      await toggleAtivo(id, !ativo);
+      setPageError('');
+      const res = await toggleAtivo(id, !ativo);
+      if (!res.ok) {
+        setPageError(res.data?.error ?? 'Não foi possível atualizar o status da empresa.');
+        return;
+      }
       setEmpresas(prev => prev.map(e => e.id === id ? { ...e, ativo: !ativo } : e));
     });
   }
@@ -154,7 +186,12 @@ export default function EmpresasClient({
   function handleDelete(id: number) {
     if (!confirm('Excluir esta empresa do Integra?')) return;
     startTransition(async () => {
-      await excluirEmpresa(id);
+      setPageError('');
+      const res = await excluirEmpresa(id);
+      if (!res.ok) {
+        setPageError('Não foi possível excluir a empresa. Tente novamente.');
+        return;
+      }
       setEmpresas(prev => prev.filter(e => e.id !== id));
     });
   }
@@ -181,6 +218,24 @@ export default function EmpresasClient({
   const certVencendo = (val: string | null) =>
     !!val && !!now && (new Date(val).getTime() - now) < 30 * 24 * 60 * 60 * 1000;
 
+  const empresasFiltradas = empresas
+    .filter((e) => {
+      const needle = search.trim().toLowerCase();
+      const cnpjDigits = search.replace(/\D/g, '');
+      const bySearch = !needle
+        || e.razao_social.toLowerCase().includes(needle)
+        || (e.lead_nome || '').toLowerCase().includes(needle)
+        || e.cnpj.includes(cnpjDigits);
+      const byRegime = regimeFilter === 'todos' || e.regime_tributario === regimeFilter;
+      const byAtivo = ativoFilter === 'todos' || (ativoFilter === 'ativo' ? e.ativo : !e.ativo);
+      const byCert = certFilter === 'todos'
+        || (certFilter === 'vencendo' && certVencendo(e.certificado_validade))
+        || (certFilter === 'sem_cert' && !e.certificado_validade);
+      const byService = serviceFilter === 'todos' || (e.servicos_habilitados ?? []).includes(serviceFilter);
+      return bySearch && byRegime && byAtivo && byCert && byService;
+    })
+    .sort((a, b) => a.razao_social.localeCompare(b.razao_social, 'pt-BR'));
+
   const leadsVisiveis = leadsDisponiveis.filter(l =>
     l.nome_completo.toLowerCase().includes(importSearch.toLowerCase()) ||
     l.cnpj.includes(importSearch.replace(/\D/g, ''))
@@ -192,7 +247,9 @@ export default function EmpresasClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Empresas — Integra Contador</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{empresas.length} empresa{empresas.length !== 1 ? 's' : ''} cadastrada{empresas.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            {empresasFiltradas.length} de {empresas.length} empresa{empresas.length !== 1 ? 's' : ''} exibida{empresasFiltradas.length !== 1 ? 's' : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           {leadsDisponiveis.length > 0 && (
@@ -207,6 +264,54 @@ export default function EmpresasClient({
             + Nova Empresa
           </button>
         </div>
+      </div>
+
+      {pageError && (
+        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+          {pageError}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar empresa, lead ou CNPJ..."
+          className={`${inputCls} md:col-span-2`}
+        />
+        <select value={regimeFilter} onChange={(e) => setRegimeFilter(e.target.value)} className={inputCls}>
+          <option value="todos">Todos regimes</option>
+          {REGIMES.map((r) => <option key={r} value={r}>{r.toUpperCase()}</option>)}
+        </select>
+        <select value={ativoFilter} onChange={(e) => setAtivoFilter(e.target.value)} className={inputCls}>
+          <option value="todos">Ativas + inativas</option>
+          <option value="ativo">Somente ativas</option>
+          <option value="inativo">Somente inativas</option>
+        </select>
+        <select value={certFilter} onChange={(e) => setCertFilter(e.target.value)} className={inputCls}>
+          <option value="todos">Todos certificados</option>
+          <option value="vencendo">Vencendo 30 dias</option>
+          <option value="sem_cert">Sem certificado</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <select value={serviceFilter} onChange={(e) => setServiceFilter(e.target.value)} className={inputCls}>
+          <option value="todos">Todos serviços habilitados</option>
+          {SERVICOS_DISPONIVEIS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <button
+          onClick={() => {
+            setSearch('');
+            setRegimeFilter('todos');
+            setAtivoFilter('todos');
+            setCertFilter('todos');
+            setServiceFilter('todos');
+          }}
+          className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
+        >
+          Limpar filtros
+        </button>
       </div>
 
       {/* Table */}
@@ -224,13 +329,13 @@ export default function EmpresasClient({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {empresas.length === 0 && (
+            {empresasFiltradas.length === 0 && (
               <tr>
                 <td colSpan={7} className="text-center py-16 text-slate-400 dark:text-slate-500">
                   <div className="space-y-2">
-                    <div className="text-4xl">🏢</div>
-                    <div className="font-medium">Nenhuma empresa cadastrada</div>
-                    {leadsDisponiveis.length > 0 && (
+                    <div className="text-4xl">{empresas.length === 0 ? '🏢' : '🔎'}</div>
+                    <div className="font-medium">{empresas.length === 0 ? 'Nenhuma empresa cadastrada' : 'Nenhuma empresa encontrada com os filtros'}</div>
+                    {empresas.length === 0 && leadsDisponiveis.length > 0 && (
                       <button
                         onClick={() => { setShowImport(true); setImportSelected(new Set()); setImportSearch(''); }}
                         className="text-emerald-600 underline text-sm"
@@ -242,7 +347,7 @@ export default function EmpresasClient({
                 </td>
               </tr>
             )}
-            {empresas.map(e => (
+            {empresasFiltradas.map(e => (
               <tr key={e.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                 <td className="px-5 py-4">
                   <div className="font-semibold text-slate-800 dark:text-slate-100 leading-snug">{e.razao_social}</div>
@@ -404,8 +509,15 @@ export default function EmpresasClient({
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">CNPJ *</label>
-                <input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value.replace(/\D/g, '') }))}
-                  className={`${inputCls} font-mono`} placeholder="00000000000000" maxLength={14} />
+                <input
+                  value={form.cnpj}
+                  onChange={e => setForm(f => ({ ...f, cnpj: e.target.value.replace(/\D/g, '') }))}
+                  disabled={!!editingId}
+                  className={`${inputCls} font-mono ${editingId ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  placeholder="00000000000000"
+                  maxLength={14}
+                />
+                {editingId && <p className="text-[11px] text-slate-400 mt-1">CNPJ não pode ser alterado na edição.</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Regime Tributário</label>

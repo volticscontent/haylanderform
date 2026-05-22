@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DataViewer } from '@/components/serpro/DataViewer';
+import { PgfnResultCard, hasPgfnResumo } from '@/components/serpro/PgfnResultCard';
 import LastConsultedClients from '@/components/serpro/LastConsultedClients';
 import { SerproHealthMonitor } from '@/components/serpro/SerproHealthMonitor';
 import { SERVICE_CONFIG, ServiceConfigItem } from '@/lib/serpro-config';
@@ -35,11 +36,44 @@ export default function SerproPage() {
   const [sitfisPdfUrl, setSitfisPdfUrl] = useState<string | null>(null);
   const [sitfisProtocolo, setSitfisProtocolo] = useState('');
   const [sitfisTempoEspera, setSitfisTempoEspera] = useState<number | null>(null);
+  const [saveWarning, setSaveWarning] = useState('');
 
   const buildPdfBlobUrl = (base64: string): string => {
     const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
     const blob = new Blob([bytes], { type: 'application/pdf' });
     return URL.createObjectURL(blob);
+  };
+
+  const extractPdfBase64 = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== 'object') return null;
+    const obj = payload as Record<string, unknown>;
+    if (typeof obj.pdf === 'string' && obj.pdf.trim().length > 100) return obj.pdf.trim();
+    const rawDados = obj.dados;
+    const dados = typeof rawDados === 'string'
+      ? (() => {
+          try { return JSON.parse(rawDados) as Record<string, unknown>; } catch { return null; }
+        })()
+      : (rawDados && typeof rawDados === 'object' ? rawDados as Record<string, unknown> : null);
+    if (dados && typeof dados.pdf === 'string' && dados.pdf.trim().length > 100) return dados.pdf.trim();
+    return null;
+  };
+
+  const extractProtocolo = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== 'object') return null;
+    const obj = payload as Record<string, unknown>;
+    const direct = obj.protocoloRelatorio ?? obj.protocolo ?? obj.numeroProtocolo;
+    if (typeof direct === 'string' && direct.trim()) return direct.trim();
+    const rawDados = obj.dados;
+    if (typeof rawDados === 'string') {
+      try {
+        const dados = JSON.parse(rawDados) as Record<string, unknown>;
+        const nested = dados.protocoloRelatorio ?? dados.protocolo ?? dados.numeroProtocolo;
+        if (typeof nested === 'string' && nested.trim()) return nested.trim();
+      } catch {
+        return null;
+      }
+    }
+    return null;
   };
 
   const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO'];
@@ -50,7 +84,7 @@ export default function SerproPage() {
     "Situação Fiscal & Certidões": ["SIT_FISCAL_SOLICITAR", "SIT_FISCAL_RELATORIO", "CND"],
     "Declarações (DASN, PGDAS, DCTFWeb)": ["DASN_SIMEI", "PGDASD", "DCTFWEB"],
     "Parcelamentos (MEI & SN)": ["PARCELAMENTO_MEI_CONSULTAR", "PARCELAMENTO_MEI_EMITIR", "PARCELAMENTO_SN_CONSULTAR", "PARCELAMENTO_SN_EMITIR"],
-    "Dívida Ativa (PGFN)": ["DIVIDA_ATIVA", "PGFN_CONSULTAR"],
+    "Dívida Ativa (PGFN)": ["PGFN_API"],
     "Mensagens e Processos": ["CAIXA_POSTAL", "PROCESSOS", "PAGAMENTO"],
   };
 
@@ -97,6 +131,7 @@ export default function SerproPage() {
     setLoading(true);
     setLoadingLabel('Consultando...');
     setError('');
+    setSaveWarning('');
     setResult(null);
     setSitfisPdfUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -123,8 +158,10 @@ export default function SerproPage() {
           dados: { pdf: '[base64 ocultado no frontend]' },
         });
 
-        savePdfToR2(pdfBase64, cnpj, protocolo, 'SIT_FISCAL_RELATORIO')
-          .catch(() => { /* falha silenciosa — PDF disponível via blob */ });
+        const saved = await savePdfToR2(pdfBase64, cnpj, protocolo, 'SIT_FISCAL_RELATORIO');
+        if (!saved.success) {
+          setSaveWarning('PDF gerado, mas não foi possível persistir no R2/Documentos. Tente novamente.');
+        }
 
         return;
       }
@@ -151,6 +188,15 @@ export default function SerproPage() {
       }
 
       setResult(data);
+
+      const pdfBase64 = extractPdfBase64(data);
+      if (pdfBase64) {
+        const protocolo = extractProtocolo(data) ?? `${service}-${Date.now()}`;
+        const saved = await savePdfToR2(pdfBase64, cnpj, protocolo, service);
+        if (!saved.success) {
+          setSaveWarning('Consulta concluída, mas o PDF não foi salvo no R2/Documentos.');
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Falha inesperada';
       setError(message);
@@ -395,6 +441,12 @@ export default function SerproPage() {
         </div>
       )}
 
+      {saveWarning && (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded-lg border border-amber-200 dark:border-amber-800">
+          {saveWarning}
+        </div>
+      )}
+
       {sitfisPdfUrl && (
         <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
           <div className="flex items-center justify-between gap-4">
@@ -428,9 +480,7 @@ export default function SerproPage() {
               key={key}
               onClick={() => setHistoryTab(key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${historyTab === key
-                ? key === 'test'
-                  ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                  : 'border-amber-500 text-amber-600 dark:text-amber-400'
+                ? 'border-purple-500 text-purple-600 dark:border-amber-400 dark:text-amber-400'
                 : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
                 }`}
             >
@@ -471,6 +521,96 @@ export default function SerproPage() {
                   </div>
                 </div>
               )}
+
+              {hasPgfnResumo(primaryData) && <PgfnResultCard data={primaryData} />}
+
+              {service === 'PGFN_API' && !hasPgfnResumo(primaryData) && (() => {
+                const rDados = (primaryData as Record<string, unknown>).dados;
+                const DEBITO_STATUS  = ['ENVIADO A PFN', 'DEVEDOR', 'INADIMPLENTE', 'PENDENTE', 'IRREGULAR', 'DEBITO'];
+                const REGULAR_STATUS = ['ADIMPLENTE', 'REGULAR', 'SEM_DEBITO', 'SEM DEBITO'];
+
+                let situacao: 'COM_DEBITO' | 'SEM_DEBITO' | 'INCONCLUSIVO' = 'INCONCLUSIVO';
+                let anosComDebito: number[] = [];
+                let anosInconclusivos: number[] = [];
+                let debitosCount = 0;
+                const hasPdf = extractPdfBase64(primaryData) !== null;
+
+                if (Array.isArray(rDados)) {
+                  let temDebito = false, temRegular = false;
+                  const byAno: Record<number, boolean | null> = {};
+                  for (const item of rDados as Array<Record<string, unknown>>) {
+                    const s = String(item.situacaoDebito ?? item.situacao ?? '').toUpperCase().trim();
+                    const itemAno = Number(item.anoCalendario ?? item.ano ?? 0);
+                    if (DEBITO_STATUS.some(d => s.includes(d))) {
+                      temDebito = true; debitosCount++;
+                      if (itemAno) byAno[itemAno] = true;
+                    } else if (REGULAR_STATUS.some(d => s.includes(d))) {
+                      temRegular = true;
+                      if (itemAno && byAno[itemAno] !== true) byAno[itemAno] = false;
+                    } else if (itemAno && byAno[itemAno] === undefined) {
+                      byAno[itemAno] = null;
+                    }
+                  }
+                  situacao = temDebito ? 'COM_DEBITO' : temRegular ? 'SEM_DEBITO' : 'INCONCLUSIVO';
+                  anosComDebito     = Object.entries(byAno).filter(([, v]) => v === true).map(([k]) => Number(k)).sort();
+                  anosInconclusivos = Object.entries(byAno).filter(([, v]) => v === null).map(([k]) => Number(k)).sort();
+                }
+
+                const badgeCls = situacao === 'COM_DEBITO'
+                  ? 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+                  : situacao === 'SEM_DEBITO'
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700'
+                  : 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700';
+
+                return (
+                  <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800">
+                    <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-4">Resultado PGFN — Dívida Ativa</p>
+                    <div className="flex flex-wrap items-start gap-6">
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Ano consultado</p>
+                        <p className="text-2xl font-mono font-bold text-zinc-900 dark:text-white">{ano}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Situação</p>
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold border ${badgeCls}`}>
+                          {situacao === 'COM_DEBITO' ? 'COM DÉBITO' : situacao === 'SEM_DEBITO' ? 'SEM DÉBITO' : 'INCONCLUSIVO'}
+                        </span>
+                      </div>
+                      {debitosCount > 0 && (
+                        <div>
+                          <p className="text-xs text-zinc-500 mb-1">Itens com débito</p>
+                          <p className="text-2xl font-bold text-red-600 dark:text-red-400">{debitosCount}</p>
+                        </div>
+                      )}
+                    </div>
+                    {(anosComDebito.length > 0 || anosInconclusivos.length > 0) && (
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        {anosComDebito.length > 0 && (
+                          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                            <p className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">Anos com débito</p>
+                            <p className="font-mono text-sm text-red-900 dark:text-red-300">{anosComDebito.join(', ')}</p>
+                          </div>
+                        )}
+                        {anosInconclusivos.length > 0 && (
+                          <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Anos inconclusivos</p>
+                            <p className="font-mono text-sm text-amber-900 dark:text-amber-300">{anosInconclusivos.join(', ')}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {hasPdf && (
+                      <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 w-fit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">Resultado em PDF — use o DataViewer abaixo para baixar</span>
+                      </div>
+                    )}
+                    {situacao === 'INCONCLUSIVO' && !hasPdf && !Array.isArray(rDados) && (
+                      <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">Situação não determinada automaticamente — revise os dados brutos abaixo.</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800">
                 <DataViewer data={primaryData} title="Dados da Consulta" />

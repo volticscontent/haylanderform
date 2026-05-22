@@ -105,12 +105,21 @@ export default function CarteiraPage() {
   const [openingMap, setOpeningMap] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [togglingProc, setTogglingProc] = useState<Set<number>>(new Set());
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchCarteira = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch('/api/serpro/carteira');
-      if (res.ok) setLeads(await res.json());
+      if (res.ok) {
+        setLeads(await res.json());
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setFetchError((data as { error?: string }).error || `Erro ${res.status}`);
+      }
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : 'Falha ao conectar ao servidor');
     } finally {
       setLoading(false);
     }
@@ -201,7 +210,8 @@ export default function CarteiraPage() {
       if (!res.ok) throw new Error('Falha ao atualizar procuração');
       await fetchCarteira();
     } catch (err) {
-      console.error('Erro ao alternar procuração:', err);
+      const msg = err instanceof Error ? err.message : 'Falha ao atualizar procuração';
+      alert(msg);
     } finally {
       setTogglingProc((s) => { const ns = new Set(s); ns.delete(lead.lead_id); return ns; });
     }
@@ -224,6 +234,13 @@ export default function CarteiraPage() {
           Atualizar
         </button>
       </div>
+
+      {fetchError && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>Erro ao carregar carteira: {fetchError}</span>
+        </div>
+      )}
 
       {/* Filtros + Ações em lote */}
       <div className="flex flex-wrap gap-3 items-center">

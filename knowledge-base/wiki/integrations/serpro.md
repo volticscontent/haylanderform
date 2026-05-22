@@ -2,7 +2,7 @@
 title: Integração Serpro — Integra Contador
 type: integration
 tags: [serpro, mtls, oauth, pgmei, cnd, caixa-postal]
-updated: 2026-04-23
+updated: 2026-05-15
 status: current
 ---
 
@@ -73,8 +73,7 @@ Credenciais em `.env`:
 ### Dívida Ativa / PGFN
 | Serviço | Descrição |
 |---------|-----------|
-| `DIVIDA_ATIVA` | Alias de PGMEI com versaoSistema='2.4' |
-| `PGFN_CONSULTAR` | Alias de PGMEI com versaoSistema='1.0' |
+| `PGFN_API` | API avulsa Consulta Dívida Ativa da União, com token OAuth próprio e parser estruturado de inscrições/valores |
 
 ### Certidão e Outros
 | Serviço | Descrição | CPF-based? |
@@ -160,8 +159,20 @@ Não é possível chamar CND diretamente sem o protocolo.
 ### 3. PGMEI_EXTRATO / PGMEI_BOLETO precisam de ano + mês
 Sempre passar `options.ano` e `options.mes` ao emitir DAS. Sem eles, `periodoApuracao` fica ausente no payload → erro Serpro 400.
 
-### 4. DIVIDA_ATIVA e PGFN_CONSULTAR são aliases de PGMEI
-Os três chamam `PGMEI`/`DIVIDAATIVA24` por padrão. Diferença: `PGFN_CONSULTAR` usa `versaoSistema: '1.0'` (sem override), `PGMEI`/`DIVIDA_ATIVA` usam `'2.4'`. Override via env vars dedicadas.
+### 4. PGFN agora usa API avulsa da Serpro (2026-05-15)
+A consulta de Dívida Ativa/PGFN não deve mais ser tratada como serviço interno do Integra Contador. O fluxo correto usa a API independente `Consulta Dívida Ativa da União`, com token OAuth próprio e base URL própria.
+
+Variáveis do `bot-backend/.env`:
+```env
+PGFN_TOKEN_URL=https://gateway.apiserpro.serpro.gov.br/token
+PGFN_BASE_URL=https://gateway.apiserpro.serpro.gov.br/consulta-divida-ativa-df/api
+PGFN_CLIENT_ID=...
+PGFN_CLIENT_SECRET=...
+```
+
+Implementação: `bot-backend/src/lib/pgfn.ts`. O Integra Contador continua responsável por PGMEI, CND, SITFIS, Caixa Postal e Procuração.
+
+**Frontend/Admin (2026-05-15):** a tela Serpro expõe apenas `PGFN_API` para Dívida Ativa. Os aliases legados `DIVIDA_ATIVA` e `PGFN_CONSULTAR` foram removidos do catálogo visual para evitar fallback indevido para `DIVIDAATIVA24`.
 
 ### 5. Falha em massa = procuração ausente
 Se quase todos os serviços falham para um CNPJ, verificar:
@@ -179,3 +190,37 @@ O campo `dados` pode ser um PDF em base64 em vez de JSON estruturado. Isso ocorr
 - IA recebe `tem_debitos_detectado: true/false/null` + `texto_pdf` legível
 
 **Regra no prompt:** IA só afirma "sem dívidas" com `tem_debitos_detectado === false` explícito em PGMEI e PGFN.
+
+**⚠️ GAP ABERTO (2026-05-09 — ADR-014):** `consultar_divida_ativa_serpro` (Camada 2) ainda NÃO usa `parseSerproData`. PDFs de DIVIDA_ATIVA via Camada 2 continuam chegando como base64 opaco para a IA. Fix pendente.
+
+**⚠️ GAP ABERTO:** `detectarDebitosNoPdf` escaneia apenas primeiros 800 chars do texto extraído. Débitos após esse ponto são invisíveis para a IA. Aumentar para 2500 chars.
+
+### 7. PGMEI é exclusivo para MEI
+Serviços `PGMEI`, `PGMEI_EXTRATO`, `PGMEI_BOLETO` são válidos apenas para empresas enquadradas como MEI. Chamar para Simples Nacional retorna erro. O bot deve verificar `is_mei = true` antes de recomendar Camada 1.
+
+### 8. `ADMIN_PHONES` tem default hardcoded com números reais
+`workflow-regularizacao.ts:17` inclui números de telefone reais como fallback. Se env var ausente em produção, qualquer consulta desses números bypassa validação de procuração. Remover defaults e falhar explicitamente se env var ausente.
+
+## Estudo PGFN (2026-05-09)
+
+### Diagnóstico atual (código)
+- `PGMEI` continua no Integra Contador para débitos DAS MEI e segue consultando os últimos 6 anos.
+- PGFN/Dívida Ativa passa a usar cliente independente em `bot-backend/src/lib/pgfn.ts`, com `PGFN_TOKEN_URL`, `PGFN_BASE_URL`, `PGFN_CLIENT_ID` e `PGFN_CLIENT_SECRET`.
+- Camada 1 (`consultar_pgmei_serpro`) consolida PGMEI por ano + PGFN por devedor no mesmo retorno `COM_DEBITO | SEM_DEBITO | INCONCLUSIVO`.
+- O parser (`parseSerproData`) segue dedicado ao envelope do Integra Contador; PGFN avulsa usa detecção própria baseada no JSON retornado pela API de Dívida Ativa.
+- Frontend Admin ainda expõe PGFN no agrupamento de serviços da tela Serpro, mas sem painel dedicado de leitura por inscrição/valor.
+
+### Riscos identificados
+- **Multi-empresa:** em pontos de sincronização de procuração ainda existem consultas por `leads.cnpj` sem considerar `cnpj_ativo/lead_empresa`, com risco de marcação no lead incorreto.
+- **Doc drift:** documentação interna antiga da API ainda descreve serviços/nomes já superados pelo catálogo atual.
+
+### Recomendações (prioridade)
+1. Padronizar resolução multi-empresa em todas as sincronizações (priorizar `cnpj_ativo` e vínculo em `lead_empresa`).
+2. Manter `PGFN_API` como único serviço visual de Dívida Ativa no Admin.
+3. Revisar payloads avançados de `CAIXA_POSTAL`, `DCTFWEB`, `PAGAMENTO` e `DASN_SIMEI` conforme contratos/autorizações reais.
+4. Atualizar documentação técnica de frontend (`src/lib/docs/serpro-api.ts`) para refletir serviços e fluxos reais do backend.
+
+### Relacionados
+- [[ADR-014-apolo-agent-audit-2026-05]]
+- [[ADR-015-multi-empresa-pgfn-array-fix]]
+- [[log]]

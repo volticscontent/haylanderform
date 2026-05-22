@@ -11,8 +11,14 @@ export async function GET() {
   try {
     const res = await backendGet('/api/serpro/carteira');
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(data, {
+      status: res.status,
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, {
+      status: 500,
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   }
 }

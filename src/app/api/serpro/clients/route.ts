@@ -17,10 +17,13 @@ export async function GET(req: Request) {
 
     const res = await backendGet('/api/serpro/clients', params);
     const data = await res.json();
-    return NextResponse.json(Array.isArray(data) ? data : []);
+    return NextResponse.json(Array.isArray(data) ? data : [], {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   } catch (e) {
     console.error('serpro/clients proxy error:', e);
-    return NextResponse.json([]);
+    return NextResponse.json([], {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    });
   }
 }
-

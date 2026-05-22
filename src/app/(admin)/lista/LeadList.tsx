@@ -176,10 +176,11 @@ export default function LeadList({
   const filteredData = useMemo(() => {
     return data.filter(row => {
       const searchLower = searchTerm.toLowerCase()
+      const allCnpjs = [row.cnpj, ...(row.empresas ?? []).map(e => e.cnpj)].filter(Boolean).join(' ').toLowerCase()
       const matchesSearch = (
         (row.nome_completo?.toLowerCase() || '').includes(searchLower) ||
         phoneMatches(row.telefone, searchTerm) ||
-        (row.cnpj?.toLowerCase() || '').includes(searchLower)
+        allCnpjs.includes(searchLower)
       )
 
       const matchesStatus = statusFilter === 'all'
@@ -689,7 +690,19 @@ export default function LeadList({
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-zinc-500 font-mono">{row.cnpj || 'CNPJ não informado'}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-zinc-500 font-mono">
+                                {row.cnpj || 'CNPJ não informado'}
+                              </span>
+                              {(row.empresas?.length ?? 0) > 0 && (
+                                <span
+                                  className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                                  title={row.empresas!.map(e => `${e.cnpj} (${e.tipo}${e.razao_social ? ' — ' + e.razao_social : ''}${e.procuracao_ativa ? ' ✓proc' : ''})`).join('\n')}
+                                >
+                                  +{row.empresas!.length}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -726,13 +739,23 @@ export default function LeadList({
                     {visibleColumns.includes('empresa') && (
                       <td className="px-6 py-4">
                         {row.cnpj ? (
-                          <Link
-                            href={`/serpro?cnpj=${row.cnpj.replace(/\\D/g, '')}`}
-                            className="text-purple-600 dark:text-orange-400 hover:underline text-sm font-medium line-clamp-2"
-                            title="Consultar no Serpro"
-                          >
-                            {row.razao_social || 'Sem nome da empresa'}
-                          </Link>
+                          <div className="space-y-0.5">
+                            <Link
+                              href={`/serpro?cnpj=${row.cnpj.replace(/\D/g, '')}`}
+                              className="text-purple-600 dark:text-orange-400 hover:underline text-sm font-medium line-clamp-2"
+                              title="Consultar no Serpro"
+                            >
+                              {row.razao_social || 'Sem nome da empresa'}
+                            </Link>
+                            {(row.empresas?.length ?? 0) > 0 && (
+                              <div
+                                className="text-[10px] text-zinc-400 truncate max-w-[160px]"
+                                title={row.empresas!.map(e => `${e.cnpj} (${e.tipo}${e.razao_social ? ' — ' + e.razao_social : ''}${e.procuracao_ativa ? ' ✓proc' : ''})`).join('\n')}
+                              >
+                                +{row.empresas!.length} empresa{row.empresas!.length > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-zinc-500 text-sm line-clamp-2">{row.razao_social || '-'}</span>
                         )}

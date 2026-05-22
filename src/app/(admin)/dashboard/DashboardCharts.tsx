@@ -475,7 +475,7 @@ export default function DashboardCharts({ data }: { data: LeadDashboardRecord[] 
                 name="filter-column"
                 value={filterColumn}
                 onChange={(e) => setFilterColumn(e.target.value as typeof filterColumn)}
-                className="block w-full sm:w-32 rounded-md border-0 py-1.5 pl-3 pr-8 text-zinc-900 ring-1 ring-inset ring-zinc-300 focus:ring-2 focus:ring-inset focus:ring-purple-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
+                className="block w-full sm:w-32 rounded-md py-1.5 pl-3 pr-8 text-zinc-900 focus:ring-2 focus:ring-inset focus:ring-purple-600 dark:focus:ring-orange-500 sm:text-sm sm:leading-6 dark:bg-zinc-800 dark:text-zinc-200 dark:ring-zinc-700 h-10 sm:h-auto"
               >
                 {/* DISPARO: comentado — feature não ativa */}
                 {/* <option value="envio_disparo">Envio</option> */}
