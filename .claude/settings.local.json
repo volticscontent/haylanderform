@@ -128,7 +128,8 @@
       "WebFetch(domain:www.blog.sci.com.br)",
       "WebFetch(domain:suporte.dominioatendimento.com)",
       "WebFetch(domain:centraldeajuda.serpro.gov.br)",
-      "Bash(dir D:\\\\Códigos\\\\Tzolkin\\\\Portifolio\\\\Haylander\\\\haylanderform\\\\knowledge-base\\\\wiki *)"
+      "Bash(dir D:\\\\Códigos\\\\Tzolkin\\\\Portifolio\\\\Haylander\\\\haylanderform\\\\knowledge-base\\\\wiki *)",
+      "PowerShell(npm run *)"
     ]
   }
 }

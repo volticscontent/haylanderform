@@ -1,9 +1,10 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { backendGet } from '@/lib/backend-proxy'
+import type { LeadRecord } from '@/types/lead'
 import LeadList from './LeadList'
 
-async function getData(page: number = 1, limit: number = 50) {
+async function getData(page: number = 1, limit: number = 50): Promise<{ data: LeadRecord[]; total: number; error: string | null }> {
   try {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) })
     const res = await backendGet('/api/leads/list', params)
@@ -11,7 +12,7 @@ async function getData(page: number = 1, limit: number = 50) {
       const err = await res.text()
       return { data: [], total: 0, error: `Backend ${res.status}: ${err}` }
     }
-    const json = await res.json() as { data: unknown[]; total: number }
+    const json = await res.json() as { data: LeadRecord[]; total: number }
     return { data: json.data, total: json.total, error: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
