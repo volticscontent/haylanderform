@@ -1,33 +1,30 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyAdminSession } from '@/lib/dashboard-auth';
-import { Client } from 'pg';
+import { backendGet } from '@/lib/backend-proxy';
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
   if (!await verifyAdminSession(cookieStore.get('admin_session')?.value)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
-  const { searchParams } = new URL(req.url);
-  const cnpj = searchParams.get('cnpj')?.replace(/\D/g, '');
-  if (!cnpj) return NextResponse.json({ error: 'CNPJ obrigatório' }, { status: 400 });
 
-  if (!process.env.DATABASE_URL) return NextResponse.json({ error: 'DATABASE_URL ausente' }, { status: 500 });
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
   try {
-    await client.connect();
-    const { rows } = await client.query(
-      `SELECT id, cnpj, tipo_servico, status, created_at, resultado, source
-       FROM consultas_serpro
-       WHERE REPLACE(cnpj, '.', '') = $1
-          OR REPLACE(REPLACE(REPLACE(cnpj, '.', ''), '/', ''), '-', '') = $1
-       ORDER BY created_at DESC LIMIT 20`,
-      [cnpj]
-    );
-    return NextResponse.json(rows);
+    const { searchParams } = new URL(req.url);
+    const cnpj = searchParams.get('cnpj');
+    if (!cnpj) return NextResponse.json({ error: 'CNPJ obrigatório' }, { status: 400 });
+
+    const params = new URLSearchParams();
+    params.set('cnpj', cnpj.replace(/\D/g, ''));
+
+    const res = await backendGet('/api/serpro/history', params);
+    if (!res.ok) {
+        throw new Error('Falha ao buscar histórico no backend');
+    }
+    const data = await res.json();
+    return NextResponse.json(Array.isArray(data) ? data : []);
   } catch (e) {
+    console.error('serpro/history proxy error:', e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
-  } finally {
-    await client.end();
   }
 }
