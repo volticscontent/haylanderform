@@ -266,19 +266,37 @@ export default function SerproPage() {
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {SERVICE_CONFIG[service]?.descricao || 'Serviço Selecionado'}
               </h3>
-              {SERVICE_CONFIG[service] && (
-                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${(SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Consultar' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                  (SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Emitir' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200' :
-                    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                  }`}>
-                  {(SERVICE_CONFIG[service] as ServiceConfigItem).tipo}
-                </span>
-              )}
+              <div className="flex gap-2">
+                {SERVICE_CONFIG[service]?.status === 'nao_assinada' && (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200">
+                    Não Assinada
+                  </span>
+                )}
+                {SERVICE_CONFIG[service] && (
+                  <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${(SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Consultar' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                    (SERVICE_CONFIG[service] as ServiceConfigItem).tipo === 'Emitir' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200' :
+                      'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                    }`}>
+                    {(SERVICE_CONFIG[service] as ServiceConfigItem).tipo}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="space-y-1 text-sm text-gray-800 dark:text-gray-200">
               <p><span className="font-medium">Finalidade:</span> {(SERVICE_CONFIG[service] as ServiceConfigItem)?.finalidade || 'Não informada'}</p>
               <p><span className="font-medium">Como usar:</span> {(SERVICE_CONFIG[service] as ServiceConfigItem)?.uso || 'Consulte a documentação'}</p>
             </div>
+            {SERVICE_CONFIG[service]?.status === 'nao_assinada' && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded-lg text-sm text-red-800 dark:text-red-300 flex gap-2">
+                <svg className="shrink-0 mt-0.5 w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <p>
+                  Caso queira usar esse serviço é necessário contratar em{' '}
+                  <a href="https://loja.serpro.gov.br/" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-900 dark:hover:text-red-200 font-medium">
+                    loja.serpro.gov.br
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
 
           {SERVICES_WITH_YEAR.includes(service) && (

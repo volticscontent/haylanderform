@@ -9,6 +9,7 @@ export interface ServiceConfigItem {
   descricao?: string;
   uso?: string;
   finalidade?: string;
+  status?: 'ativo' | 'nao_assinada';
 }
 
 // Espelho do catálogo do bot-backend (bot-backend/src/lib/serpro-config.ts).
@@ -24,6 +25,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta dados cadastrais completos do MEI.',
     uso: 'Requer apenas CNPJ.',
     finalidade: 'Verificar situação cadastral, atividades e endereço.',
+    status: 'ativo',
   },
   PGMEI: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
@@ -35,6 +37,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta dívida ativa e débitos via PGMEI.',
     uso: 'Requer CNPJ e Ano (opcional).',
     finalidade: 'Verificar débitos pendentes e inscritos em Dívida Ativa.',
+    status: 'ativo',
   },
   PGMEI_EXTRATO: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
@@ -44,6 +47,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Geração de PDF do DAS (Extrato/Boleto).',
     uso: 'Requer CNPJ e Período (MM/AAAA).',
+    status: 'nao_assinada',
   },
   PGMEI_BOLETO: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
@@ -53,6 +57,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Geração de Linha Digitável/Código de Barras do DAS.',
     uso: 'Requer CNPJ e Período (MM/AAAA).',
+    status: 'nao_assinada',
   },
   PGMEI_ATU_BENEFICIO: {
     env_sistema: 'INTEGRA_PGMEI_ID_SISTEMA',
@@ -62,6 +67,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Atualização de Benefícios Previdenciários no PGMEI.',
     uso: 'Requer CNPJ.',
+    status: 'nao_assinada',
   },
   SIMEI: {
     env_sistema: 'INTEGRA_SIMEI_ID_SISTEMA',
@@ -72,6 +78,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta situação do SIMEI via CCMEI.',
     uso: 'Requer CNPJ e Ano.',
     finalidade: 'Verificar se a empresa é optante pelo SIMEI.',
+    status: 'ativo',
   },
   SIT_FISCAL_SOLICITAR: {
     env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
@@ -83,6 +90,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Solicitação de Protocolo de Situação Fiscal.',
     uso: 'Requer CNPJ.',
     finalidade: 'Primeiro passo para o diagnóstico completo de pendências.',
+    status: 'ativo',
   },
   SIT_FISCAL_RELATORIO: {
     env_sistema: 'INTEGRA_SITFIS_ID_SISTEMA',
@@ -94,6 +102,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Relatório de Situação Fiscal Completa.',
     uso: 'Requer número do protocolo obtido na solicitação.',
     finalidade: 'Obtenção do relatório detalhado em PDF/JSON.',
+    status: 'ativo',
   },
   DASN_SIMEI: {
     env_sistema: 'INTEGRA_DASNSIMEI_ID_SISTEMA',
@@ -104,6 +113,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta Declaração Anual do MEI (DASN).',
     uso: 'Requer CNPJ e Ano.',
     finalidade: 'Consultar recibos e situação de declarações do MEI.',
+    status: 'nao_assinada',
   },
   PGDASD: {
     env_sistema: 'INTEGRA_PGDASD_ID_SISTEMA',
@@ -114,6 +124,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Extrato PGDAS-D (Simples Nacional).',
     uso: 'Requer CNPJ e Ano Calendário.',
     finalidade: 'Consultar declarações transmitidas e situação do PGDAS-D.',
+    status: 'nao_assinada',
   },
   DCTFWEB: {
     env_sistema: 'INTEGRA_DCTFWEB_ID_SISTEMA',
@@ -124,6 +135,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta Declaração DCTFWeb Completa.',
     uso: 'Requer CNPJ e Período (MM/AAAA).',
     finalidade: 'Consultar débitos e créditos tributários previdenciários.',
+    status: 'nao_assinada',
   },
   PARCELAMENTO_MEI_CONSULTAR: {
     env_sistema: 'INTEGRA_PARCMEI_SISTEMA',
@@ -133,6 +145,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta Pedidos de Parcelamento MEI.',
     finalidade: 'Verificar status e parcelas de acordos ativos.',
+    status: 'ativo',
   },
   PARCELAMENTO_MEI_EMITIR: {
     env_sistema: 'INTEGRA_PARCMEI_SISTEMA',
@@ -141,6 +154,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_servico: 'GERARDAS201',
     tipo: 'Emitir',
     descricao: 'Emissão de DAS de Parcelamento MEI.',
+    status: 'nao_assinada',
   },
   PARCELAMENTO_SN_CONSULTAR: {
     env_sistema: 'INTEGRA_PARCSN_SISTEMA',
@@ -149,6 +163,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_servico: 'PEDIDOSPARC163',
     tipo: 'Consultar',
     descricao: 'Consulta de Pedidos de Parcelamento Simples Nacional.',
+    status: 'ativo',
   },
   PARCELAMENTO_SN_EMITIR: {
     env_sistema: 'INTEGRA_PARCSN_SISTEMA',
@@ -158,6 +173,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Emissão de DAS de Parcelamento Simples Nacional.',
     finalidade: 'Gerar guia de pagamento de parcela SN.',
+    status: 'nao_assinada',
   },
   PGFN_API: {
     env_sistema: 'PGFN_CLIENT_ID',
@@ -168,6 +184,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     descricao: 'Consulta Dívida Ativa PGFN por API avulsa.',
     uso: 'Requer CNPJ. Usa token próprio da API Consulta Dívida Ativa.',
     finalidade: 'Verificar inscrições, valores consolidados e situação na Dívida Ativa da União.',
+    status: 'ativo',
   },
   CND: {
     env_sistema: 'INTEGRA_CND_ID_SISTEMA',
@@ -178,6 +195,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Emissão de Certidão via Relatório de Situação Fiscal.',
     finalidade: 'Comprovar regularidade fiscal perante a Receita Federal.',
+    status: 'ativo',
   },
   PROCESSOS: {
     env_sistema: 'INTEGRA_PROCESSOS_ID_SISTEMA',
@@ -187,6 +205,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     versaoSistema: '2.0',
     tipo: 'Consultar',
     descricao: 'Consulta de Processos Administrativos.',
+    status: 'nao_assinada',
   },
   CAIXA_POSTAL: {
     env_sistema: 'INTEGRA_CAIXA_POSTAL_ID_SISTEMA',
@@ -196,6 +215,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Caixa Postal Eletrônica (DTE).',
     finalidade: 'Ler mensagens e intimações oficiais.',
+    status: 'nao_assinada',
   },
   PAGAMENTO: {
     env_sistema: 'INTEGRA_PAGAMENTO_ID_SISTEMA',
@@ -205,6 +225,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Emitir',
     descricao: 'Emissão de Comprovante de Arrecadação.',
     finalidade: 'Verificar pagamentos realizados pelo contribuinte.',
+    status: 'nao_assinada',
   },
   PROCURACAO: {
     env_sistema: 'INTEGRA_PROCURACAO_ID_SISTEMA',
@@ -215,5 +236,6 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta de Procurações Eletrônicas.',
     finalidade: 'Verificar poderes do contador no e-CAC.',
+    status: 'ativo',
   },
 };
