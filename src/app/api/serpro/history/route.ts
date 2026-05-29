@@ -5,8 +5,11 @@ import { backendGet } from '@/lib/backend-proxy';
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
-  if (!await verifyAdminSession(cookieStore.get('admin_session')?.value)) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const sessionValue = cookieStore.get('admin_session')?.value;
+  
+  if (!await verifyAdminSession(sessionValue)) {
+    // Se a sessão for inválida, redireciona para o login
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   try {

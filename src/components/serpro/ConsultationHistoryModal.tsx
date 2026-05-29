@@ -37,6 +37,13 @@ export default function ConsultationHistoryModal({
     setLoading(true);
     try {
       const res = await fetch(`/api/serpro/history?cnpj=${cnpj}`);
+      
+      // Se a API redirecionar para o login (sessão expirada)
+      if (res.redirected && res.url.includes('/login')) {
+        window.location.href = '/login';
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -47,6 +54,8 @@ export default function ConsultationHistoryModal({
         } else {
           setHistory([]);
         }
+      } else if (res.status === 401) {
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Error fetching history:', error);
