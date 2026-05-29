@@ -112,7 +112,7 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     tipo: 'Consultar',
     descricao: 'Consulta Declaração Anual do MEI (DASN).',
     uso: 'Requer CNPJ e Ano.',
-    finalidade: 'Consultar recibos e situação de declarações do MEI.',
+    finalidade: 'Consultar recibos e situação de declarações anuais (faturamento) entregues pelo MEI.',
     status: 'nao_assinada',
   },
   PGDASD: {
