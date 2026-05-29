@@ -6,6 +6,12 @@ type: log
 
 # Log Operacional
 
+## [2026-05-29 13:45] [INGEST] Auditoria Serpro de 23 APIs + tabela de mensagens DASN-SIMEI.
+- Files affected: [[serpro-audit-2026-05-29]], [[serpro]], [[index]]
+- Sources: `raw/docs/relatorio_serpro_2026_05_29.md`, apicenter → integra-mei/dasnsimei/mensagens
+- Context: Script de auditoria sobre CNPJ 23950473000155 confirmou que **apenas `DASN_SIMEI` (HTTP 403) está fora do pacote**. Demais HTTP 400 vêm de payload incompleto do Admin (mês ausente, CPF ausente, numeroDas ausente, statusLeitura ausente). Adicionada Armadilha #9 em `serpro.md` e ingerida tabela completa de mensagens DASN-SIMEI (avisos, entradas incorretas, erros) para uso futuro caso a API seja contratada.
+- Canvas: ingest-2026-05-29-1, file_serpro_audit_20260529, save-date-2026-05-29
+
 ## [2026-05-15 12:33] [FIX] Frontend Serpro usa apenas PGFN_API para Dívida Ativa.
 - Files affected: [[serpro]]
 - Context: Removidos aliases visuais `DIVIDA_ATIVA`/`PGFN_CONSULTAR`, rota admin passa a chamar API PGFN avulsa e payloads básicos de Caixa Postal/DCTFWeb foram ajustados após auditoria de 3 CNPJs.

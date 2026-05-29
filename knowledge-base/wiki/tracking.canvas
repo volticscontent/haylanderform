@@ -31,7 +31,11 @@
 		{"id":"file_adr014","type":"file","file":"wiki/decisions/ADR-014-apolo-agent-audit-2026-05.md","x":6440,"y":420,"width":340,"height":1400},
 		{"id":"file_adr015","type":"file","file":"wiki/decisions/ADR-015-multi-empresa-pgfn-array-fix.md","x":6800,"y":420,"width":1040,"height":1760},
 		{"id":"e_nextstep","type":"text","text":"## 🎯 Próximos Passos\n\n- [ ] Gravar vídeo tutorial real do e-CAC (substituir placeholder em `createAutonomoMessageSegments`).\n- [ ] Rodar migration `016_lead_empresa.sql` em produção.\n- [ ] Fix BUG-1 ADR-014: envolver `consultar_divida_ativa_serpro` em `parseSerproData()`.\n- [ ] Fix BUG-2 ADR-014: `verificar_serpro_pos_ecac` usar `cnpj_ativo` corretamente.\n- [ ] Validação E2E Integra Contador (Frontend → BullMQ → Serpro → DB).\n- [ ] Implementar RAG + Context Retrieval para cadastro automático de empresas.\n- [ ] Commitar e deployar todos os arquivos `??` do git status.","x":7180,"y":-60,"width":440,"height":360,"color":"1"},
-		{"id":"node_20260509_01","type":"text","text":"## 📅 2026-05-09\n**Estudo PGFN (Hardening)**\n\n- Diagnóstico consolidado de `PGFN_CONSULTAR` vs `DIVIDA_ATIVA`.\n- Registro de riscos (alias operacional, multi-empresa, doc drift).\n- Plano de hardening documentado em `wiki/integrations/serpro.md`.","x":7920,"y":240,"width":380,"height":280,"color":"5"}
+		{"id":"node_20260509_01","type":"text","text":"## 📅 2026-05-09\n**Estudo PGFN (Hardening)**\n\n- Diagnóstico consolidado de `PGFN_CONSULTAR` vs `DIVIDA_ATIVA`.\n- Registro de riscos (alias operacional, multi-empresa, doc drift).\n- Plano de hardening documentado em `wiki/integrations/serpro.md`.","x":7920,"y":240,"width":380,"height":280,"color":"5"},
+		{"id":"e_20260529","type":"text","text":"## 📅 2026-05-29\n**Auditoria das 23 APIs Serpro**\n\n- Script automatizado contra CNPJ 23950473000155 (procuração ativa).\n- **Apenas `DASN_SIMEI` (HTTP 403)** está fora do pacote — todos os outros respondem.\n- HTTP 400 dos demais = payload incompleto do Admin (mês, CPF, numeroDas, statusLeitura).\n- Tabela completa de mensagens DASN-SIMEI ingerida (avisos, entradas incorretas, erros).\n- Armadilha #9 adicionada em `serpro.md`.","x":8400,"y":-60,"width":520,"height":340},
+		{"id":"ingest-2026-05-29-1","type":"text","text":"## 📥 2026-05-29 — Ingest #1\n**Fontes:**\n- `raw/docs/relatorio_serpro_2026_05_29.md`\n- apicenter → integra-mei/dasnsimei/mensagens\n\n**Escopo:** auditoria de 23 serviços + catálogo de mensagens DASN-SIMEI.","x":8400,"y":340,"width":520,"height":260,"color":"6"},
+		{"id":"file_serpro_audit_20260529","type":"file","file":"wiki/integrations/serpro-audit-2026-05-29.md","x":8400,"y":640,"width":520,"height":1400},
+		{"id":"commit-167d888","type":"text","text":"## ✅ commit 167d888\n`fix(serpro): corrige status das apis serpro - apenas dasn-simei não está assinada`\n\nFlag `nao_assinada` aplicada apenas ao serviço efetivamente bloqueado (HTTP 403).","x":8960,"y":-60,"width":380,"height":260,"color":"4"}
 	],
 	"edges":[
 		{"id":"edge_1","fromNode":"e_20260420","fromSide":"right","toNode":"e_20260421","toSide":"left"},
@@ -66,6 +70,11 @@
 		{"id":"edge_adr014","fromNode":"e_20260509","fromSide":"bottom","toNode":"file_adr014","toSide":"top","color":"6"},
 		{"id":"edge_adr015","fromNode":"e_20260509","fromSide":"bottom","toNode":"file_adr015","toSide":"top","color":"6"},
 		{"id":"edge_nextstep","fromNode":"e_20260509","fromSide":"right","toNode":"e_nextstep","toSide":"left","color":"1"},
-		{"id":"edge_pgfn_doc_20260509","fromNode":"node_20260509_01","fromSide":"left","toNode":"file_serpro","toSide":"right","color":"5"}
+		{"id":"edge_pgfn_doc_20260509","fromNode":"node_20260509_01","fromSide":"left","toNode":"file_serpro","toSide":"right","color":"5"},
+		{"id":"edge_0509_0529","fromNode":"e_20260509","fromSide":"right","toNode":"e_20260529","toSide":"left","label":"timeline"},
+		{"id":"edge_ingest_20260529","fromNode":"e_20260529","fromSide":"bottom","toNode":"ingest-2026-05-29-1","toSide":"top","color":"6","label":"em"},
+		{"id":"edge_ingest_file_20260529","fromNode":"ingest-2026-05-29-1","fromSide":"bottom","toNode":"file_serpro_audit_20260529","toSide":"top","color":"6","label":"documenta"},
+		{"id":"edge_audit_serpro_xref","fromNode":"file_serpro_audit_20260529","fromSide":"left","toNode":"file_serpro","toSide":"right","color":"2","label":"complementa"},
+		{"id":"edge_commit_167d888","fromNode":"e_20260529","fromSide":"right","toNode":"commit-167d888","toSide":"left","color":"4","label":"em"}
 	]
 }

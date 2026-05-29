@@ -2,7 +2,7 @@
 title: Integração Serpro — Integra Contador
 type: integration
 tags: [serpro, mtls, oauth, pgmei, cnd, caixa-postal]
-updated: 2026-05-15
+updated: 2026-05-29
 status: current
 ---
 
@@ -200,6 +200,9 @@ Serviços `PGMEI`, `PGMEI_EXTRATO`, `PGMEI_BOLETO` são válidos apenas para emp
 
 ### 8. `ADMIN_PHONES` tem default hardcoded com números reais
 `workflow-regularizacao.ts:17` inclui números de telefone reais como fallback. Se env var ausente em produção, qualquer consulta desses números bypassa validação de procuração. Remover defaults e falhar explicitamente se env var ausente.
+
+### 9. HTTP 400 ≠ serviço não-assinado (auditoria 2026-05-29)
+Diagnóstico anterior tratava qualquer erro como "API não contratada". Auditoria de 23 serviços revelou que **apenas `DASN_SIMEI` retorna HTTP 403 (não autorizado)** — único serviço efetivamente fora do pacote. Os demais HTTP 400 vêm de **payload incompleto do frontend Admin** (mês ausente em PGMEI_EXTRATO/BOLETO, CPF ausente em SITFIS/CND, `numeroDas` ausente em PGDASD, `statusLeitura` ausente em CAIXA_POSTAL). Flag `nao_assinada` só deve ser aplicada quando o Serpro retornar 403 com mensagem explícita de não-contratação. Detalhes em [[serpro-audit-2026-05-29]].
 
 ## Estudo PGFN (2026-05-09)
 

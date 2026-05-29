@@ -2,7 +2,7 @@
 name: Índice Master — Haylanderform Knowledge Base
 description: Catálogo central de toda a documentação viva do projeto
 type: index
-updated: 2026-05-09
+updated: 2026-05-29
 ---
 
 # Haylanderform — Knowledge Base
@@ -57,6 +57,7 @@ Stack: Next.js (frontend admin) + Node.js/Express (bot-backend) + Evolution API 
 ## Integrações
 
 - [Serpro (Integra Contador)](integrations/serpro.md)
+- [Auditoria Serpro 2026-05-29](integrations/serpro-audit-2026-05-29.md) — status real das 23 APIs + mensagens DASN-SIMEI
 - [Evolution API (WhatsApp)](integrations/evolution-api.md)
 - [BrasilAPI / CNPJ Público](integrations/brasil-api.md)
 - [Redis (Cache + Sessão)](integrations/redis.md)
