@@ -25,6 +25,7 @@ export default function SerproPage() {
   const [mes, setMes] = useState('');
   const [numeroRecibo, setNumeroRecibo] = useState('');
   const [codigoReceita, setCodigoReceita] = useState('');
+  const [statusLeitura, setStatusLeitura] = useState('T'); // T=Todos, L=Lidas, N=Não lidas
   const [categoria, setCategoria] = useState('GERAL_MENSAL');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SerproResponse | null>(null);
@@ -175,6 +176,8 @@ export default function SerproPage() {
           ano,
           mes: mes || undefined,
           numeroRecibo: numeroRecibo || undefined,
+          numeroDas: numeroRecibo || undefined, // PGDASD e PAGAMENTO usam numeroDas
+          statusLeitura: service === 'CAIXA_POSTAL' ? statusLeitura : undefined,
           protocoloRelatorio: service === 'SIT_FISCAL_RELATORIO' ? (numeroRecibo || undefined) : undefined,
           codigoReceita: codigoReceita || undefined,
           categoria: service === 'DCTFWEB' ? categoria : undefined
@@ -324,7 +327,7 @@ export default function SerproPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Mês (Opcional)
+                    Mês {['PGMEI_EXTRATO', 'PGMEI_BOLETO', 'DCTFWEB', 'PARCELAMENTO_MEI_EMITIR', 'PARCELAMENTO_SN_EMITIR'].includes(service) ? '(Obrigatório)' : '(Opcional)'}
                   </label>
                   <input
                     type="number"
@@ -395,21 +398,38 @@ export default function SerproPage() {
             </div>
           )}
 
-          {(service === 'SIT_FISCAL_RELATORIO' || service === 'PGDASD') && (
+          {(service === 'SIT_FISCAL_RELATORIO' || service === 'PGDASD' || service === 'PAGAMENTO') && (
             <div className="p-3 bg-purple-50 dark:bg-orange-900/20 border border-purple-100 dark:border-orange-900/50 rounded-lg">
               <label className="block text-sm font-medium text-purple-900 dark:text-orange-100 mb-1">
-                Número do Recibo / Protocolo (Obrigatório)
+                {service === 'PGDASD' ? 'Número do DAS (Obrigatório)' : service === 'PAGAMENTO' ? 'Número do DAS ou Recibo (Obrigatório)' : 'Número do Recibo / Protocolo (Obrigatório)'}
               </label>
               <input
                 type="text"
                 value={numeroRecibo}
                 onChange={(e) => setNumeroRecibo(e.target.value)}
-                placeholder="Insira o protocolo aqui"
+                placeholder={service === 'PGDASD' ? 'Ex: 12345678901234' : 'Insira o número aqui'}
                 className="w-full p-2 rounded border border-purple-300 dark:border-orange-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
               />
               <p className="text-[10px] text-purple-600 dark:text-orange-400 mt-1">
-                Este serviço exige o número do recibo ou protocolo da solicitação prévia.
+                {service === 'PGDASD' ? 'Este serviço exige o número do DAS para gerar o extrato.' : 'Este serviço exige o número do recibo ou protocolo da solicitação prévia.'}
               </p>
+            </div>
+          )}
+
+          {service === 'CAIXA_POSTAL' && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                Status de Leitura
+              </label>
+              <select
+                value={statusLeitura}
+                onChange={(e) => setStatusLeitura(e.target.value)}
+                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all"
+              >
+                <option value="T">Todas as Mensagens</option>
+                <option value="N">Apenas Não Lidas</option>
+                <option value="L">Apenas Lidas</option>
+              </select>
             </div>
           )}
 
