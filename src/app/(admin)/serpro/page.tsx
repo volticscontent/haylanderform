@@ -23,6 +23,7 @@ export default function SerproPage() {
   const [cnpj, setCnpj] = useState(searchParams.get('cnpj') ?? '');
   const [ano, setAno] = useState(new Date().getFullYear().toString());
   const [mes, setMes] = useState('');
+  const [cpf, setCpf] = useState('');
   const [numeroRecibo, setNumeroRecibo] = useState('');
   const [codigoReceita, setCodigoReceita] = useState('');
   const [statusLeitura, setStatusLeitura] = useState('T'); // T=Todos, L=Lidas, N=Não lidas
@@ -175,6 +176,7 @@ export default function SerproPage() {
           service,
           ano,
           mes: mes || undefined,
+          cpf: cpf || undefined,
           numeroRecibo: numeroRecibo || undefined,
           numeroDas: numeroRecibo || undefined, // PGDASD e PAGAMENTO usam numeroDas
           statusLeitura: service === 'CAIXA_POSTAL' ? statusLeitura : undefined,
@@ -395,6 +397,25 @@ export default function SerproPage() {
                 <option value="13_SALARIO">13º Salário</option>
                 <option value="ESPETACULO_DESPORTIVO">Espetáculo Desportivo</option>
               </select>
+            </div>
+          )}
+
+          {(service === 'SIT_FISCAL_SOLICITAR' || service === 'SIT_FISCAL_RELATORIO' || service === 'CND') && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 rounded-lg">
+              <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+                CPF do Empresário (Obrigatório)
+              </label>
+              <input
+                type="text"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className="w-full p-2 rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-black/50 outline-none transition-all"
+              />
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                A Receita Federal exige o CPF do titular para emitir certidões e relatórios de situação fiscal.
+              </p>
             </div>
           )}
 
