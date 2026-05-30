@@ -8,8 +8,8 @@ export async function GET(req: Request) {
   const sessionValue = cookieStore.get('admin_session')?.value;
   
   if (!await verifyAdminSession(sessionValue)) {
-    // Se a sessão for inválida, redireciona para o login
-    return NextResponse.redirect(new URL('/login', req.url));
+    // Se a sessão for inválida, retorna 401 para o frontend lidar
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
 
   try {
