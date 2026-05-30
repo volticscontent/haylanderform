@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyAdminSession } from '@/lib/dashboard-auth';
-import { backendGet } from '@/lib/backend-proxy';
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
@@ -20,9 +19,19 @@ export async function GET(req: Request) {
     const params = new URLSearchParams();
     params.set('cnpj', cnpj.replace(/\D/g, ''));
 
-    const res = await backendGet('/api/serpro/history', params);
+    // Busca diretamente do backend no EasyPanel para evitar problemas de proxy/env na Vercel
+    const backendUrl = process.env.BOT_BACKEND_URL || 'https://other-hf.rzkso2.easypanel.host';
+    const url = `${backendUrl.replace(/\/$/, '')}/api/serpro/history?${params.toString()}`;
+    
+    const res = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(process.env.BOT_BACKEND_SECRET ? { 'x-api-key': process.env.BOT_BACKEND_SECRET } : {})
+      }
+    });
+
     if (!res.ok) {
-        throw new Error('Falha ao buscar histórico no backend');
+        throw new Error(`Falha ao buscar histórico no backend: ${res.status}`);
     }
     const data = await res.json();
     return NextResponse.json(Array.isArray(data) ? data : []);
