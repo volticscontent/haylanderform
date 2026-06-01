@@ -139,3 +139,7 @@ CNPJ 23950473000155 reportado pelo cliente Haylander: bot informava "sem dívida
 - Files affected: [[CLAUDE]], [[index]], [[tracking]]
 - Context: Vault histórico Haylander/ copiado para knowledge-base/, commands e skill memory instalados; vault original preservado intacto.
 
+## [2026-06-01 12:42] [FIX] Correção de parsing da Serpro e tratamento de erros PGFN/DASN
+- Files affected: [[serpro-apolo-integration]], [[serpro-audit-2026-05-29]]
+- Context: O bot estava retornando "inconclusivo" para PGFN e DASN-SIMEI. Corrigido o parsing de espaços duplos no PGMEI (`ENVIADO A  PFN`), adicionado tratamento para erro 403 da PGFN (Receita Federal fora do ar) e erro 403 da DASN-SIMEI (falta de assinatura no portal). O LLM agora recebe o JSON estruturado corretamente.
+
