@@ -65,8 +65,9 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     default_sistema: 'PGMEI',
     default_servico: 'ATUBENEFICIO23',
     tipo: 'Emitir',
-    descricao: 'Atualização de Benefícios Previdenciários no PGMEI.',
-    uso: 'Requer CNPJ.',
+    descricao: '⚠️ Atualização de Benefícios Previdenciários (ESCRITA na Receita).',
+    uso: 'Operação de ESCRITA — uso restrito. Requer CNPJ, ano e os meses com benefício. Exige confirmação do operador; indisponível para o atendimento automatizado.',
+    finalidade: 'Marcar/atualizar os meses do ano-calendário em que o MEI teve benefício previdenciário (altera o cálculo do DAS).',
     status: 'ativo',
   },
   SIMEI: {
@@ -104,17 +105,8 @@ export const SERVICE_CONFIG: Record<string, ServiceConfigItem> = {
     finalidade: 'Obtenção do relatório detalhado em PDF/JSON.',
     status: 'ativo',
   },
-  DASN_SIMEI: {
-    env_sistema: 'INTEGRA_DASNSIMEI_ID_SISTEMA',
-    env_servico: 'INTEGRA_DASNSIMEI_ID_SERVICO',
-    default_sistema: 'DASNSIMEI',
-    default_servico: 'CONSULTIMADECREC152',
-    tipo: 'Consultar',
-    descricao: 'Consulta Declaração Anual do MEI (DASN).',
-    uso: 'Requer CNPJ e Ano.',
-    finalidade: 'Consultar recibos e situação de declarações anuais (faturamento) entregues pelo MEI.',
-    status: 'nao_assinada',
-  },
+  // DASN_SIMEI removido do catálogo: a Serpro mantém o serviço "em prospecção" (ainda não liberado
+  // em produção — erro ICGERENCIADOR-044). Não é contratável; será reincluído quando a Serpro publicar.
   PGDASD: {
     env_sistema: 'INTEGRA_PGDASD_ID_SISTEMA',
     env_servico: 'INTEGRA_PGDASD_ID_SERVICO',

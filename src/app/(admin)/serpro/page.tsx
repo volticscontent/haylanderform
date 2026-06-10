@@ -26,8 +26,10 @@ export default function SerproPage() {
   const [cpf, setCpf] = useState('');
   const [numeroRecibo, setNumeroRecibo] = useState('');
   const [codigoReceita, setCodigoReceita] = useState('');
-  const [statusLeitura, setStatusLeitura] = useState('T'); // T=Todos, L=Lidas, N=Não lidas
+  const [statusLeitura, setStatusLeitura] = useState('0'); // 0=Todas, 1=Lidas, 2=Não lidas (Serpro exige dígito)
   const [categoria, setCategoria] = useState('GERAL_MENSAL');
+  // PGMEI_ATU_BENEFICIO (escrita): meses (1-12) do ano-calendário marcados como com benefício previdenciário.
+  const [beneficioMeses, setBeneficioMeses] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SerproResponse | null>(null);
   const [error, setError] = useState('');
@@ -78,16 +80,20 @@ export default function SerproPage() {
     return null;
   };
 
-  const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'DASN_SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO'];
+  const SERVICES_WITH_YEAR = ['PGMEI', 'SIMEI', 'PGDASD', 'DCTFWEB', 'PGMEI_EXTRATO', 'PGMEI_BOLETO', 'PARCELAMENTO_MEI_EMITIR', 'PGMEI_ATU_BENEFICIO'];
+
+  // Serviços de ESCRITA na Receita — separados das consultas; exigem confirmação explícita do operador.
+  const WRITE_SERVICES = ['PGMEI_ATU_BENEFICIO'];
 
   const SERVICE_GROUPS: Record<string, string[]> = {
     "Dados Cadastrais & Enquadramento": ["CCMEI_DADOS", "SIMEI", "PROCURACAO"],
-    "Guias e Débitos (PGMEI)": ["PGMEI", "PGMEI_EXTRATO", "PGMEI_BOLETO", "PGMEI_ATU_BENEFICIO"],
+    "Guias e Débitos (PGMEI)": ["PGMEI", "PGMEI_EXTRATO", "PGMEI_BOLETO"],
     "Situação Fiscal & Certidões": ["SIT_FISCAL_SOLICITAR", "SIT_FISCAL_RELATORIO", "CND"],
-    "Declarações (DASN, PGDAS, DCTFWeb)": ["DASN_SIMEI", "PGDASD", "DCTFWEB"],
+    "Declarações (PGDAS, DCTFWeb)": ["PGDASD", "DCTFWEB"],
     "Parcelamentos (MEI & SN)": ["PARCELAMENTO_MEI_CONSULTAR", "PARCELAMENTO_MEI_EMITIR", "PARCELAMENTO_SN_CONSULTAR", "PARCELAMENTO_SN_EMITIR"],
     "Dívida Ativa (PGFN)": ["PGFN_API"],
     "Mensagens e Processos": ["CAIXA_POSTAL", "PROCESSOS", "PAGAMENTO"],
+    "⚠️ Ações de Escrita (uso restrito)": ["PGMEI_ATU_BENEFICIO"],
   };
 
   // Lógica inteligente para sugestão de ano baseada no serviço
@@ -96,8 +102,9 @@ export default function SerproPage() {
     setNumeroRecibo('');
     setMes('');
     setCodigoReceita('');
+    setBeneficioMeses([]);
 
-    if (service === 'DASN_SIMEI' || service === 'PGDASD') {
+    if (service === 'PGDASD') {
       setAno((currentYear - 1).toString());
     } else if (SERVICES_WITH_YEAR.includes(service)) {
       setAno(currentYear.toString());
@@ -130,8 +137,24 @@ export default function SerproPage() {
       return;
     }
 
+    // Serviços de ESCRITA: validação + confirmação explícita do operador.
+    const isWrite = WRITE_SERVICES.includes(service);
+    if (isWrite) {
+      if (service === 'PGMEI_ATU_BENEFICIO' && beneficioMeses.length === 0) {
+        setError('Selecione ao menos um mês com benefício para atualizar.');
+        return;
+      }
+      const mesesTxt = beneficioMeses.map((m) => String(m).padStart(2, '0')).join(', ');
+      const ok = window.confirm(
+        `ATENÇÃO: operação de ESCRITA na Receita.\n\n` +
+        `Serviço: ${service}\nCNPJ: ${cnpj}\nAno: ${ano}\nMeses com benefício: ${mesesTxt}\n\n` +
+        `Isso ALTERA a declaração de benefício do MEI. Confirmar?`
+      );
+      if (!ok) return;
+    }
+
     setLoading(true);
-    setLoadingLabel('Consultando...');
+    setLoadingLabel(isWrite ? 'Executando operação de escrita...' : 'Consultando...');
     setError('');
     setSaveWarning('');
     setResult(null);
@@ -182,7 +205,12 @@ export default function SerproPage() {
           statusLeitura: service === 'CAIXA_POSTAL' ? statusLeitura : undefined,
           protocoloRelatorio: service === 'SIT_FISCAL_RELATORIO' ? (numeroRecibo || undefined) : undefined,
           codigoReceita: codigoReceita || undefined,
-          categoria: service === 'DCTFWEB' ? categoria : undefined
+          categoria: service === 'DCTFWEB' ? categoria : undefined,
+          // Escrita: PGMEI_ATU_BENEFICIO exige a lista de meses + autorização explícita.
+          infoBeneficio: service === 'PGMEI_ATU_BENEFICIO'
+            ? beneficioMeses.map((m) => ({ periodoApuracao: `${ano}${String(m).padStart(2, '0')}`, indicadorBeneficio: true }))
+            : undefined,
+          permitirEscrita: WRITE_SERVICES.includes(service) ? true : undefined
         }),
       });
 
@@ -361,19 +389,13 @@ export default function SerproPage() {
               </div>
 
               {/* Informações sobre o Ano-Calendário */}
-              {(showYearInfo || service === 'DASN_SIMEI') && (
+              {showYearInfo && (
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
                   <div className="flex gap-2 text-amber-800 dark:text-amber-300">
                     <svg className="shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                     <div className="text-xs space-y-1">
-                      <p className="font-semibold">
-                        {service === 'DASN_SIMEI' ? 'Atenção para a DASN (Declaração Anual):' : 'Sobre o Ano-Calendário:'}
-                      </p>
-                      <p>
-                        {service === 'DASN_SIMEI'
-                          ? `Em ${new Date().getFullYear()}, você declara os dados do ano que fechou (${new Date().getFullYear() - 1}). Por isso, sugerimos automaticamente ${new Date().getFullYear() - 1}.`
-                          : `O Ano-Calendário ${ano} refere-se ao período em que os impostos foram gerados ou as atividades ocorreram.`}
-                      </p>
+                      <p className="font-semibold">Sobre o Ano-Calendário:</p>
+                      <p>{`O Ano-Calendário ${ano} refere-se ao período em que os impostos foram gerados ou as atividades ocorreram.`}</p>
                     </div>
                   </div>
                 </div>
@@ -397,6 +419,38 @@ export default function SerproPage() {
                 <option value="13_SALARIO">13º Salário</option>
                 <option value="ESPETACULO_DESPORTIVO">Espetáculo Desportivo</option>
               </select>
+            </div>
+          )}
+
+          {service === 'PGMEI_ATU_BENEFICIO' && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-lg space-y-3">
+              <div className="flex gap-2 text-red-800 dark:text-red-300">
+                <svg className="shrink-0 mt-0.5 w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold">Operação de ESCRITA — altera a declaração na Receita.</p>
+                  <p>Marque os meses de <strong>{ano}</strong> em que o MEI teve benefício previdenciário (afeta o cálculo do DAS). Ao confirmar, será exigida uma confirmação explícita.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                  const ativo = beneficioMeses.includes(m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setBeneficioMeses((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m].sort((a, b) => a - b))}
+                      className={`text-xs py-1.5 rounded border font-medium transition-all ${ativo
+                        ? 'bg-red-600 border-red-600 text-white'
+                        : 'bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-red-400'}`}
+                    >
+                      {String(m).padStart(2, '0')}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                {beneficioMeses.length === 0 ? 'Nenhum mês selecionado — selecione ao menos um.' : `Meses com benefício: ${beneficioMeses.map((m) => String(m).padStart(2, '0')).join(', ')}`}
+              </p>
             </div>
           )}
 
@@ -447,9 +501,9 @@ export default function SerproPage() {
                 onChange={(e) => setStatusLeitura(e.target.value)}
                 className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-orange-500 outline-none transition-all"
               >
-                <option value="T">Todas as Mensagens</option>
-                <option value="N">Apenas Não Lidas</option>
-                <option value="L">Apenas Lidas</option>
+                <option value="0">Todas as Mensagens</option>
+                <option value="2">Apenas Não Lidas</option>
+                <option value="1">Apenas Lidas</option>
               </select>
             </div>
           )}
