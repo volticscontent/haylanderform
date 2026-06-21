@@ -16,9 +16,17 @@ async function checkDb(url, name) {
 }
 
 async function main() {
-  const frontUrl = 'postgres://postgres:3ad3550763e84d5864a7@easypanel.landcriativa.com:9000/systembots?sslmode=disable';
-  const backUrl = 'postgres://root:mG19276395$R@easy.tpsuk.shop:5432/n_db_pg?sslmode=disable';
-  
+  // Credenciais NUNCA hardcoded. Defina no .env (que e gitignored):
+  //   FRONTEND_DB_URL=postgres://user:pass@host:port/db
+  //   BACKEND_DB_URL=postgres://user:pass@host:port/db
+  const frontUrl = process.env.FRONTEND_DB_URL;
+  const backUrl = process.env.BACKEND_DB_URL;
+
+  if (!frontUrl || !backUrl) {
+    console.error('Defina FRONTEND_DB_URL e BACKEND_DB_URL no ambiente antes de rodar este script.');
+    process.exit(1);
+  }
+
   await checkDb(frontUrl, 'Frontend DB');
   await checkDb(backUrl, 'Backend DB');
 }
