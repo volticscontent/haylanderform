@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, Fragment } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, Download, MoreVertical, FileText, Phone, CheckCircle, AlertCircle, Clock, Trash2, Edit, Eye, X, User, Calendar, DollarSign, Building, Info, Send, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Download, MoreVertical, FileText, Phone, CheckCircle, AlertCircle, Clock, Trash2, Edit, Eye, X, User, Calendar, DollarSign, Building, Info, Send, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { deleteLead, updateLeadFields } from './actions'
 import { phoneMatches } from '@/lib/phone-utils'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
@@ -14,6 +14,9 @@ import LeadDetailsSidebar from '@/components/LeadDetailsSidebar'
 import { ChatAvatar } from '@/components/chat/ChatAvatar'
 
 const DATE_COLUMNS = ['data_controle_24h', 'data_cadastro', 'atualizado_em', 'data_reuniao']
+
+const fmtCnpj = (c?: string | null) =>
+  (c || '').replace(/\D/g, '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') || '—'
 
 
 export default function LeadList({
@@ -47,6 +50,12 @@ export default function LeadList({
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null)
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const toggleExpanded = (id: string) => setExpandedRows(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
   const [startInEditMode, setStartInEditMode] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const [bulkOpen, setBulkOpen] = useState(false)
@@ -667,7 +676,8 @@ export default function LeadList({
                 </tr>
               ) : (
                 filteredData.map((row, idx) => (
-                  <tr key={`${row.telefone}-${idx}`} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <Fragment key={`${row.telefone}-${idx}`}>
+                  <tr className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     {visibleColumns.includes('cliente') && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -695,12 +705,15 @@ export default function LeadList({
                                 {row.cnpj || 'CNPJ não informado'}
                               </span>
                               {(row.empresas?.length ?? 0) > 0 && (
-                                <span
-                                  className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                                  title={row.empresas!.map(e => `${e.cnpj} (${e.tipo}${e.razao_social ? ' — ' + e.razao_social : ''}${e.procuracao_ativa ? ' ✓proc' : ''})`).join('\n')}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(`${row.telefone}-${idx}`)}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
+                                  title="Ver todas as empresas do cliente"
                                 >
-                                  +{row.empresas!.length}
-                                </span>
+                                  +{row.empresas!.length} empresa{row.empresas!.length > 1 ? 's' : ''}
+                                  <ChevronDown className={`w-3 h-3 transition-transform ${expandedRows.has(`${row.telefone}-${idx}`) ? 'rotate-180' : ''}`} />
+                                </button>
                               )}
                             </div>
                           </div>
@@ -862,6 +875,54 @@ export default function LeadList({
                       </div>
                     </td>
                   </tr>
+                  {expandedRows.has(`${row.telefone}-${idx}`) && (() => {
+                    const todas: { cnpj: string; razao_social?: string | null; tipo: string; procuracao_ativa?: boolean }[] = [
+                      ...(row.cnpj ? [{ cnpj: row.cnpj, razao_social: row.razao_social, tipo: 'principal', procuracao_ativa: !!row.procuracao }] : []),
+                      ...((row.empresas || []).map(e => ({ cnpj: e.cnpj, razao_social: e.razao_social, tipo: String(e.tipo), procuracao_ativa: e.procuracao_ativa }))),
+                    ]
+                    return (
+                      <tr className="bg-zinc-50/70 dark:bg-zinc-900/40">
+                        <td colSpan={visibleColumns.length + visibleFieldColumns.length + 1} className="px-6 py-3">
+                          <div className="space-y-1.5">
+                            <div className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide">
+                              Empresas do cliente ({todas.length})
+                            </div>
+                            <div className="grid gap-1.5">
+                              {todas.map((e, i) => (
+                                <div key={e.cnpj + i} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Building className="w-4 h-4 text-zinc-400 shrink-0" />
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-mono text-zinc-700 dark:text-zinc-200">{fmtCnpj(e.cnpj)}</div>
+                                      <div className="text-xs text-zinc-500 truncate max-w-[280px]">{e.razao_social || 'Sem razão social'}</div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${e.tipo === 'principal' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                      {e.tipo}
+                                    </span>
+                                    {e.procuracao_ativa ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"><CheckCircle className="w-3 h-3" />proc</span>
+                                    ) : (
+                                      <span className="text-[10px] text-zinc-400">sem proc</span>
+                                    )}
+                                    <Link
+                                      href={`/serpro?cnpj=${(e.cnpj || '').replace(/\D/g, '')}`}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-purple-600 text-white hover:bg-purple-700 dark:bg-orange-500 dark:hover:bg-orange-600 transition-colors"
+                                      title="Consultar esta empresa no Serpro"
+                                    >
+                                      <Search className="w-3 h-3" />Serpro
+                                    </Link>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })()}
+                  </Fragment>
                 ))
               )}
             </tbody>
