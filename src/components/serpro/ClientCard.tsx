@@ -142,6 +142,7 @@ export default function ClientCard({ client, className = '', onSelectCnpj }: Cli
         onClose={() => setIsHistoryOpen(false)}
         cnpj={client.cnpj}
         clientName={client.nome}
+        onReconsultar={onSelectCnpj}
       />
     </>
   )
