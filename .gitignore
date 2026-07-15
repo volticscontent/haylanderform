@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -9,6 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+
+# package managers
+pnpm-lock.yaml
+yarn.lock
 
 # testing
 /coverage
@@ -30,8 +34,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (never commit secrets)
 .env*
+**/.env*
+!.env.example
 
 # vercel
 .vercel
@@ -42,3 +48,6 @@ next-env.d.ts
 
 # claude code (settings pessoais/locais - nunca versionar; podem conter segredos)
 .claude/settings.local.json
+
+# cleanup / temporary tooling
+.venv-cleanup/

@@ -1,0 +1,3 @@
+[submodule "bot-backend"]
+	path = bot-backend
+	url = https://github.com/volticscontent/backendhay.git

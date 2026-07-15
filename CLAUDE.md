@@ -1,5 +1,7 @@
 ﻿# Haylander Form — CLAUDE.md
 
+> **Aviso:** o schema canônico da knowledge base está em [`knowledge-base/CLAUDE.md`](knowledge-base/CLAUDE.md). Este arquivo mantém o contexto operacional histórico do monorepo.
+>
 > **Padrão atual:** Tzolkin Karpathy v2.0.
 > **KB canônica:** `knowledge-base/`.
 > **Contexto preservado:** o vault histórico `Haylander/` permanece intacto e foi copiado para `knowledge-base/`. Nenhum conteúdo foi removido.
