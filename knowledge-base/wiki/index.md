@@ -2,7 +2,7 @@
 name: Índice Master — Haylanderform Knowledge Base
 description: Catálogo central de toda a documentação viva do projeto
 type: index
-updated: 2026-05-29
+updated: 2026-07-15
 ---
 
 # Haylanderform — Knowledge Base
@@ -110,3 +110,4 @@ Stack: Next.js (frontend admin) + Node.js/Express (bot-backend) + Evolution API 
 | [ADR-013](decisions/ADR-013-red-flags.md) | Red-Flags e Notificação Imediata | 2026-04-29 | accepted |
 | [ADR-014](decisions/ADR-014-apolo-agent-audit-2026-05.md) | Auditoria Completa Agente Apolo (Mai/2026) | 2026-05-09 | accepted |
 | [ADR-015](decisions/ADR-015-multi-empresa-pgfn-array-fix.md) | Multi-Empresa Relacional + Fix Parser PGFN | 2026-05-09 | accepted |
+| [ADR-016](decisions/ADR-016-monorepo-cleanup.md) | Limpeza Estrutural do Repositório | 2026-07-15 | accepted |

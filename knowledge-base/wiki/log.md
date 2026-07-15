@@ -6,6 +6,11 @@ type: log
 
 # Log Operacional
 
+## [2026-07-15 16:50] [TASK] Limpeza estrutural do repositório e configuração de monorepo
+- Files affected: [[ADR-016-monorepo-cleanup]], [[index]], [[CLAUDE]], [[README]], [[pnpm-workspace]]
+- Context: Corrigido submodule `bot-backend` (criado `.gitmodules`), removidos `" - Copia.env"` e `socket-server/node_modules/` do histórico git via `git-filter-repo`, configurado monorepo com `pnpm-workspace.yaml`, padronizados `.gitignore` de todos os pacotes, criado `README.md` e atualizado `CLAUDE.md` raiz. Branches `main`, `fix/serpro-atubeneficio-dasn` e `natan` foram reescritas e force-pushadas.
+- Decisions: ADR-016 registrado em `decisions/ADR-016-monorepo-cleanup.md`.
+
 ## [2026-05-29 13:45] [INGEST] Auditoria Serpro de 23 APIs + tabela de mensagens DASN-SIMEI.
 - Files affected: [[serpro-audit-2026-05-29]], [[serpro]], [[index]]
 - Sources: `raw/docs/relatorio_serpro_2026_05_29.md`, apicenter → integra-mei/dasnsimei/mensagens
