@@ -52,3 +52,10 @@ next-env.d.ts
 # cleanup / temporary tooling
 .venv-cleanup/
 /tmp/
+
+# knowledge-base: certificados/segredos e binários pesados (nunca versionar)
+knowledge-base/certs/
+*.pfx
+*.p12
+knowledge-base/serpro/*.pdf
+knowledge-base/docs/*.pdf
