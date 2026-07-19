@@ -51,3 +51,4 @@ next-env.d.ts
 
 # cleanup / temporary tooling
 .venv-cleanup/
+/tmp/
